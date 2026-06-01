@@ -18,7 +18,6 @@ function App() {
       {/* اضافه کردن bg-gadget-dark و فاصله‌ها برای حالت شناور */}
       <div
         className="flex h-screen w-full font-sans text-gray-800 bg-gadget-dark p-4 gap-6"
-        dir="rtl"
       >
         <Sidebar />
 

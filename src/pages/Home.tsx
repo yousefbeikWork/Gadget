@@ -1,29 +1,33 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Activity, Users, Building, Plane, ArrowLeft, TrendingUp } from 'lucide-react';
 
 export default function Home() {
-  // دیتای تستی برای نمایش آمار
+  const { t, i18n } = useTranslation(); // اضافه کردن i18n برای دسترسی به زبان فعلی
+
+  // ۱. تغییر مقادیر به عدد واقعی (Number) به جای رشته متنی فارسی
   const stats = [
-    { title: 'کلینیک‌های فعال', value: '۱۲۴', icon: Building, color: 'text-blue-600', bg: 'bg-blue-100' },
-    { title: 'پزشکان ثبت‌شده', value: '۸۵۰', icon: Users, color: 'text-green-600', bg: 'bg-green-100' },
-    { title: 'پروازهای امروز', value: '۴۲', icon: Plane, color: 'text-orange-600', bg: 'bg-orange-100' },
-    { title: 'بازدیدهای سیستم', value: '۱,۲۰۴', icon: Activity, color: 'text-purple-600', bg: 'bg-purple-100' },
+    { titleKey: 'active_clinics', value: 124, icon: Building, color: 'text-blue-600', bg: 'bg-blue-100' },
+    { titleKey: 'registered_doctors', value: 850, icon: Users, color: 'text-green-600', bg: 'bg-green-100' },
+    { titleKey: 'todays_flights', value: 42, icon: Plane, color: 'text-orange-600', bg: 'bg-orange-100' },
+    { titleKey: 'system_visits', value: 1204, icon: Activity, color: 'text-purple-600', bg: 'bg-purple-100' },
   ];
 
+  // ۲. یک فرمت‌کننده هوشمند که بر اساس زبان فعلی (fa یا en) اعداد را تبدیل می‌کند
+  const numberFormatter = new Intl.NumberFormat(i18n.language);
+
   return (
-    <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 overflow-y-auto" dir="rtl">
+    <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 overflow-y-auto">
       
-      {/* بخش خوش‌آمدگویی */}
       <div className="mb-10">
         <h1 className="text-3xl font-bold text-gadget-dark mb-2">
-          سلام حسین، به گجت خوش اومدی! 👋
+          {t('welcome')}
         </h1>
         <p className="text-gray-500 text-sm">
-          امروز دوشنبه است، بیا یک نگاه سریع به وضعیت سیستم بندازیم.
+          {t('subtitle')}
         </p>
       </div>
 
-      {/* شبکه کارت‌های آماری */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
@@ -33,26 +37,29 @@ export default function Home() {
                 <div className={`p-3 rounded-lg ${stat.bg} ${stat.color}`}>
                   <Icon size={24} strokeWidth={2} />
                 </div>
-                <span className="flex items-center text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                  +۱۲٪ <TrendingUp size={12} className="mr-1" />
+                <span className="flex items-center text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full ltr:flex-row-reverse">
+                  {/* فرمت کردن عدد درصد پیشرفت */}
+                  <TrendingUp size={12} className="mx-1" /> {numberFormatter.format(12)}٪
                 </span>
               </div>
-              <h3 className="text-gray-500 text-sm font-medium mb-1">{stat.title}</h3>
-              <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+              <h3 className="text-gray-500 text-sm font-medium mb-1">{t(stat.titleKey)}</h3>
+              
+              {/* ۳. استفاده از فرمت‌کننده برای تبدیل خودکار اعداد کارت‌ها */}
+              <p className="text-2xl font-bold text-gray-800">
+                {numberFormatter.format(stat.value)}
+              </p>
             </div>
           );
         })}
       </div>
 
-      {/* بنر دسترسی سریع */}
       <div className="bg-gadget-dark/5 border border-gadget-dark/10 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-        {/* یک افکت تزئینی برای پس‌زمینه بنر */}
         <div className="absolute -left-20 -top-20 w-64 h-64 bg-gadget-dark opacity-5 rounded-full blur-3xl"></div>
         
-        <div className="z-10 text-center md:text-right">
-          <h2 className="text-xl font-bold text-gadget-dark mb-2">آماده‌ای برای شروع کار؟</h2>
+        <div className="z-10 text-center md:text-start">
+          <h2 className="text-xl font-bold text-gadget-dark mb-2">{t('ready_to_start')}</h2>
           <p className="text-sm text-gray-600 max-w-lg leading-relaxed">
-            سیستم آماده بهره‌برداری است. می‌توانی از بخش کلینیک‌ها شروع کنی، اطلاعات جدیدی ثبت کنی و یا داده‌های قبلی را مدیریت کنی.
+            {t('system_ready_desc')}
           </p>
         </div>
         
@@ -60,8 +67,8 @@ export default function Home() {
           to="/clinics" 
           className="z-10 shrink-0 flex items-center gap-2 bg-gadget-dark hover:bg-opacity-90 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-md"
         >
-          رفتن به مدیریت کلینیک‌ها
-          <ArrowLeft size={18} />
+          {t('go_to_clinics')}
+          <ArrowLeft size={18} className="rtl:rotate-0 ltr:rotate-180" />
         </Link>
       </div>
 
