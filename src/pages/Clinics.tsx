@@ -57,11 +57,14 @@ export default function Clinics() {
   );
 
   return (
-    <div className="flex-1 bg-[#fbfdfd] p-8 overflow-y-auto" dir="rtl">
+    <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 overflow-y-auto">
+      {" "}
       {/* هدر صفحه */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">مدیریت کلینیک‌ها</h1>
+          <h1 className="text-2xl font-bold text-gadget-dark">
+            مدیریت کلینیک‌ها
+          </h1>
           <p className="text-sm text-gray-500 mt-1">
             لیست مراکز درمانی ثبت شده در سامانه گجت
           </p>
@@ -73,7 +76,6 @@ export default function Clinics() {
           ثبت کلینیک جدید
         </button>
       </div>
-
       {/* ابزارهای بالای جدول (باکس جستجو) */}
       <div className="bg-white p-4 rounded-xl shadow-xs border border-gray-100 mb-6 flex items-center max-w-md">
         <div className="text-gray-400 ml-3">
@@ -87,13 +89,12 @@ export default function Clinics() {
           className="w-full text-sm text-gray-700 bg-transparent outline-hidden"
         />
       </div>
-
       {/* جدول نمایش داده‌ها */}
       <div className="bg-white rounded-xl shadow-xs border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right border-collapse">
             <thead>
-              <tr className="bg-gray-50/70 border-b border-gray-100 text-gray-600 text-sm font-semibold">
+              <tr className="bg-gadget-dark text-white border-b border-gray-100 text-sm font-semibold">
                 <th className="p-4">نام کلینیک</th>
                 <th className="p-4">تخصص اصلی</th>
                 <th className="p-4">شماره تماس</th>
@@ -106,7 +107,7 @@ export default function Clinics() {
                 filteredClinics.map((clinic) => (
                   <tr
                     key={clinic.id}
-                    className="hover:bg-gray-50/50 transition-colors"
+                    className="hover:bg-gray-100 transition-colors"
                   >
                     <td className="p-4 font-medium text-gray-900">
                       {clinic.name}
