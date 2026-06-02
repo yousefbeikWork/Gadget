@@ -1,13 +1,14 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Sidebar from "./components/Sidebar";
-import Clinics from "./pages/Clinics";
+import DashboardLayout from "./layouts/DashboardLayout"; 
 import Home from "./pages/Home";
+import Clinics from "./pages/Clinics";
+import Login from "./pages/Login"; 
+import Register from "./pages/Register";
 
 const PlaceholderPage = ({ title }: { title: string }) => (
-  // تبدیل اسکلت صفحات خالی به کارت سفید و گرد
   <main className="flex-1 flex items-center justify-center bg-white rounded-2xl shadow-lg p-10">
     <h1 className="text-4xl font-light text-gray-300 tracking-wider">
-      {title} Page Skeleton
+      {title} coming soon 
     </h1>
   </main>
 );
@@ -15,14 +16,11 @@ const PlaceholderPage = ({ title }: { title: string }) => (
 function App() {
   return (
     <BrowserRouter>
-      {/* اضافه کردن bg-gadget-dark و فاصله‌ها برای حالت شناور */}
-      <div
-        className="flex h-screen w-full font-sans text-gray-800 bg-gadget-dark p-4 gap-6"
-      >
-        <Sidebar />
-
-        <Routes>
-          <Route path="/" element={<Home />} />{" "}
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />{" "}
+        <Route element={<DashboardLayout />}>
+          <Route path="/" element={<Home />} />
           <Route
             path="/doctors"
             element={<PlaceholderPage title="Doctors" />}
@@ -39,8 +37,10 @@ function App() {
           <Route path="/travel" element={<PlaceholderPage title="Travel" />} />
           <Route path="/guides" element={<PlaceholderPage title="Guides" />} />
           <Route path="/search" element={<PlaceholderPage title="Search" />} />
-        </Routes>
-      </div>
+          <Route path="/laeder" element={<PlaceholderPage title="Leader" />} />
+          <Route path="/visa" element={<PlaceholderPage title="Visa" />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }

@@ -9,6 +9,8 @@ import {
   Map,
   List,
   Search,
+  UserCheck,
+  IdCard
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 
@@ -22,6 +24,8 @@ const menuItems = [
   { key: "travel", path: "/travel", icon: Map },
   { key: "guides", path: "/guides", icon: List },
   { key: "search", path: "/search", icon: Search },
+  { key: "leader", path: "/leader", icon: UserCheck },
+  { key: "visa", path: "/visa", icon: IdCard },
 ];
 
 export default function Sidebar() {
