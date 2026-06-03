@@ -13,6 +13,8 @@ const resources = {
       "travel": "سفر",
       "guides": "راهنما",
       "search": "جست و جو",
+      "leader": "لیدر",
+      "visa": "ویزا",
       
       // کلمات صفحه اصلی (Home)
       "welcome": "سلام حسین، به گجت خوش اومدی! 👋",
@@ -37,6 +39,8 @@ const resources = {
       "travel": "Travel",
       "guides": "Guides",
       "search": "Search",
+      "leader": "Leader",
+      "visa": "Visa",
       
       // کلمات صفحه اصلی (Home)
       "welcome": "Hello Hossein, Welcome to Gadget! 👋",
