@@ -115,7 +115,7 @@ export default function Clinics() {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 bg-gadget-light hover:bg-[#209c96] text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm transition-colors cursor-pointer self-start md:self-auto"
+          className="flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm transition-colors cursor-pointer self-start md:self-auto"
         >
           <Plus size={18} />
           ثبت کلینیک جدید

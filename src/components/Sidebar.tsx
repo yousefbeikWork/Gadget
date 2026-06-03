@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Home,
   Stethoscope,
+  User,
   Building2,
   Hospital,
   Plane,
@@ -18,6 +19,7 @@ import LanguageSwitcher from "./LanguageSwitcher";
 const menuItems = [
   { key: "home", path: "/", icon: Home },
   { key: "doctors", path: "/doctors", icon: Stethoscope },
+  { key: 'patients', path: '/patients', icon: User },
   { key: "hospitals", path: "/hospitals", icon: Building2 },
   { key: "clinics", path: "/clinics", icon: Hospital },
   { key: "airplanes", path: "/airplanes", icon: Plane },

@@ -7,6 +7,7 @@ const resources = {
       // کلمات سایدبار
       "home": "خانه",
       "doctors": "پزشک",
+      "patients": "بیماران",
       "hospitals": "بیمارستان",
       "clinics": "کلینیک",
       "airplanes": "هواپیما",
@@ -33,6 +34,7 @@ const resources = {
       // کلمات سایدبار
       "home": "Home",
       "doctors": "Doctors",
+      "patients": "Patients",
       "hospitals": "Hospitals",
       "clinics": "Clinics",
       "airplanes": "Airplanes",

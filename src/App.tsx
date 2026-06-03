@@ -1,14 +1,16 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import DashboardLayout from "./layouts/DashboardLayout"; 
+import DashboardLayout from "./layouts/DashboardLayout";
 import Home from "./pages/Home";
 import Clinics from "./pages/Clinics";
-import Login from "./pages/Login"; 
+import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Doctors from "./pages/Doctors";
+import Patients from "./pages/Patients"; // ایمپورت
 
 const PlaceholderPage = ({ title }: { title: string }) => (
   <main className="flex-1 flex items-center justify-center bg-white rounded-2xl shadow-lg p-10">
     <h1 className="text-4xl font-light text-gray-300 tracking-wider">
-      {title} coming soon 
+      {title} coming soon
     </h1>
   </main>
 );
@@ -21,10 +23,8 @@ function App() {
         <Route path="/register" element={<Register />} />{" "}
         <Route element={<DashboardLayout />}>
           <Route path="/" element={<Home />} />
-          <Route
-            path="/doctors"
-            element={<PlaceholderPage title="Doctors" />}
-          />
+          <Route path="/doctors" element={<Doctors />} />
+          <Route path="/patients" element={<Patients />} />
           <Route path="/clinics" element={<Clinics />} />
           <Route
             path="/hospitals"
@@ -37,7 +37,7 @@ function App() {
           <Route path="/travel" element={<PlaceholderPage title="Travel" />} />
           <Route path="/guides" element={<PlaceholderPage title="Guides" />} />
           <Route path="/search" element={<PlaceholderPage title="Search" />} />
-          <Route path="/laeder" element={<PlaceholderPage title="Leader" />} />
+          <Route path="/leader" element={<PlaceholderPage title="Leader" />} />
           <Route path="/visa" element={<PlaceholderPage title="Visa" />} />
         </Route>
       </Routes>
