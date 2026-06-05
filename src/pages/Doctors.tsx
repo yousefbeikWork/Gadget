@@ -28,7 +28,7 @@ export default function Doctors() {
   );
 
   return (
-    <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 overflow-y-auto">
+    <div className="flex-1 bg-white md:rounded-2xl shadow-lg p-8 overflow-y-auto">
       
       {/* هدر صفحه */}
       <div className="mb-8">

@@ -59,7 +59,7 @@ export default function Patients() {
   };
 
   return (
-    <div className="flex-1 bg-white rounded-2xl shadow-lg p-8 overflow-y-auto">
+    <div className="flex-1 bg-white md:rounded-2xl shadow-lg p-8 overflow-y-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gadget-dark">لیست بیماران</h1>

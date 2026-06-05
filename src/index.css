@@ -3,3 +3,23 @@
   --color-gadget-dark: #0f6d6d;
   --color-gadget-light: #29b6b0; 
 }
+/* استایل‌دهی مدرن به نوار اسکرول فقط برای دسکتاپ (دستگاه‌های دارای موس) */
+@media (hover: hover) and (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: #e2e8f0;
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #29b6b0;
+  }
+}
