@@ -1,5 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../context/AuthContext";
 import {
   Home,
   Stethoscope,
@@ -15,6 +16,7 @@ import {
   X,
   LogIn,
   UserPlus,
+  LogOut,
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 
@@ -40,7 +42,19 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation();
-
+  const { isLoggedIn, userRole, logout, userProfile } = useAuth();
+  const getRoleName = (role: string | null) => {
+    switch (role) {
+      case "Doctor":
+        return "پزشک متخصص";
+      case "Patient":
+        return "بیمار";
+      case "Hospital":
+        return "مرکز درمانی";
+      default:
+        return "کاربر سامانه";
+    }
+  };
   return (
     <>
       {/* بک‌گراند تاریک برای موبایل وقتی منو باز است */}
@@ -105,29 +119,71 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* بخش پایین سایدبار (احراز هویت + تغییر زبان) */}
-        <div className="mt-auto shrink-0 border-t border-gray-100 bg-gray-50/50 md:rounded-2xl">
-          {/* دکمه‌های ورود و ثبت‌نام */}
+        {/* بخش پایین سایدبار (احراز هویت + تغییر زبان) */}
+        <div className="mt-auto shrink-0 border-t border-gray-100 bg-gray-50/50">
           <div className="p-5 flex flex-col gap-3">
-            <Link
-              to="/login"
-              onClick={onClose}
-              className="flex items-center justify-center gap-2 w-full bg-white hover:bg-gray-100 text-gadget-dark py-2.5 rounded-xl text-sm font-bold transition-colors border border-gray-200"
-            >
-              <LogIn size={18} />
-              <span>ورود به سیستم</span>
-            </Link>
-
-            <Link
-              to="/register"
-              onClick={onClose}
-              className="flex items-center justify-center gap-2 w-full bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm"
-            >
-              <UserPlus size={18} />
-              <span>ثبت‌نام جدید</span>
-            </Link>
+            {/* اگر کاربر لاگین بود، کارت پروفایل را نشان بده */}
+            {/* اگر کاربر لاگین بود، کارت پروفایل هوشمند را نشان بده */}
+            {isLoggedIn ? (
+              <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-xs">
+                <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
+                  {/* دایره آواتار شامل حرف اول نام کاربر */}
+                  <div className="w-10 h-10 bg-gadget-light/10 text-gadget-light rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
+                    {userProfile?.firstName ? (
+                      userProfile.firstName[0]
+                    ) : (
+                      <User size={20} />
+                    )}
+                  </div>
+                  <div className="overflow-hidden">
+                    {/* نمایش نام و نام خانوادگی واقعی از API */}
+                    <h4 className="text-sm font-bold text-gray-800 truncate">
+                      {userProfile
+                        ? `${userProfile.firstName} ${userProfile.lastName}`
+                        : "در حال بارگذاری..."}
+                    </h4>
+                    {/* نمایش تخصص برای پزشکان، یا نام نقش برای بقیه */}
+                    <p className="text-xs text-gray-500 font-medium truncate mt-0.5">
+                      {userRole === "Doctor" && userProfile?.Expertise
+                        ? `متخصص ${userProfile.Expertise}`
+                        : getRoleName(userRole)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    logout();
+                    onClose();
+                  }}
+                  className="flex items-center justify-center gap-2 w-full text-red-500 hover:bg-red-50 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <LogOut size={16} />
+                  <span>خروج از سیستم</span>
+                </button>
+              </div>
+            ) : (
+              /* اگر کاربر لاگین نبود، همان دکمه‌های ورود و ثبت‌نام را نشان بده */
+              <>
+                <Link
+                  to="/login"
+                  onClick={onClose}
+                  className="flex items-center justify-center gap-2 w-full bg-white hover:bg-gray-100 text-gadget-dark py-2.5 rounded-xl text-sm font-bold transition-colors border border-gray-200"
+                >
+                  <LogIn size={18} />
+                  <span>ورود به سیستم</span>
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={onClose}
+                  className="flex items-center justify-center gap-2 w-full bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm"
+                >
+                  <UserPlus size={18} />
+                  <span>ثبت‌نام جدید</span>
+                </Link>
+              </>
+            )}
           </div>
 
-          {/* بخش زبان در پایین‌ترین قسمت */}
           <div className="px-6 pb-6 pt-2 flex justify-center w-full">
             <LanguageSwitcher />
           </div>
