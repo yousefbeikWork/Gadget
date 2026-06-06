@@ -5,7 +5,8 @@ import Clinics from "./pages/Clinics";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Doctors from "./pages/Doctors";
-import Patients from "./pages/Patients"; // ایمپورت
+import Patients from "./pages/Patients";
+import { Toaster } from "react-hot-toast"; 
 
 const PlaceholderPage = ({ title }: { title: string }) => (
   <main className="flex-1 flex items-center justify-center bg-white rounded-2xl shadow-lg p-10">
@@ -18,6 +19,16 @@ const PlaceholderPage = ({ title }: { title: string }) => (
 function App() {
   return (
     <BrowserRouter>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          className: "text-sm font-bold font-sans",
+          style: {
+            background: "#333",
+            color: "#fff",
+          },
+        }}
+      />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />{" "}
