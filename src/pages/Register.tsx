@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import {
   User,
@@ -12,18 +11,18 @@ import {
   Lock,
   CreditCard,
   MapPin,
+  Users,
 } from "lucide-react";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
-// نقش‌ها دقیقاً معادل چیزی که بک‌اند انتظار دارد تنظیم شدند
 type Role = "Patient" | "Doctor" | "Hospital";
 
 export default function Register() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [role, setRole] = useState<Role>("Doctor"); // پیش‌فرض روی پزشک
+  const [role, setRole] = useState<Role>("Patient");
 
-  // استیت فرم (فقط فیلدهای مورد نیاز پزشک متصل شده‌اند)
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -36,6 +35,14 @@ export default function Register() {
     clinicPhone: "",
     orgAddress: "",
     clinicAddress: "",
+    fatherName: "",
+    gender: "MALE",
+    maritalStatus: "SINGLE",
+    guardianFirstName: "",
+    guardianLastName: "",
+    guardianNationalId: "",
+    guardianMobile: "",
+    guardianAddress: "",
   });
 
   const handleChange = (
@@ -55,24 +62,56 @@ export default function Register() {
       .join("");
   };
 
+  const numericAge = Number(toEnglishDigits(formData.age)) || 0;
+  const isUnderage = numericAge > 0 && numericAge < 18;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // اگر نقش پزشک نبود، فعلاً ریکوئست نمی‌زنیم
-    if (role !== "Doctor") {
-      toast("این بخش در حال توسعه است. فعلاً فقط ثبت‌نام پزشک فعال است.", {
-        icon: "🛠️",
-      });
+    if (role === "Hospital") {
+      toast("ثبت‌نام مراکز درمانی به زودی فعال می‌شود.", { icon: "🛠️" });
       return;
     }
 
-    const payload = {
-      ...formData,
+    const payload: any = {
       role: role,
       mobile: toEnglishDigits(formData.mobile).trim(),
+      password: formData.password,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
       nationalId: toEnglishDigits(formData.nationalId).trim(),
-      age: Number(toEnglishDigits(formData.age)) || 0,
+      age: numericAge,
     };
+
+    if (role === "Doctor") {
+      payload.medicalCouncilCode = formData.medicalCouncilCode;
+      payload.Expertise = formData.Expertise;
+      payload.clinicPhone = toEnglishDigits(formData.clinicPhone).trim();
+      payload.orgAddress = formData.orgAddress;
+      payload.clinicAddress = formData.clinicAddress;
+    } else if (role === "Patient") {
+      payload.fatherName = formData.fatherName;
+      payload.gender = formData.gender;
+      payload.maritalStatus = formData.maritalStatus;
+
+      // بررسی می‌کنیم که آیا سن زیر 18 است یا کاربر حداقل یکی از فیلدهای قیم را پر کرده است
+      const hasGuardianData =
+        formData.guardianFirstName ||
+        formData.guardianLastName ||
+        formData.guardianNationalId ||
+        formData.guardianMobile ||
+        formData.guardianAddress;
+
+      if (isUnderage || hasGuardianData) {
+        payload.guardian = {
+          firstName: formData.guardianFirstName,
+          lastName: formData.guardianLastName,
+          nationalId: toEnglishDigits(formData.guardianNationalId).trim(),
+          mobile: toEnglishDigits(formData.guardianMobile).trim(),
+          address: formData.guardianAddress,
+        };
+      }
+    }
 
     const registerPromise = api.post("/auth/register", payload);
 
@@ -80,10 +119,13 @@ export default function Register() {
       loading: "در حال ایجاد حساب کاربری...",
       success: (response) => {
         const { accessToken, refreshToken, role: userRole } = response.data;
+
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
         localStorage.setItem("userRole", userRole);
+
         login(userRole);
+
         setTimeout(() => navigate("/"), 1000);
         return "ثبت‌نام با موفقیت انجام شد!";
       },
@@ -103,7 +145,6 @@ export default function Register() {
       dir="rtl"
     >
       <div className="bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* هدر فرم */}
         <div className="bg-linear-to-r from-gadget-dark to-gadget-light p-6 text-center shrink-0 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-[url('/cubes.png')] opacity-20 mix-blend-overlay"></div>
           <div className="relative z-10 w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mx-auto flex items-center justify-center mb-4 border border-white/20">
@@ -117,9 +158,7 @@ export default function Register() {
           </p>
         </div>
 
-        {/* بخش محتوای اسکرول‌خور */}
         <div className="p-6 overflow-y-auto custom-scrollbar">
-          {/* انتخابگر نقش */}
           <div className="flex bg-gray-50 border border-gray-100 p-1.5 rounded-xl mb-8">
             <button
               type="button"
@@ -176,15 +215,14 @@ export default function Register() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* ================= فیلدهای اختصاصی پزشک متصل به بک‌اند ================= */}
-              {role === "Doctor" && (
+              {/* ================= فیلدهای مشترک ================= */}
+              {(role === "Patient" || role === "Doctor") && (
                 <>
                   <div className="md:col-span-2">
                     <h3 className="text-sm font-bold text-gadget-light border-b border-gray-100 pb-2 mb-2">
                       اطلاعات هویتی و کاربری
                     </h3>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       نام
@@ -217,7 +255,6 @@ export default function Register() {
                       className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       کد ملی
@@ -251,7 +288,6 @@ export default function Register() {
                       className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       شماره موبایل
@@ -293,13 +329,160 @@ export default function Register() {
                       />
                     </div>
                   </div>
+                </>
+              )}
 
+              {/* ================= فیلدهای اختصاصی بیمار ================= */}
+              {role === "Patient" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      نام پدر 
+                    </label>
+                    <input
+                      name="fatherName"
+                      value={formData.fatherName}
+                      onChange={handleChange}
+                      type="text"
+                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light"
+                    />
+                  </div>
+                  <div></div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      جنسیت
+                    </label>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light bg-white"
+                    >
+                      <option value="MALE">مرد</option>
+                      <option value="FEMALE">زن</option>
+                      <option value="OTHER">سایر</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      وضعیت تاهل
+                    </label>
+                    <select
+                      name="maritalStatus"
+                      value={formData.maritalStatus}
+                      onChange={handleChange}
+                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light bg-white"
+                    >
+                      <option value="SINGLE">مجرد</option>
+                      <option value="MARRIED">متاهل</option>
+                      <option value="DIVORCED">مطلقه</option>
+                      <option value="WIDOWED">بیوه</option>
+                    </select>
+                  </div>
+
+                  {/* ---------- بخش قیم (پویا) ---------- */}
+                  <div
+                    className={`md:col-span-2 border rounded-xl p-4 mt-2 transition-colors duration-300 ${isUnderage ? "border-orange-200 bg-orange-50/50" : "border-gray-100 bg-gray-50/50"}`}
+                  >
+                    <div
+                      className={`flex items-center gap-2 mb-4 ${isUnderage ? "text-orange-600" : "text-gray-600"}`}
+                    >
+                      <Users size={18} />
+                      <h3 className="text-sm font-bold">
+                        اطلاعات قیم
+                        {isUnderage ? (
+                          <span className="text-orange-500 font-normal text-xs mr-2">
+                            (الزامی با توجه به سن بیمار)
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 font-normal text-xs mr-2">
+                            (اختیاری)
+                          </span>
+                        )}
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          نام قیم
+                        </label>
+                        <input
+                          name="guardianFirstName"
+                          value={formData.guardianFirstName}
+                          onChange={handleChange}
+                          required={isUnderage}
+                          type="text"
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white ${isUnderage ? "border border-orange-200 focus:border-orange-400" : "border border-gray-200 focus:border-gadget-light"}`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          نام خانوادگی قیم
+                        </label>
+                        <input
+                          name="guardianLastName"
+                          value={formData.guardianLastName}
+                          onChange={handleChange}
+                          required={isUnderage}
+                          type="text"
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white ${isUnderage ? "border border-orange-200 focus:border-orange-400" : "border border-gray-200 focus:border-gadget-light"}`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          کد ملی قیم
+                        </label>
+                        <input
+                          name="guardianNationalId"
+                          value={formData.guardianNationalId}
+                          onChange={handleChange}
+                          required={isUnderage}
+                          type="text"
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white text-left ${isUnderage ? "border border-orange-200 focus:border-orange-400" : "border border-gray-200 focus:border-gadget-light"}`}
+                          dir="ltr"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          شماره موبایل قیم
+                        </label>
+                        <input
+                          name="guardianMobile"
+                          value={formData.guardianMobile}
+                          onChange={handleChange}
+                          required={isUnderage}
+                          type="tel"
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white text-left ${isUnderage ? "border border-orange-200 focus:border-orange-400" : "border border-gray-200 focus:border-gadget-light"}`}
+                          dir="ltr"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          آدرس سکونت
+                        </label>
+                        <textarea
+                          name="guardianAddress"
+                          value={formData.guardianAddress}
+                          onChange={handleChange}
+                          required={isUnderage}
+                          rows={2}
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white ${isUnderage ? "border border-orange-200 focus:border-orange-400" : "border border-gray-200 focus:border-gadget-light"}`}
+                        ></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ================= فیلدهای اختصاصی پزشک ================= */}
+              {role === "Doctor" && (
+                <>
                   <div className="md:col-span-2 pt-4">
                     <h3 className="text-sm font-bold text-gadget-light border-b border-gray-100 pb-2 mb-2">
                       اطلاعات تخصصی و کاری
                     </h3>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       کد نظام پزشکی
@@ -316,7 +499,7 @@ export default function Register() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      تخصص (Expertise)
+                      تخصص
                     </label>
                     <div className="relative">
                       <Stethoscope
@@ -333,7 +516,6 @@ export default function Register() {
                       />
                     </div>
                   </div>
-
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       شماره تماس مطب / مرکز
@@ -354,7 +536,6 @@ export default function Register() {
                       />
                     </div>
                   </div>
-
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       آدرس سازمان / بیمارستان
@@ -374,7 +555,6 @@ export default function Register() {
                       ></textarea>
                     </div>
                   </div>
-
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       آدرس مطب شخصی
@@ -396,144 +576,13 @@ export default function Register() {
                   </div>
                 </>
               )}
-
-              {/* ================= فیلدهای نمایشی بیمار ================= */}
-              {role === "Patient" && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      نام و نام خانوادگی
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      کد ملی / کد اتباع
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark text-left"
-                      dir="ltr"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      نام پدر
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      شماره موبایل
-                    </label>
-                    <input
-                      type="tel"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark text-left"
-                      dir="ltr"
-                      placeholder="0912..."
-                    />
-                  </div>
-                  <div className="md:col-span-2 border-t border-gray-100 pt-5 mt-2">
-                    <h3 className="text-sm font-bold text-gadget-dark mb-1">
-                      ثبت مشخصات قیم
-                    </h3>
-                    <p className="text-xs text-gray-500 mb-4">
-                      در صورت نیاز به ثبت اطلاعات قیم، فیلدهای زیر را تکمیل
-                      کنید.
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      نام و نام خانوادگی قیم
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      شماره موبایل قیم
-                    </label>
-                    <input
-                      type="tel"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark text-left"
-                      dir="ltr"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* ================= فیلدهای نمایشی مراکز درمانی ================= */}
-              {role === "Hospital" && (
-                <>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      نام مرکز درمانی
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark"
-                      placeholder="مثال: بیمارستان عرفان"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      نوع مرکز
-                    </label>
-                    <select className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark bg-white">
-                      <option value="بیمارستان">بیمارستان</option>
-                      <option value="کلینیک">کلینیک</option>
-                      <option value="سازمان طرف قرارداد">
-                        سازمان طرف قرارداد
-                      </option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      کد پروانه مرکز
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark text-left"
-                      dir="ltr"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      تلفن‌های مرکز
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark text-left"
-                      dir="ltr"
-                      placeholder="021-..."
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      آدرس دقیق مرکز
-                    </label>
-                    <textarea
-                      rows={3}
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark"
-                    ></textarea>
-                  </div>
-                </>
-              )}
             </div>
 
-            {/* بخش دکمه ثبت */}
             <div className="pt-6 border-t border-gray-100">
               <button
                 type="submit"
-                className={`w-full md:w-auto md:min-w-50 float-left py-3 px-6 rounded-xl text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer bg-gadget-dark hover:bg-gadget-dark/90 text-white`}
+                className={`w-full md:w-auto md:min-w-50 float-left py-3 px-6 rounded-xl text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer bg-gadget-dark hover:bg-gadget-dark/90 text-white
+                `}
               >
                 تکمیل ثبت‌نام
                 <ArrowRight size={18} />
@@ -542,7 +591,6 @@ export default function Register() {
             </div>
           </form>
 
-          {/* لینک بازگشت به ورود */}
           <div className="mt-8 text-center text-sm text-gray-600 border-t border-gray-50 pt-6">
             قبلاً ثبت‌نام کرده‌اید؟{" "}
             <Link
