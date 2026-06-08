@@ -1,158 +1,205 @@
-import { useState } from "react";
-import { Search, Plus, Phone, User, Activity, Trash2, Edit } from "lucide-react";
-import AddPatientModal, { type PatientData } from "../components/AddPatientModal";
-interface Patient extends PatientData {
-  id: number;
+import { useState, useEffect } from 'react';
+import { 
+  Users, Search, Phone, CreditCard, 
+  CalendarDays, Loader2, CheckCircle2, 
+  Clock4, CalendarX2, Activity
+} from 'lucide-react';
+import api from '../services/api';
+
+// تعریف تایپ‌ها بر اساس ساختار خروجی API
+interface PatientItem {
+  patientId: string;
+  firstName: string;
+  lastName: string;
+  nationalId: string;
+  phoneNumber: string;
+  totalAppointments: number;
+  lastAppointmentDate: string;
+  lastAppointmentStatus: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 }
 
-const initialPatients: Patient[] = [
-  { id: 1, name: "علی حسینی", nationalId: "0012345678", phone: "09121112233", gender: "مرد", status: "تحت درمان" },
-  { id: 2, name: "مریم رضایی", nationalId: "0456789123", phone: "09354445566", gender: "زن", status: "در انتظار ویزیت" },
-  { id: 3, name: "رضا کریمی", nationalId: "0078945612", phone: "09107778899", gender: "مرد", status: "ترخیص شده" },
-];
+export default function DoctorPatients() {
+  const [patients, setPatients] = useState<PatientItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
-export default function Patients() {
-  const [patients, setPatients] = useState<Patient[]>(initialPatients);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const fetchPatients = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/doctor/getDoctorPatients');
+      
+      if (response.data && response.data.success) {
+        setPatients(response.data.patients);
+      }
+    } catch (err) {
+      setError('خطا در دریافت لیست بیماران. لطفاً ارتباط با سرور را بررسی کنید.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.name.includes(searchTerm) || patient.nationalId.includes(searchTerm),
+  useEffect(() => {
+    fetchPatients();
+  }, []);
+
+  // فیلتر کردن لوکال (سمت فرانت) بر اساس نام یا کد ملی
+  const filteredPatients = patients.filter(p => 
+    p.firstName.includes(searchTerm) || 
+    p.lastName.includes(searchTerm) || 
+    p.nationalId.includes(searchTerm)
   );
 
-  const handleSavePatient = (patientData: PatientData) => {
-    if (editingPatient) {
-      setPatients(patients.map(p => p.id === editingPatient.id ? { ...patientData, id: editingPatient.id } : p));
-    } else {
-      const newPatient = { ...patientData, id: Date.now() };
-      setPatients([newPatient, ...patients]);
-    }
-  };
-
-  const handleDeletePatient = (id: number) => {
-    const isConfirmed = window.confirm("آیا از حذف پرونده این بیمار اطمینان دارید؟");
-    if (isConfirmed) {
-      setPatients(patients.filter((p) => p.id !== id));
-    }
-  };
-
-  const handleEditPatient = (patient: Patient) => {
-    setEditingPatient(patient);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingPatient(null);
-  };
-
-  // استایل‌دهی به وضعیت‌های مختلف
-  const getStatusBadge = (status: Patient['status']) => {
+  // تابع کمکی برای استایل‌دهی به وضعیت آخرین نوبت
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'تحت درمان': return 'bg-blue-50 text-blue-700';
-      case 'در انتظار ویزیت': return 'bg-amber-50 text-amber-700';
-      case 'ترخیص شده': return 'bg-green-50 text-green-700';
-      default: return 'bg-gray-50 text-gray-700';
+      case 'CONFIRMED':
+        return (
+          <span className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-md text-[10px] font-bold border border-green-100">
+            <CheckCircle2 size={12} />
+            تایید شده
+          </span>
+        );
+      case 'PENDING':
+        return (
+          <span className="flex items-center gap-1 bg-orange-50 text-orange-600 px-2 py-1 rounded-md text-[10px] font-bold border border-orange-100">
+            <Clock4 size={12} />
+            در انتظار
+          </span>
+        );
+      case 'CANCELLED':
+        return (
+          <span className="flex items-center gap-1 bg-red-50 text-red-600 px-2 py-1 rounded-md text-[10px] font-bold border border-red-100">
+            <CalendarX2 size={12} />
+            لغو شده
+          </span>
+        );
+      default:
+        return null;
     }
+  };
+
+  const formatDate = (isoString: string) => {
+    if (!isoString) return 'نامشخص';
+    const date = new Date(isoString);
+    return date.toLocaleDateString('fa-IR', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
   };
 
   return (
-    <div className="flex-1 bg-white md:rounded-2xl shadow-lg p-8 overflow-y-auto">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gadget-dark">لیست بیماران</h1>
-          <p className="text-sm text-gray-500 mt-1">مدیریت پرونده‌ها و اطلاعات بیماران مراجعه‌کننده</p>
+    <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 w-full h-full overflow-y-auto custom-scrollbar p-6 md:p-8 font-sans" dir="rtl">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* هدر صفحه */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 border-b border-gray-50 pb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-gadget-light/10 text-gadget-light rounded-2xl">
+              <Users size={28} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">لیست بیماران من</h1>
+              <p className="text-gray-500 text-sm mt-1">
+                {patients.length > 0 ? `تعداد کل بیماران ثبت شده: ${patients.length} نفر` : 'پرونده بیماران مطب شما'}
+              </p>
+            </div>
+          </div>
+
+          <div className="relative w-full md:w-72">
+            <Search className="absolute right-3 top-2.5 text-gray-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="جستجوی نام یا کد ملی..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors"
+            />
+          </div>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors cursor-pointer self-start md:self-auto"
-        >
-          <Plus size={18} />
-          ثبت بیمار جدید
-        </button>
-      </div>
+        {/* وضعیت لودینگ */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-20 text-gadget-light">
+            <Loader2 className="animate-spin mb-4" size={40} />
+            <p className="text-sm font-medium">در حال دریافت پرونده بیماران...</p>
+          </div>
+        )}
 
-      <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100 mb-6 flex items-center max-w-md">
-        <div className="text-gray-400 ml-3">
-          <Search size={20} />
-        </div>
-        <input
-          type="text"
-          placeholder="جستجوی نام بیمار یا کد ملی..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full text-sm text-gray-700 bg-transparent outline-hidden"
-        />
-      </div>
+        {/* وضعیت خطا */}
+        {error && !loading && (
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl text-center text-sm font-medium border border-red-100">
+            {error}
+          </div>
+        )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse">
-            <thead>
-              <tr className="bg-gadget-dark text-white text-sm font-semibold">
-                <th className="p-4">نام بیمار</th>
-                <th className="p-4">کد ملی</th>
-                <th className="p-4">شماره تماس</th>
-                <th className="p-4">جنسیت</th>
-                <th className="p-4">وضعیت پرونده</th>
-                <th className="p-4 text-center">عملیات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50 text-gray-700 text-sm">
-              {filteredPatients.length > 0 ? (
-                filteredPatients.map((patient) => (
-                  <tr key={patient.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="p-4 font-bold text-gray-900">{patient.name}</td>
-                    <td className="p-4 text-gray-600 font-medium" dir="ltr">{patient.nationalId}</td>
-                    <td className="p-4 text-gray-600">
-                      <span className="inline-flex items-center gap-1" dir="ltr">
-                        {patient.phone}
-                        <Phone size={14} className="text-gray-400" />
-                      </span>
-                    </td>
-                    <td className="p-4 text-gray-500">
-                      <span className="inline-flex items-center gap-1">
-                        <User size={14} className="text-gray-400 shrink-0" />
-                        {patient.gender}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${getStatusBadge(patient.status)}`}>
-                        <Activity size={12} />
-                        {patient.status}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center justify-center gap-3">
-                        <button onClick={() => handleEditPatient(patient)} className="text-gray-400 hover:text-blue-600 transition-colors cursor-pointer" title="ویرایش">
-                          <Edit size={18} />
-                        </button>
-                        <button onClick={() => handleDeletePatient(patient.id)} className="text-gray-400 hover:text-red-600 transition-colors cursor-pointer" title="حذف">
-                          <Trash2 size={18} />
-                        </button>
+        {/* حالت خالی */}
+        {!loading && !error && filteredPatients.length === 0 && (
+          <div className="bg-gray-50 p-10 rounded-2xl border border-dashed border-gray-200 text-center">
+            <div className="w-16 h-16 bg-white text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <Users size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-gray-700 mb-1">بیماری یافت نشد</h3>
+            <p className="text-gray-500 text-sm">شما هنوز بیماری در سیستم ندارید یا جستجوی شما نتیجه‌ای نداشت.</p>
+          </div>
+        )}
+
+        {/* جدول/گرید بیماران */}
+        {!loading && filteredPatients.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+            {filteredPatients.map((patient) => (
+              <div key={patient.patientId} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col group relative overflow-hidden">
+                
+                {/* نوار رنگی دکوری */}
+                <div className="absolute top-0 right-0 w-1.5 h-full bg-gadget-light opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                {/* هدر کارت: اطلاعات هویتی */}
+                <div className="flex items-center justify-between mb-4 border-b border-gray-50 pb-4">
+                  <div>
+                    <h3 className="font-bold text-lg text-gray-800">
+                      {patient.firstName} {patient.lastName}
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                      <CreditCard size={14} className="text-gray-400" />
+                      <span dir="ltr">{patient.nationalId}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col items-center justify-center bg-blue-50 w-12 h-12 rounded-xl text-blue-600 border border-blue-100 shrink-0">
+                    <span className="text-lg font-bold leading-none">{patient.totalAppointments}</span>
+                    <span className="text-[9px] font-medium mt-1">مراجعه</span>
+                  </div>
+                </div>
+
+                {/* بدنه کارت: اطلاعات تماس و آخرین نوبت */}
+                <div className="space-y-3 flex-1">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+                    <Phone size={16} className="text-gray-400 shrink-0" />
+                    <span className="font-medium font-sans" dir="ltr">{patient.phoneNumber}</span>
+                  </div>
+                  
+                  <div className="bg-orange-50/50 border border-orange-100/50 rounded-lg p-3 mt-2">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                      <Activity size={14} className="text-orange-400" />
+                      <span>وضعیت آخرین مراجعه:</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                        <CalendarDays size={16} className="text-gray-400" />
+                        {formatDate(patient.lastAppointmentDate)}
                       </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-gray-400">بیماری با این مشخصات یافت نشد.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      {getStatusBadge(patient.lastAppointmentStatus)}
+                    </div>
+                  </div>
+                </div>
 
-      <AddPatientModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onAdd={handleSavePatient}
-        initialData={editingPatient}
-      />
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }

@@ -17,13 +17,38 @@ import {
   LogIn,
   UserPlus,
   LogOut,
+  Calendar,
+  CalendarDays,
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 
+// اضافه کردن ویژگی hideFor به منوها
 const menuItems = [
   { key: "home", path: "/", icon: Home },
-  { key: "doctors", path: "/doctors", icon: Stethoscope },
-  { key: "patients", path: "/patients", icon: User },
+  {
+    key: "schedule",
+    path: "/schedule",
+    icon: Calendar,
+    hideFor: ["Patient", "guest", "Hospital"],
+  },
+  {
+    key: "myAppointments",
+    path: "/my-appointments",
+    icon: CalendarDays,
+    hideFor: ["Doctor", "guest", "Hospital"],
+  },
+  // لیست پزشکان: برای دکتری که لاگین کرده مخفی می‌شود
+  { key: "doctors", path: "/doctors", icon: Stethoscope, hideFor: ["Doctor"] },
+
+  // لیست بیماران: برای بیمار (و احتمالاً مهمان که لاگین نکرده) مخفی می‌شود
+  // اگر می‌خواهی کسی که لاگین نکرده هم لیست بیماران را نبیند، کلمه 'guest' را هم به آرایه اضافه می‌کنیم
+  {
+    key: "patients",
+    path: "/patients",
+    icon: User,
+    hideFor: ["Patient", "guest"],
+  },
+
   { key: "hospitals", path: "/hospitals", icon: Building2 },
   { key: "clinics", path: "/clinics", icon: Hospital },
   { key: "airplanes", path: "/airplanes", icon: Plane },
@@ -43,6 +68,17 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation();
   const { isLoggedIn, userRole, logout, userProfile } = useAuth();
+  // تعیین نقش فعلی (اگر لاگین نکرده بود، 'guest' در نظر می‌گیریم)
+  const currentRole = isLoggedIn ? userRole : "guest";
+
+  // فیلتر کردن منوها بر اساس نقش
+  const filteredMenuItems = menuItems.filter((item) => {
+    // اگر ویژگی hideFor وجود داشت و نقش کاربر داخل آن آرایه بود، این آیتم را حذف کن (رندر نکن)
+    if (item.hideFor && item.hideFor.includes(currentRole as string)) {
+      return false;
+    }
+    return true; // در غیر این صورت نمایش بده
+  });
   const getRoleName = (role: string | null) => {
     switch (role) {
       case "Doctor":
@@ -87,7 +123,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* بخش لیست لینک‌ها */}
         <div className="flex-1 py-6 md:py-8 overflow-y-auto overflow-x-hidden">
           <ul className="space-y-2 md:space-y-6">
-            {menuItems.map((item, index) => {
+            {filteredMenuItems.map((item, index) => {
               const Icon = item.icon;
               return (
                 <NavLink
