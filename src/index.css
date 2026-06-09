@@ -1,8 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
+
 @theme {
   --color-gadget-dark: #0f6d6d;
-  --color-gadget-light: #29b6b0; 
+  --color-gadget-light: #29b6b0;
+  --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
+
 }
+
+/* @layer base {
+
+  html,
+  body {
+    font-family: var(--font-sans);
+  }
+} */
+
 /* استایل‌دهی مدرن به نوار اسکرول فقط برای دسکتاپ (دستگاه‌های دارای موس) */
 @media (hover: hover) and (pointer: fine) {
   ::-webkit-scrollbar {
