@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import ScheduleManagement from "./pages/ScheduleManagement";
 import PatientAppointments from "./pages/PatientAppointments"; // ... بقیه ایمپورت‌ها
 import Patients from "./pages/Patients";
+import Profile from "./pages/Profile";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           {/* مسیرهای اصلی داخل داشبورد */}
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<Home />} />
+            <Route path="/profile" element={<Profile />} />
             <Route element={<ProtectedRoute allowedRoles={["Patient"]} />}>
               <Route
                 path="/my-appointments"

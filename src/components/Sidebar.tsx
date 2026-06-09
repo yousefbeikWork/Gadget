@@ -156,15 +156,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* بخش پایین سایدبار (احراز هویت + تغییر زبان) */}
         {/* بخش پایین سایدبار (احراز هویت + تغییر زبان) */}
-        <div className="mt-auto shrink-0 border-t border-gray-100 bg-gray-50/50">
+        <div className="mt-auto shrink-0 border-t border-gray-100 bg-gray-50/50 md:rounded-2xl">
           <div className="p-5 flex flex-col gap-3">
             {/* اگر کاربر لاگین بود، کارت پروفایل را نشان بده */}
             {/* اگر کاربر لاگین بود، کارت پروفایل هوشمند را نشان بده */}
             {isLoggedIn ? (
               <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-xs">
-                <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
+                <Link 
+                  to="/profile"
+                  onClick={onClose}
+                  className="flex items-center gap-3 mb-2 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer group"
+                  title="مشاهده و ویرایش پروفایل"
+                >
                   {/* دایره آواتار شامل حرف اول نام کاربر */}
-                  <div className="w-10 h-10 bg-gadget-light/10 text-gadget-light rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
+                  <div className="w-10 h-10 bg-gadget-light/10 text-gadget-light rounded-lg flex items-center justify-center font-bold text-sm shrink-0 group-hover:scale-105 transition-transform">
                     {userProfile?.firstName ? (
                       userProfile.firstName[0]
                     ) : (
@@ -173,7 +178,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   </div>
                   <div className="overflow-hidden">
                     {/* نمایش نام و نام خانوادگی واقعی از API */}
-                    <h4 className="text-sm font-bold text-gray-800 truncate">
+                    <h4 className="text-sm font-bold text-gray-800 truncate group-hover:text-gadget-light transition-colors">
                       {userProfile
                         ? `${userProfile.firstName} ${userProfile.lastName}`
                         : "در حال بارگذاری..."}
@@ -185,7 +190,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         : getRoleName(userRole)}
                     </p>
                   </div>
-                </div>
+                </Link>
                 <button
                   onClick={() => {
                     logout();

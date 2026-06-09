@@ -11,8 +11,12 @@ interface UserProfile {
   firstName: string;
   lastName: string;
   role: string;
+  mobile?: string; // اضافه شد
+  age?: number; // اضافه شد
   Expertise?: string;
   clinicAddress?: string;
+  orgAddress?: string; // اضافه شد
+  clinicPhone?: string; // اضافه شد
 }
 
 interface AuthContextType {
@@ -50,19 +54,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initializeAuth = async () => {
       const token = localStorage.getItem("accessToken");
       const role = localStorage.getItem("userRole");
-      
+
       if (token) {
         setIsLoggedIn(true);
         setUserRole(role);
         // await می‌کنیم تا اگر توکن منقضی بود، ابتدا رفرش‌توکن کارش را تمام کند
-        await fetchUserProfile(); 
+        await fetchUserProfile();
       } else {
         setIsLoggedIn(false);
         setUserRole(null);
       }
-      
+
       // پس از پایان تمام بررسی‌ها (چه موفق، چه ناموفق)، لودینگ تمام می‌شود
-      setIsLoading(false); 
+      setIsLoading(false);
     };
 
     initializeAuth();
@@ -71,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = (role: string) => {
     setIsLoggedIn(true);
     setUserRole(role);
-    fetchUserProfile(); 
+    fetchUserProfile();
   };
 
   const logout = () => {
