@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Plus,
@@ -7,11 +7,14 @@ import {
   Activity,
   Trash2,
   Edit,
+  Loader2, // آیکون لودینگ اضافه شد
 } from "lucide-react";
 import AddClinicModal from "../components/AddClinicModal";
+import api from "../services/api";
 
+// نوع id به string تغییر یافت
 interface Clinic {
-  id: number;
+  id: string;
   name: string;
   specialty: string;
   phone: string;
@@ -19,46 +22,60 @@ interface Clinic {
   status: "فعال" | "غیرفعال";
 }
 
-const initialClinics: Clinic[] = [
-  {
-    id: 1,
-    name: "کلینیک تخصصی قلب آوینا",
-    specialty: "کاردینولوژی (قلب)",
-    phone: "۰۲۱-۸۸۸۸۴۴۴۴",
-    address: "تهران، ولیعصر، بالاتر از میدان ونک، کوچه شاد، پلاک ۱۲",
-    status: "فعال",
-  },
-  {
-    id: 2,
-    name: "مرکز دندانپزشکی لبخند مدرن",
-    specialty: "دندانپزشکی",
-    phone: "۰۲۱-۲۲۲۲۳۳۳۳",
-    address: "تهران، نیاوران، خیابان باهنر، ساختمان پزشکان پارس",
-    status: "فعال",
-  },
-  {
-    id: 3,
-    name: "کلینیک شبانه‌روزی مهرگان",
-    specialty: "عمومی و داخلی",
-    phone: "۰۲۱-۴۴۴۴۵۵۵۵",
-    address: "تهران، صادقیه، بلوار فردوس شرق، جنب بانک ملی",
-    status: "فعال",
-  },
-  {
-    id: 4,
-    name: "مرکز پوست و زیبایی ونوس",
-    specialty: "پوست، مو و زیبایی",
-    phone: "۰۲۱-۷۷۷۷۶۶۶۶",
-    address: "تهران، تهرانپارس، فلکه اول، خیابان رشید، پلاک ۴۵",
-    status: "غیرفعال",
-  },
-];
-
 export default function Clinics() {
-  const [clinics, setClinics] = useState<Clinic[]>(initialClinics);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClinic, setEditingClinic] = useState<Clinic | null>(null);
+
+  // استیت‌های جدید برای مدیریت لودینگ و خطا
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // دریافت داده‌ها از API
+  useEffect(() => {
+    const fetchClinics = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.get("/clinic/listClinc", {
+          headers: {
+            accept: "application/json",
+          },
+        });
+
+        if (!response) {
+          throw new Error("خطا در برقراری ارتباط با سرور");
+        }
+
+        const result = await response.data
+
+        if (result.success && result.data) {
+          // مپ کردن داده‌های سرور به فرمت اینترفیس محلی
+          const mappedData: Clinic[] = result.data.map((item: any) => ({
+            id: item.id,
+            name: item.centerName,
+            specialty: item.specialty,
+            // اگر شماره‌ای وجود داشت اولین شماره را بردار، در غیر اینصورت بنویس نامشخص
+            phone:
+              item.phones && item.phones.length > 0 ? item.phones[0] : "نامشخص",
+            address: item.address,
+            // چون در API فیلد وضعیت نداریم، پیش‌فرض همه را فعال در نظر می‌گیریم (مگر اینکه فیلدی برای آن داشته باشید)
+            status: "فعال",
+          }));
+
+          setClinics(mappedData);
+        } else {
+          throw new Error("داده‌ای یافت نشد");
+        }
+      } catch (err: any) {
+        setError(err.message || "خطای ناشناخته رخ داده است");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchClinics();
+  }, []);
 
   const filteredClinics = clinics.filter(
     (clinic) =>
@@ -67,7 +84,6 @@ export default function Clinics() {
 
   const handleSaveClinic = (clinicData: Omit<Clinic, "id">) => {
     if (editingClinic) {
-      // اگر در حالت ویرایش هستیم، فقط همان کلینیک را در آرایه آپدیت کن
       setClinics(
         clinics.map((clinic) =>
           clinic.id === editingClinic.id
@@ -76,29 +92,29 @@ export default function Clinics() {
         ),
       );
     } else {
-      // اگر در حالت ثبت جدید هستیم، یک آیدی جدید بساز و اضافه کن
-      const newClinic = { ...clinicData, id: Date.now() };
+      // استفاده از toString() چون id در دیتابیس رشته است
+      const newClinic = { ...clinicData, id: Date.now().toString() };
       setClinics([newClinic, ...clinics]);
     }
   };
 
-  // تابع حذف کلینیک
-  const handleDeleteClinic = (id: number) => {
-    // یک تاییدیه ساده برای جلوگیری از حذف اشتباه
+  // نوع آیدی ورودی به string تغییر یافت
+  const handleDeleteClinic = (id: string) => {
     const isConfirmed = window.confirm("آیا از حذف این کلینیک اطمینان دارید؟");
     if (isConfirmed) {
+      // اینجا در آینده باید درخواست DELETE هم به API بفرستید
       setClinics(clinics.filter((clinic) => clinic.id !== id));
     }
   };
 
-  // تابع پایه برای ویرایش (در آینده به مودال متصل می‌شود)
   const handleEditClinic = (clinic: Clinic) => {
-    setEditingClinic(clinic); // دیتای کلینیک را داخل استیت می‌ریزیم
-    setIsModalOpen(true); // مودال را باز می‌کنیم
+    setEditingClinic(clinic);
+    setIsModalOpen(true);
   };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setEditingClinic(null); // حتماً باید نال شود تا دفعه بعد که روی "ثبت جدید" کلیک کردیم، فرم خالی باشد
+    setEditingClinic(null);
   };
 
   return (
@@ -145,11 +161,32 @@ export default function Clinics() {
                 <th className="p-4">شماره تماس</th>
                 <th className="p-4">آدرس</th>
                 <th className="p-4">وضعیت</th>
-                <th className="p-4 text-center">عملیات</th> {/* ستون جدید */}
+                <th className="p-4 text-center">عملیات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-gray-700 text-sm">
-              {filteredClinics.length > 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="p-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <Loader2
+                        className="animate-spin text-gadget-dark"
+                        size={32}
+                      />
+                      <p>در حال دریافت اطلاعات...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="p-8 text-center text-red-500 bg-red-50"
+                  >
+                    {error}
+                  </td>
+                </tr>
+              ) : filteredClinics.length > 0 ? (
                 filteredClinics.map((clinic) => (
                   <tr
                     key={clinic.id}
@@ -193,7 +230,6 @@ export default function Clinics() {
                         {clinic.status}
                       </span>
                     </td>
-                    {/* دکمه‌های عملیات */}
                     <td className="p-4">
                       <div className="flex items-center justify-center gap-3">
                         <button
@@ -228,9 +264,9 @@ export default function Clinics() {
 
       <AddClinicModal
         isOpen={isModalOpen}
-        onClose={handleCloseModal} // استفاده از تابع جدید
-        onAdd={handleSaveClinic} // استفاده از تابع جدید
-        initialData={editingClinic} // پاس دادن دیتای کلینیک به فرم
+        onClose={handleCloseModal}
+        onAdd={handleSaveClinic}
+        initialData={editingClinic}
       />
     </div>
   );

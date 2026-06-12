@@ -29,13 +29,13 @@ const menuItems = [
     key: "schedule",
     path: "/schedule",
     icon: Calendar,
-    hideFor: ["Patient", "guest", "Hospital"],
+    hideFor: ["Patient", "guest", "MedicalCenter"],
   },
   {
     key: "myAppointments",
     path: "/my-appointments",
     icon: CalendarDays,
-    hideFor: ["Doctor", "guest", "Hospital"],
+    hideFor: ["Doctor", "guest", "MedicalCenter"],
   },
   // لیست پزشکان: برای دکتری که لاگین کرده مخفی می‌شود
   { key: "doctors", path: "/doctors", icon: Stethoscope, hideFor: ["Doctor"] },
@@ -85,7 +85,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         return "پزشک متخصص";
       case "Patient":
         return "بیمار";
-      case "Hospital":
+      case "MedicalCenter":
         return "مرکز درمانی";
       default:
         return "کاربر سامانه";
@@ -162,28 +162,31 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             {/* اگر کاربر لاگین بود، کارت پروفایل هوشمند را نشان بده */}
             {isLoggedIn ? (
               <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-xs">
-                <Link 
+                <Link
                   to="/profile"
                   onClick={onClose}
                   className="flex items-center gap-3 mb-2 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer group"
                   title="مشاهده و ویرایش پروفایل"
                 >
-                  {/* دایره آواتار شامل حرف اول نام کاربر */}
                   <div className="w-10 h-10 bg-gadget-light/10 text-gadget-light rounded-lg flex items-center justify-center font-bold text-sm shrink-0 group-hover:scale-105 transition-transform">
-                    {userProfile?.firstName ? (
+                    {/* تشخیص حرف اول نام بر اساس نقش */}
+                    {userRole === "MedicalCenter" && userProfile?.centerName ? (
+                      userProfile.centerName[0]
+                    ) : userProfile?.firstName ? (
                       userProfile.firstName[0]
                     ) : (
                       <User size={20} />
                     )}
                   </div>
                   <div className="overflow-hidden">
-                    {/* نمایش نام و نام خانوادگی واقعی از API */}
                     <h4 className="text-sm font-bold text-gray-800 truncate group-hover:text-gadget-light transition-colors">
-                      {userProfile
-                        ? `${userProfile.firstName} ${userProfile.lastName}`
-                        : "در حال بارگذاری..."}
+                      {/* نمایش نام مرکز یا نام فرد بر اساس نقش */}
+                      {userRole === "MedicalCenter"
+                        ? userProfile?.centerName
+                        : userProfile
+                          ? `${userProfile.firstName || ""} ${userProfile.lastName || ""}`
+                          : "در حال بارگذاری..."}
                     </h4>
-                    {/* نمایش تخصص برای پزشکان، یا نام نقش برای بقیه */}
                     <p className="text-xs text-gray-500 font-medium truncate mt-0.5">
                       {userRole === "Doctor" && userProfile?.Expertise
                         ? `متخصص ${userProfile.Expertise}`

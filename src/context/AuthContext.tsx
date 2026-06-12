@@ -7,16 +7,52 @@ import {
 } from "react";
 import api from "../services/api";
 
-interface UserProfile {
+interface Guardian {
+  firstName: string;
+  lastName: string;
+  nationalId: string;
+  mobile: string;
+  address: string;
+}
+interface Manager {
   firstName: string;
   lastName: string;
   role: string;
-  mobile?: string; // اضافه شد
-  age?: number; // اضافه شد
+  mobile?: string;
+  nationalId?: string;
+}
+interface UserProfile {
+  _id?: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  mobile?: string;
+  age?: number;
+  nationalId?: string;
+  // فیلدهای مخصوص پزشک
   Expertise?: string;
   clinicAddress?: string;
-  orgAddress?: string; // اضافه شد
-  clinicPhone?: string; // اضافه شد
+  orgAddress?: string;
+  clinicPhone?: string;
+  medicalCouncilCode?: string;
+  // فیلدهای مخصوص بیمار
+  fatherName?: string;
+  gender?: "MALE" | "FEMALE" | string;
+  maritalStatus?: "SINGLE" | "MARRIED" | string;
+  // قیم بیمار
+  guardian?: Guardian;
+  // فیلدهای مخصوص کلینیک (MedicalCenter)
+  centerName?: string;
+  centerType?: string;
+  licenseCode?: string;
+  ownershipType?: string;
+  address?: string;
+  postalCode?: string;
+  phones?: string[];
+  activeStaffCount?: number;
+  specialty?: string;
+  isActive?: boolean;
+  manager?: Manager;
 }
 
 interface AuthContextType {

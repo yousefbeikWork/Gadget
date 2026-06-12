@@ -16,7 +16,34 @@ import {
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-type Role = "Patient" | "Doctor" | "Hospital";
+type Role = "Patient" | "Doctor"; // نقش Hospital از اینجا حذف شد چون صفحه مجزا دارد
+
+const medicalSpecialties = [
+  "پزشک عمومی",
+  "دندانپزشک",
+  "متخصص قلب و عروق",
+  "متخصص مغز و اعصاب",
+  "متخصص زنان و زایمان",
+  "متخصص اطفال",
+  "متخصص پوست، مو و زیبایی",
+  "متخصص چشم‌پزشکی",
+  "متخصص گوش، حلق و بینی",
+  "متخصص ارتوپدی",
+  "متخصص داخلی",
+  "متخصص گوارش و کبد",
+  "متخصص غدد و متابولیسم",
+  "متخصص کلیه و مجاری ادراری (اورولوژی)",
+  "متخصص ریه",
+  "متخصص بیماری‌های عفونی",
+  "روان‌پزشک (اعصاب و روان)",
+  "جراح عمومی",
+  "جراح پلاستیک و زیبایی",
+  "رادیولوژی و سونوگرافی",
+  "فیزیوتراپی و توانبخشی",
+  "تغذیه و رژیم‌درمانی",
+  "علوم آزمایشگاهی",
+  "سایر موارد",
+];
 
 export default function Register() {
   const navigate = useNavigate();
@@ -45,13 +72,29 @@ export default function Register() {
     guardianAddress: "",
   });
 
+  const onlyNumbers = (value: string) => {
+    return value.replace(/\D/g, "");
+  };
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const numericFields = [
+      "nationalId",
+      "mobile",
+      "guardianNationalId",
+      "guardianMobile",
+      "clinicPhone",
+      "medicalCouncilCode",
+      "age",
+    ];
+    const finalValue = numericFields.includes(name)
+      ? onlyNumbers(value)
+      : value;
+    setFormData((prev) => ({ ...prev, [name]: finalValue }));
   };
 
   const toEnglishDigits = (str: string) => {
@@ -63,15 +106,9 @@ export default function Register() {
   };
 
   const numericAge = Number(toEnglishDigits(formData.age)) || 0;
-  const isUnderage = numericAge > 0 && numericAge < 18;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (role === "Hospital") {
-      toast("ثبت‌نام مراکز درمانی به زودی فعال می‌شود.", { icon: "🛠️" });
-      return;
-    }
 
     const payload: any = {
       role: role,
@@ -93,24 +130,13 @@ export default function Register() {
       payload.fatherName = formData.fatherName;
       payload.gender = formData.gender;
       payload.maritalStatus = formData.maritalStatus;
-
-      // بررسی می‌کنیم که آیا سن زیر 18 است یا کاربر حداقل یکی از فیلدهای قیم را پر کرده است
-      const hasGuardianData =
-        formData.guardianFirstName ||
-        formData.guardianLastName ||
-        formData.guardianNationalId ||
-        formData.guardianMobile ||
-        formData.guardianAddress;
-
-      if (isUnderage || hasGuardianData) {
-        payload.guardian = {
-          firstName: formData.guardianFirstName,
-          lastName: formData.guardianLastName,
-          nationalId: toEnglishDigits(formData.guardianNationalId).trim(),
-          mobile: toEnglishDigits(formData.guardianMobile).trim(),
-          address: formData.guardianAddress,
-        };
-      }
+      payload.guardian = {
+        firstName: formData.guardianFirstName,
+        lastName: formData.guardianLastName,
+        nationalId: toEnglishDigits(formData.guardianNationalId).trim(),
+        mobile: toEnglishDigits(formData.guardianMobile).trim(),
+        address: formData.guardianAddress,
+      };
     }
 
     const registerPromise = api.post("/auth/register", payload);
@@ -159,6 +185,7 @@ export default function Register() {
         </div>
 
         <div className="p-6 overflow-y-auto custom-scrollbar">
+          {/* ================= انتخاب نقش ================= */}
           <div className="flex bg-gray-50 border border-gray-100 p-1.5 rounded-xl mb-8">
             <button
               type="button"
@@ -194,14 +221,12 @@ export default function Register() {
                 </span>
               </span>
             </button>
+
+            {/* 👈 تغییر کلیدی: هدایت مستقیم به صفحه کلینیک با کلیک روی این تب */}
             <button
               type="button"
-              onClick={() => setRole("Hospital")}
-              className={`flex-1 flex flex-col md:flex-row items-center justify-center gap-2 py-3 text-sm font-bold rounded-lg transition-all ${
-                role === "Hospital"
-                  ? "bg-white text-gadget-dark shadow-sm ring-1 ring-gray-200"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-              }`}
+              onClick={() => navigate("/register-clinic")}
+              className={`flex-1 flex flex-col md:flex-row items-center justify-center gap-2 py-3 text-sm font-bold rounded-lg transition-all text-gray-500 hover:text-gadget-dark hover:bg-gray-100 cursor-pointer`}
             >
               <Building2 size={18} />
               <span>
@@ -266,6 +291,7 @@ export default function Register() {
                       />
                       <input
                         name="nationalId"
+                        maxLength={10}
                         value={formData.nationalId}
                         onChange={handleChange}
                         required
@@ -299,6 +325,7 @@ export default function Register() {
                       />
                       <input
                         name="mobile"
+                        maxLength={11}
                         value={formData.mobile}
                         onChange={handleChange}
                         required
@@ -337,12 +364,13 @@ export default function Register() {
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      نام پدر 
+                      نام پدر
                     </label>
                     <input
                       name="fatherName"
                       value={formData.fatherName}
                       onChange={handleChange}
+                      required
                       type="text"
                       className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light"
                     />
@@ -375,31 +403,18 @@ export default function Register() {
                     >
                       <option value="SINGLE">مجرد</option>
                       <option value="MARRIED">متاهل</option>
-                      <option value="DIVORCED">مطلقه</option>
-                      <option value="WIDOWED">بیوه</option>
                     </select>
                   </div>
 
                   {/* ---------- بخش قیم (پویا) ---------- */}
                   <div
-                    className={`md:col-span-2 border rounded-xl p-4 mt-2 transition-colors duration-300 ${isUnderage ? "border-orange-200 bg-orange-50/50" : "border-gray-100 bg-gray-50/50"}`}
+                    className={`md:col-span-2 border rounded-xl p-4 mt-2 transition-colors duration-300 border-gray-100 bg-gray-50/50`}
                   >
                     <div
-                      className={`flex items-center gap-2 mb-4 ${isUnderage ? "text-orange-600" : "text-gray-600"}`}
+                      className={`flex items-center gap-2 mb-4 text-gray-600`}
                     >
                       <Users size={18} />
-                      <h3 className="text-sm font-bold">
-                        اطلاعات قیم
-                        {isUnderage ? (
-                          <span className="text-orange-500 font-normal text-xs mr-2">
-                            (الزامی با توجه به سن بیمار)
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 font-normal text-xs mr-2">
-                            (اختیاری)
-                          </span>
-                        )}
-                      </h3>
+                      <h3 className="text-sm font-bold">اطلاعات قیم</h3>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -411,9 +426,9 @@ export default function Register() {
                           name="guardianFirstName"
                           value={formData.guardianFirstName}
                           onChange={handleChange}
-                          required={isUnderage}
+                          required
                           type="text"
-                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white ${isUnderage ? "border border-orange-200 focus:border-orange-400" : "border border-gray-200 focus:border-gadget-light"}`}
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white border border-gray-200 focus:border-gadget-light`}
                         />
                       </div>
                       <div>
@@ -424,9 +439,9 @@ export default function Register() {
                           name="guardianLastName"
                           value={formData.guardianLastName}
                           onChange={handleChange}
-                          required={isUnderage}
+                          required
                           type="text"
-                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white ${isUnderage ? "border border-orange-200 focus:border-orange-400" : "border border-gray-200 focus:border-gadget-light"}`}
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white border border-gray-200 focus:border-gadget-light`}
                         />
                       </div>
                       <div>
@@ -435,11 +450,12 @@ export default function Register() {
                         </label>
                         <input
                           name="guardianNationalId"
+                          maxLength={10}
                           value={formData.guardianNationalId}
                           onChange={handleChange}
-                          required={isUnderage}
+                          required
                           type="text"
-                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white text-left ${isUnderage ? "border border-orange-200 focus:border-orange-400" : "border border-gray-200 focus:border-gadget-light"}`}
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white text-left border border-gray-200 focus:border-gadget-light`}
                           dir="ltr"
                         />
                       </div>
@@ -449,12 +465,14 @@ export default function Register() {
                         </label>
                         <input
                           name="guardianMobile"
+                          maxLength={11}
                           value={formData.guardianMobile}
                           onChange={handleChange}
-                          required={isUnderage}
+                          required
                           type="tel"
-                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white text-left ${isUnderage ? "border border-orange-200 focus:border-orange-400" : "border border-gray-200 focus:border-gadget-light"}`}
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white text-left border border-gray-200 focus:border-gadget-light`}
                           dir="ltr"
+                          placeholder="09"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -465,9 +483,9 @@ export default function Register() {
                           name="guardianAddress"
                           value={formData.guardianAddress}
                           onChange={handleChange}
-                          required={isUnderage}
+                          required
                           rows={2}
-                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white ${isUnderage ? "border border-orange-200 focus:border-orange-400" : "border border-gray-200 focus:border-gadget-light"}`}
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white border border-gray-200 focus:border-gadget-light`}
                         ></textarea>
                       </div>
                     </div>
@@ -498,22 +516,52 @@ export default function Register() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      تخصص
+                    <label className="block text-sm font-bold text-gray-700 mb-1">
+                      تخصص پزشکی
                     </label>
                     <div className="relative">
-                      <Stethoscope
-                        className="absolute right-3 top-2.5 text-gray-400"
-                        size={16}
-                      />
-                      <input
+                      <select
                         name="Expertise"
                         value={formData.Expertise}
                         onChange={handleChange}
                         required
-                        type="text"
-                        className="w-full border border-gray-200 rounded-lg pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light"
-                      />
+                        className={`w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light transition-colors appearance-none cursor-pointer ${
+                          !formData.Expertise
+                            ? "text-gray-400"
+                            : "text-gray-800"
+                        }`}
+                      >
+                        <option value="" disabled>
+                          لطفاً تخصص خود را انتخاب کنید...
+                        </option>
+
+                        {medicalSpecialties.map((specialty, index) => (
+                          <option
+                            key={index}
+                            value={specialty}
+                            className="text-gray-800"
+                          >
+                            {specialty}
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* یک آیکون فلش کوچک برای زیبایی بیشتر دراپ‌داون */}
+                      <div className="absolute left-4 top-3 pointer-events-none text-gray-400">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                   <div className="md:col-span-2">
@@ -591,6 +639,7 @@ export default function Register() {
             </div>
           </form>
 
+          {/* ================= فوتر صفحه ================= */}
           <div className="mt-8 text-center text-sm text-gray-600 border-t border-gray-50 pt-6">
             قبلاً ثبت‌نام کرده‌اید؟{" "}
             <Link
@@ -599,6 +648,19 @@ export default function Register() {
             >
               وارد شوید
             </Link>
+            {/* 👈 لینک کمکی اضافه شده برای هدایت مدیران کلینیک */}
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <p className="text-sm text-gray-500 mb-3">
+                آیا نماینده یک بیمارستان یا کلینیک هستید؟
+              </p>
+              <Link
+                to="/register-clinic"
+                className="inline-flex items-center justify-center gap-2 text-gadget-dark font-bold hover:text-gadget-light transition-colors"
+              >
+                <Building2 size={18} />
+                ثبت‌نام به عنوان مرکز درمانی
+              </Link>
+            </div>
           </div>
         </div>
       </div>
