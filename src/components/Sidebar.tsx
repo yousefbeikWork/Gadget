@@ -48,7 +48,12 @@ const menuItems = [
     icon: User,
     hideFor: ["Patient", "guest"],
   },
-
+  {
+    key: "myDoctors", // در فایل ترجمه یا به صورت مستقیم بنویس "پزشکان من"
+    path: "/clinic-doctors",
+    icon: Stethoscope, // یا Users
+    hideFor: ["Patient", "Doctor", "guest"], // فقط کلینیک ببیند
+  },
   { key: "hospitals", path: "/hospitals", icon: Building2 },
   { key: "clinics", path: "/clinics", icon: Hospital },
   { key: "airplanes", path: "/airplanes", icon: Plane },

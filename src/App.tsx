@@ -8,6 +8,7 @@ import Register from "./pages/Register";
 import Clinics from "./pages/Clinics";
 import ClinicRegister from "./pages/ClinicRegister";
 import ClinicRegisterDocs from "./pages/ClinicRegisterDocs";
+import ClinicDoctors from "./pages/ClinicDoctors";
 import Doctors from "./pages/Doctors";
 import Home from "./pages/Home";
 import ScheduleManagement from "./pages/ScheduleManagement";
@@ -59,6 +60,11 @@ function App() {
               }
             >
               <Route path="/clinics" element={<Clinics />} />
+            </Route>
+            <Route
+              element={<ProtectedRoute allowedRoles={["MedicalCenter"]} />}
+            >
+              <Route path="/clinic-doctors" element={<ClinicDoctors />} />
             </Route>
             <Route element={<ProtectedRoute allowedRoles={["Doctor"]} />}>
               <Route path="/schedule" element={<ScheduleManagement />} />
