@@ -66,7 +66,11 @@ function App() {
             >
               <Route path="/clinic-doctors" element={<ClinicDoctors />} />
             </Route>
-            <Route element={<ProtectedRoute allowedRoles={["Doctor"]} />}>
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={["Doctor", "MedicalCenter"]} />
+              }
+            >
               <Route path="/schedule" element={<ScheduleManagement />} />
             </Route>
             {/* در آینده: قفل کردن صفحه لیست بیماران (فقط پزشکان و مراکز درمانی حق دیدن دارند) */}
