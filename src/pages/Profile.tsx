@@ -13,12 +13,34 @@ import {
   FileCheck,
   ShieldAlert,
   CheckCircle2,
+  
+  Calendar,
+  FileText,
   Stethoscope,
+  Clock // 👈 اضافه شدن آیکون ساعت
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import FileUpload from "../components/FileUpload";
+
+interface DoctorInfo {
+  _id: string;
+  role: string;
+  firstName: string;
+  lastName: string;
+  Expertise: string;
+}
+
+interface HealthRecord {
+  _id: string;
+  title: string;
+  description: string;
+  prescription: string;
+  attachments?: string[];
+  createdAt: string;
+  doctor?: DoctorInfo;
+}
 
 export default function Profile() {
   const { userProfile, userRole, refreshProfile } = useAuth();
@@ -53,6 +75,10 @@ export default function Profile() {
     liabilityInsuranceFile: "",
   });
 
+  // استیت پرونده سلامت مخصوص بیمار
+  const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
+  const [loadingRecords, setLoadingRecords] = useState(false);
+
   // پر کردن فرم با دیتای فعلی کاربر
   useEffect(() => {
     if (userProfile) {
@@ -74,6 +100,26 @@ export default function Profile() {
       });
     }
   }, [userProfile]);
+
+  // واکشی خودکار پرونده سلامت بیمار از کلید records
+  useEffect(() => {
+    if (userRole === "Patient" && userProfile?._id) {
+      const fetchMyHealthRecords = async () => {
+        try {
+          setLoadingRecords(true);
+          const response = await api.get(`/healthRecords/historyPationtsHelthRecord/${userProfile._id}`);
+          if (response.data && response.data.records) {
+            setHealthRecords(response.data.records);
+          }
+        } catch (err) {
+          console.error("خطا در دریافت پرونده سلامت بیمار", err);
+        } finally {
+          setLoadingRecords(false);
+        }
+      };
+      fetchMyHealthRecords();
+    }
+  }, [userRole, userProfile?._id]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -122,7 +168,6 @@ export default function Profile() {
     }
   };
 
-  // --- توابع مخصوص ارسال مدارک کلینیک ---
   const handleUploadSuccess =
     (field: keyof typeof clinicDocs) => (minioObjectName: string) => {
       setClinicDocs((prev) => ({ ...prev, [field]: minioObjectName }));
@@ -131,9 +176,7 @@ export default function Profile() {
   const handleClinicDocsSubmit = async () => {
     const requiredFiles = Object.values(clinicDocs);
     if (requiredFiles.some((file) => file === "")) {
-      toast.error(
-        "لطفاً تمامی مدارک خواسته‌شده را بارگذاری کنید. هیچ فیلدی نباید خالی بماند."
-      );
+      toast.error("لطفاً تمامی مدارک خواسته‌شده را بارگذاری کنید. هیچ فیلدی نباید خالی بماند.");
       return;
     }
 
@@ -151,17 +194,11 @@ export default function Profile() {
       const response = await api.post("/clinic/updateClinicDocuments", payload);
 
       if (response.data) {
-        toast.success(
-          response.data.message ||
-            "مدارک با موفقیت تایید و در پرونده کلینیک ثبت شدند."
-        );
+        toast.success(response.data.message || "مدارک با موفقیت تایید و در پرونده کلینیک ثبت شدند.");
         await refreshProfile();
       }
     } catch (err: any) {
-      toast.error(
-        err.response?.data?.message ||
-          "خطا در ثبت نهایی مدارک. لطفاً دوباره تلاش کنید."
-      );
+      toast.error(err.response?.data?.message || "خطا در ثبت نهایی مدارک. لطفاً دوباره تلاش کنید.");
     } finally {
       setDocsLoading(false);
     }
@@ -183,13 +220,11 @@ export default function Profile() {
             <h1 className="text-2xl font-bold text-gray-800">
               {userRole === "MedicalCenter" ? "پروفایل و مدارک مرکز درمانی" : "حساب کاربری من"}
             </h1>
-            <p className="text-gray-500 text-sm mt-1">
-              مشاهده و مدیریت اطلاعات کاربری
-            </p>
+            <p className="text-gray-500 text-sm mt-1">مشاهده و مدیریت اطلاعات کاربری</p>
           </div>
         </div>
 
-        {/* ================== اطلاعات سیستمی (مشترک برای همه) ================== */}
+        {/* ================== اطلاعات سیستمی (غیرقابل تغییر) ================== */}
         <div className="bg-gray-50 border border-gray-100 p-6 rounded-2xl space-y-4">
           <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4">
             <ShieldCheck size={18} className="text-gray-400" />
@@ -231,7 +266,6 @@ export default function Profile() {
               </div>
             )}
 
-            {/* فیلدهای سیستمی مخصوص پزشک (کد نظام پزشکی و تخصص) */}
             {userRole === "Doctor" && (
               <>
                 <div>
@@ -424,20 +458,105 @@ export default function Profile() {
           </form>
         )}
 
+        {/* ================== پرونده سلامت من (فقط نمایش برای بیمار) ================== */}
+        {userRole === "Patient" && (
+          <div className="mt-12 pt-8 border-t border-gray-100 space-y-6">
+            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+              <Activity size={22} className="text-gadget-light" />
+              پرونده سلامت من (سوابق ویزیت و نسخه‌ها)
+            </h2>
+
+            {loadingRecords ? (
+              <div className="flex flex-col items-center justify-center py-12 text-gadget-light">
+                <Loader2 className="animate-spin mb-2" size={32} />
+                <p className="text-sm font-medium">در حال واکشی پرونده الکترونیک سلامت...</p>
+              </div>
+            ) : healthRecords.length === 0 ? (
+              <div className="bg-gray-50 border border-dashed border-gray-200 p-8 text-center rounded-2xl text-gray-500 text-sm">
+                <FileText size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-400" />
+                هنوز هیچ پرونده ویزیت یا نسخه‌ای برای شما در سیستم ثبت نشده است.
+              </div>
+            ) : (
+              <div className="relative border-r-2 border-gray-100 pr-6 space-y-6 py-2">
+                {healthRecords.map((record) => (
+                  <div key={record._id} className="relative animate-in fade-in slide-in-from-bottom-2">
+                    <span className="absolute -right-8.75 top-4 w-4 h-4 rounded-full bg-gadget-light ring-4 ring-white shadow-xs"></span>
+                    
+                    <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 border-b border-gray-50 pb-3">
+                        <h3 className="font-bold text-md text-gray-800">{record.title}</h3>
+                        
+                        {/* 👈 بخش تاریخ و ساعت دقیق */}
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
+                          <span className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-lg">
+                            <Calendar size={14} className="text-gray-400" />
+                            {new Date(record.createdAt).toLocaleDateString('fa-IR', { 
+                              year: 'numeric', month: 'long', day: 'numeric' 
+                            })}
+                          </span>
+                          <span className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-lg">
+                            <Clock size={14} className="text-gray-400" />
+                            ساعت {new Date(record.createdAt).toLocaleTimeString('fa-IR', { 
+                              hour: '2-digit', minute: '2-digit' 
+                            })}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        {record.doctor && (
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50/70 border border-blue-100 px-3 py-1.5 rounded-xl w-fit">
+                            <Stethoscope size={14} />
+                            پزشک معالج: دکتر {record.doctor.firstName} {record.doctor.lastName} ({record.doctor.Expertise})
+                          </div>
+                        )}
+
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-400 mb-1 flex items-center gap-1">تشخیص پزشک:</h4>
+                          <p className="text-sm text-gray-700 bg-gray-50/50 p-3 rounded-xl border border-gray-100 leading-relaxed">
+                            {record.description}
+                          </p>
+                        </div>
+                        {record.prescription && (
+                          <div>
+                            <h4 className="text-xs font-bold text-gadget-light mb-1 flex items-center gap-1">نسخه تجویزشده:</h4>
+                            <p className="text-sm text-gadget-dark bg-gadget-light/5 p-3 rounded-xl border border-gadget-light/20 font-medium">
+                              {record.prescription}
+                            </p>
+                          </div>
+                        )}
+
+                        {record.attachments && record.attachments.length > 0 && (
+                          <div className="pt-2">
+                            <h4 className="text-xs font-bold text-gray-400 mb-1.5 flex items-center gap-1.5">مدارک پیوست:</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {record.attachments.map((file, i) => (
+                                <span key={i} className="text-xs text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                                  <FileText size={12} /> {file}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ================== پروفایل اختصاصی مرکز درمانی ================== */}
         {userRole === "MedicalCenter" && (
           <div className="space-y-8 animate-in fade-in">
-            
-            {/* بنر وضعیت کلینیک */}
             {userProfile?.isActive ? (
               <div className="bg-green-50 border border-green-200 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-5 shadow-sm">
                 <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center shrink-0">
                   <CheckCircle2 size={28} className="text-green-600" />
                 </div>
                 <div className="text-center md:text-right">
-                  <h3 className="text-lg font-bold text-green-900 mb-1">
-                    پرونده مرکز درمانی شما تایید و فعال است
-                  </h3>
+                  <h3 className="text-lg font-bold text-green-900 mb-1">پرونده مرکز درمانی شما تایید و فعال است</h3>
                   <p className="text-sm text-green-700/90 leading-relaxed">
                     مدارک شما تایید شده است. اکنون به تمامی امکانات سامانه از جمله مدیریت پزشکان و نوبت‌دهی دسترسی دارید.
                   </p>
@@ -455,7 +574,6 @@ export default function Profile() {
               </div>
             )}
 
-            {/* اطلاعات ثبت شده کلینیک (نمایش در هر دو حالت) */}
             <div className="space-y-6">
               <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2 border-b border-gray-100 pb-2">
                 <Stethoscope size={18} className="text-gadget-light" />
@@ -522,7 +640,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* بخش آپلود مدارک (فقط در صورتی نمایش داده می‌شود که کلینیک غیرفعال باشد) */}
             {!userProfile?.isActive && (
               <div className="mt-10 border-t border-gray-100 pt-8 space-y-6">
                 <h2 className="text-md font-bold text-amber-900 flex items-center gap-2">
@@ -530,38 +647,16 @@ export default function Profile() {
                   بارگذاری مدارک جهت تایید
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <FileUpload
-                    label="تصویر مجوز تأسیس از وزارت بهداشت *"
-                    onUploadSuccess={handleUploadSuccess("establishmentLicenseFile")}
-                  />
-                  <FileUpload
-                    label="پروانه بهره‌برداری *"
-                    onUploadSuccess={handleUploadSuccess("exploitationLicenseFile")}
-                  />
-                  <FileUpload
-                    label="تصویر روی کارت ملی مدیر / مسئول فنی *"
-                    onUploadSuccess={handleUploadSuccess("managerIdFront")}
-                    acceptedTypes="image/jpeg,image/png,image/jpg"
-                  />
-                  <FileUpload
-                    label="تصویر پشت کارت ملی مدیر / مسئول فنی *"
-                    onUploadSuccess={handleUploadSuccess("managerIdBack")}
-                    acceptedTypes="image/jpeg,image/png,image/jpg"
-                  />
-                  <FileUpload
-                    label="معرفی‌نامه رسمی (در صورت نمایندگی حقوقی) *"
-                    onUploadSuccess={handleUploadSuccess("introductionLetterFile")}
-                  />
-                  <FileUpload
-                    label="بیمه مسئولیت مرکز (در صورت وجود) *"
-                    onUploadSuccess={handleUploadSuccess("liabilityInsuranceFile")}
-                  />
+                  <FileUpload label="تصویر مجوز تأسیس از وزارت بهداشت *" onUploadSuccess={handleUploadSuccess("establishmentLicenseFile")} />
+                  <FileUpload label="پروانه بهره‌برداری *" onUploadSuccess={handleUploadSuccess("exploitationLicenseFile")} />
+                  <FileUpload label="تصویر روی کارت ملی مدیر / مسئول فنی *" onUploadSuccess={handleUploadSuccess("managerIdFront")} acceptedTypes="image/jpeg,image/png,image/jpg" />
+                  <FileUpload label="تصویر پشت کارت ملی مدیر / مسئول فنی *" onUploadSuccess={handleUploadSuccess("managerIdBack")} acceptedTypes="image/jpeg,image/png,image/jpg" />
+                  <FileUpload label="معرفی‌نامه رسمی (در صورت نمایندگی حقوقی) *" onUploadSuccess={handleUploadSuccess("introductionLetterFile")} />
+                  <FileUpload label="بیمه مسئولیت مرکز (در صورت وجود) *" onUploadSuccess={handleUploadSuccess("liabilityInsuranceFile")} />
                 </div>
-
                 <div className="pt-6 flex justify-end">
                   <button
-                    onClick={handleClinicDocsSubmit}
-                    disabled={docsLoading}
+                    onClick={handleClinicDocsSubmit} disabled={docsLoading}
                     className="w-full md:w-auto bg-gadget-dark hover:bg-gadget-dark/90 text-white py-3.5 px-10 rounded-xl text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-70"
                   >
                     {docsLoading ? <Loader2 className="animate-spin" size={20} /> : <FileCheck size={20} />}
@@ -570,7 +665,6 @@ export default function Profile() {
                 </div>
               </div>
             )}
-
           </div>
         )}
       </div>

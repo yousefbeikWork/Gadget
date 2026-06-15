@@ -15,6 +15,7 @@ import ScheduleManagement from "./pages/ScheduleManagement";
 import PatientAppointments from "./pages/PatientAppointments"; // ... بقیه ایمپورت‌ها
 import Patients from "./pages/Patients";
 import Profile from "./pages/Profile";
+import HealthRecords from "./pages/HealthRecords";
 
 function App() {
   return (
@@ -71,6 +72,7 @@ function App() {
                 <ProtectedRoute allowedRoles={["Doctor", "MedicalCenter"]} />
               }
             >
+              <Route path="/health-records" element={<HealthRecords />} />
               <Route path="/schedule" element={<ScheduleManagement />} />
             </Route>
             {/* در آینده: قفل کردن صفحه لیست بیماران (فقط پزشکان و مراکز درمانی حق دیدن دارند) */}

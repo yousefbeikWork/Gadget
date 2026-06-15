@@ -16,6 +16,11 @@ import {
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
+import { default as DatePickerLib } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
+
+const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 
 interface Doctor {
   _id: string;
@@ -128,7 +133,7 @@ export default function Doctors() {
 
     toast.promise(bookingPromise, {
       loading: "در حال ثبت نوبت شما...",
-      success: (response) => {
+      success: (_response) => {
         // بستن مودال بعد از موفقیت
         closeModal();
         return "نوبت شما با موفقیت رزرو شد!";
@@ -306,22 +311,49 @@ export default function Doctors() {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 min-h-105">
               <div className="mb-6">
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  ابتدا تاریخ مراجعه را انتخاب کنید:
-                </label>
                 <div className="relative">
-                  <Calendar
-                    className="absolute right-3 top-3 text-gadget-light"
-                    size={18}
-                  />
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => fetchSlotsForDate(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors cursor-pointer"
-                  />
+                  <div className="mb-6">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      ابتدا تاریخ مراجعه را انتخاب کنید:
+                    </label>
+                    <div className="relative">
+                      <Calendar
+                        className="absolute right-3 top-3 text-gadget-light z-10"
+                        size={18}
+                      />
+                      <DatePicker
+                        calendar={persian}
+                        locale={persian_fa}
+                        value={selectedDate ? new Date(selectedDate) : ""}
+                        fixMainPosition={true}
+                        onChange={(date: any) => {
+                          if (date && date.isValid) {
+                            const jsDate = date.toDate();
+                            const year = jsDate.getFullYear();
+                            const month = String(
+                              jsDate.getMonth() + 1,
+                            ).padStart(2, "0");
+                            const day = String(jsDate.getDate()).padStart(
+                              2,
+                              "0",
+                            );
+
+                            const gregorianDate = `${year}-${month}-${day}`;
+                            // 👈 اینجا مستقیماً تابع دریافت ساعت‌های خالی را صدا می‌زنیم
+                            fetchSlotsForDate(gregorianDate);
+                          } else {
+                            fetchSlotsForDate(""); // پاک کردن تاریخ
+                          }
+                        }}
+                        format="YYYY/MM/DD"
+                        containerClassName="w-full"
+                        inputClass="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors cursor-pointer text-gray-700"
+                        placeholder="انتخاب تاریخ از تقویم..."
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

@@ -12,17 +12,34 @@ import {
   XCircle,
   Loader2,
   LayoutList,
-  Users, // اضافه شدن آیکون
+  Users,
+  User,
+  Phone,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { default as DatePickerLib } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
 
+// این خط جادویی، مشکل آبجکت شدن کامپوننت را در Vite/Webpack حل می‌کند
+const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 // === تایپ‌های مربوط به دیتای موجود (GET) ===
+interface PatientInfo {
+  _id: string;
+  mobile: string;
+  role: string;
+  firstName: string;
+  lastName: string;
+}
+
 interface ExistingSlot {
   startTime: string;
   endTime: string;
   status: "AVAILABLE" | "BOOKED" | string;
+  appointmentId?: string;
+  patient?: PatientInfo;
 }
 
 interface DailySchedule {
@@ -73,11 +90,19 @@ export default function ScheduleManagement() {
     useState<DailySchedule | null>(null);
   const [loadingExisting, setLoadingExisting] = useState(false);
 
-  // 1️⃣ تعیین آیدی پزشکی که باید تقویمش مدیریت شود
+  // === تابع تبدیل تاریخ میلادی به شمسی نمایشی ===
+  const formatShamsi = (dateStr: string) => {
+    if (!dateStr) return "";
+    return new Date(dateStr).toLocaleDateString("fa-IR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
   const targetDoctorId =
     userRole === "MedicalCenter" ? selectedDoctorId : userProfile?._id;
 
-  // 2️⃣ دریافت لیست پزشکان (فقط اگر کاربر کلینیک باشد)
   useEffect(() => {
     if (userRole === "MedicalCenter" && userProfile?._id) {
       const fetchDoctors = async () => {
@@ -89,7 +114,6 @@ export default function ScheduleManagement() {
           if (response.data && response.data.success) {
             setClinicDoctors(response.data.doctors);
 
-            // بررسی استیت ارسالی از صفحه پزشکان کلینیک
             if (location.state?.doctorId) {
               setSelectedDoctorId(location.state.doctorId);
             } else if (response.data.doctors.length > 0) {
@@ -106,10 +130,8 @@ export default function ScheduleManagement() {
     }
   }, [userRole, userProfile?._id, location.state?.doctorId]);
 
-  // 3️⃣ واکشی خودکار برنامه فعلی پزشک هدف
   useEffect(() => {
     const fetchExistingSchedule = async () => {
-      // اگر تاریخ انتخاب نشده یا آیدی دکتری وجود نداشت، چیزی لود نکن
       if (!currentDate || !targetDoctorId) {
         setExistingSchedule(null);
         return;
@@ -117,7 +139,6 @@ export default function ScheduleManagement() {
 
       try {
         setLoadingExisting(true);
-        // ارسال doctorId به همراه تاریخ برای دریافت تقویم مختص همان پزشک
         const response = await api.get(
           `/doctor/getDoctorDailySchedule?date=${currentDate}&doctorId=${targetDoctorId}`,
         );
@@ -134,7 +155,6 @@ export default function ScheduleManagement() {
     fetchExistingSchedule();
   }, [currentDate, targetDoctorId]);
 
-  // --- توابع مدیریت فرم ---
   const addPeriodRow = () =>
     setCurrentPeriods([...currentPeriods, { startTime: "", endTime: "" }]);
 
@@ -175,8 +195,9 @@ export default function ScheduleManagement() {
     };
 
     setScheduleList([...scheduleList, newItem]);
-    toast.success(`برنامه تاریخ ${currentDate} به لیست انتظار اضافه شد`);
-
+    toast.success(
+      `برنامه تاریخ ${formatShamsi(currentDate)} به لیست انتظار اضافه شد`,
+    );
     setCurrentDate("");
   };
 
@@ -184,14 +205,12 @@ export default function ScheduleManagement() {
     setScheduleList(scheduleList.filter((_, i) => i !== index));
   };
 
-  // 4️⃣ ارسال تمامی نوبت‌های لیست به سرور
   const handleSubmitAll = async () => {
     if (scheduleList.length === 0) {
       toast.error("لیست برنامه خالی است!");
       return;
     }
 
-    // ارسال doctorId در کنار لیست نوبت‌ها
     const payload = {
       doctorId: targetDoctorId,
       schedules: scheduleList,
@@ -218,7 +237,6 @@ export default function ScheduleManagement() {
     });
   };
 
-  // 5️⃣ تابع حذف برنامه یک روز کامل
   const handleDeleteDaySchedule = () => {
     if (!currentDate || !existingSchedule || !targetDoctorId) return;
 
@@ -231,13 +249,12 @@ export default function ScheduleManagement() {
 
     if (
       !window.confirm(
-        `آیا از لغو و حذف تمامی نوبت‌های تاریخ ${currentDate} کاملاً مطمئن هستید؟ این عملیات قابل بازگشت نیست.`,
+        `آیا از لغو و حذف تمامی نوبت‌های تاریخ ${formatShamsi(currentDate)} کاملاً مطمئن هستید؟ این عملیات قابل بازگشت نیست.`,
       )
     ) {
       return;
     }
 
-    // ارسال doctorId همراه با درخواست حذف
     const deletePromise = api.delete("/book/schedule/day", {
       data: {
         date: currentDate,
@@ -249,7 +266,7 @@ export default function ScheduleManagement() {
       loading: "در حال حذف برنامه‌های این روز...",
       success: () => {
         setExistingSchedule(null);
-        return `تمامی نوبت‌های تاریخ ${currentDate} با موفقیت حذف شدند`;
+        return `تمامی نوبت‌های تاریخ ${formatShamsi(currentDate)} با موفقیت حذف شدند`;
       },
       error: (err) => err.response?.data?.message || "خطا در حذف برنامه.",
     });
@@ -279,7 +296,6 @@ export default function ScheduleManagement() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-5 space-y-6">
-            {/* ================= منوی انتخاب پزشک (مخصوص کلینیک) ================= */}
             {userRole === "MedicalCenter" && (
               <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 animate-in fade-in">
                 <label className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
@@ -327,44 +343,69 @@ export default function ScheduleManagement() {
                   className="absolute right-3 top-3 text-gadget-light"
                   size={18}
                 />
-                <input
-                  type="date"
-                  value={currentDate}
-                  onChange={(e) => setCurrentDate(e.target.value)}
-                  className="w-full bg-white border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light cursor-pointer shadow-sm font-medium"
+                <DatePicker
+                  calendar={persian}
+                  locale={persian_fa}
+                  value={currentDate ? new Date(currentDate) : ""}
+                  onChange={(date: any) => {
+                    if (date && date.isValid) {
+                      const jsDate = date.toDate();
+                      const year = jsDate.getFullYear();
+                      const month = String(jsDate.getMonth() + 1).padStart(
+                        2,
+                        "0",
+                      );
+                      const day = String(jsDate.getDate()).padStart(2, "0");
+
+                      setCurrentDate(`${year}-${month}-${day}`);
+                    } else {
+                      setCurrentDate("");
+                    }
+                  }}
+                  format="YYYY/MM/DD"
+                  containerClassName="w-full"
+                  inputClass="w-full bg-white border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light cursor-pointer shadow-sm font-medium text-gray-700"
+                  placeholder="انتخاب تاریخ از تقویم..."
                 />
               </div>
+              {currentDate && (
+                <div className="mt-3 text-xs font-bold text-gadget-dark flex items-center justify-end gap-1">
+                  تاریخ انتخابی: {formatShamsi(currentDate)}
+                </div>
+              )}
             </div>
 
             {currentDate && (
               <div className="border border-gray-100 rounded-2xl p-5 bg-white shadow-xs animate-in fade-in slide-in-from-bottom-2">
-                <div className="flex items-center justify-between mb-4 border-b border-gray-50 pb-3">
-                  <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                    <LayoutList size={16} className="text-gadget-dark" />
-                    وضعیت نوبت‌ها در این تاریخ
-                  </h3>
+                <div className="flex flex-col mb-4 border-b border-gray-50 pb-3 gap-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                      <LayoutList size={16} className="text-gadget-dark" />
+                      وضعیت نوبت‌های {formatShamsi(currentDate)}
+                    </h3>
 
-                  {existingSchedule &&
-                    existingSchedule.slots.length > 0 &&
-                    (existingSchedule.bookedSlots > 0 ? (
-                      <button
-                        disabled
-                        className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-not-allowed border border-gray-200"
-                        title="به دلیل داشتن نوبت رزرو شده، امکان حذف وجود ندارد"
-                      >
-                        <Trash2 size={14} className="opacity-50" />
-                        غیرقابل حذف
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleDeleteDaySchedule}
-                        className="text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
-                        title="حذف کل برنامه این روز"
-                      >
-                        <Trash2 size={14} />
-                        لغو این روز
-                      </button>
-                    ))}
+                    {existingSchedule &&
+                      existingSchedule.slots.length > 0 &&
+                      (existingSchedule.bookedSlots > 0 ? (
+                        <button
+                          disabled
+                          className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-not-allowed border border-gray-200"
+                          title="به دلیل داشتن نوبت رزرو شده، امکان حذف وجود ندارد"
+                        >
+                          <Trash2 size={14} className="opacity-50" />
+                          غیرقابل حذف
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleDeleteDaySchedule}
+                          className="text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                          title="حذف کل برنامه این روز"
+                        >
+                          <Trash2 size={14} />
+                          لغو این روز
+                        </button>
+                      ))}
+                  </div>
                 </div>
 
                 {loadingExisting ? (
@@ -389,23 +430,43 @@ export default function ScheduleManagement() {
                         return (
                           <div
                             key={index}
-                            className={`p-2 rounded-lg border flex flex-col items-center justify-center text-center gap-1
-                              ${isAvailable ? "bg-white border-gray-200" : "bg-gray-50 border-gray-100 opacity-70"}`}
+                            className={`p-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all
+                              ${isAvailable ? "bg-white border-gray-200 shadow-xs" : "bg-orange-50 border-orange-200"}`}
                           >
                             <span
                               className="font-bold text-sm tracking-wider text-gray-800"
                               dir="ltr"
                             >
-                              {slot.startTime}
+                              {slot.startTime}{" "}
+                              <span className="text-[10px] text-gray-400 mx-0.5">
+                                تا
+                              </span>{" "}
+                              {slot.endTime}
                             </span>
+
                             {isAvailable ? (
-                              <span className="text-[9px] font-bold text-gadget-light flex items-center gap-0.5">
-                                <CheckCircle2 size={10} /> خالی
+                              <span className="text-[10px] font-bold text-gadget-light flex items-center gap-0.5 mt-1">
+                                <CheckCircle2 size={12} /> نوبت خالی
                               </span>
                             ) : (
-                              <span className="text-[9px] font-bold text-orange-500 flex items-center gap-0.5">
-                                <XCircle size={10} /> رزرو شده
-                              </span>
+                              <div className="w-full mt-1.5 pt-1.5 border-t border-orange-100 flex flex-col items-center gap-1">
+                                <span className="text-[10px] font-bold text-orange-700 flex items-center justify-center gap-1 w-full truncate px-1">
+                                  <User size={12} className="shrink-0" />
+                                  <span className="truncate">
+                                    {slot.patient
+                                      ? `${slot.patient.firstName} ${slot.patient.lastName}`
+                                      : "رزرو شده"}
+                                  </span>
+                                </span>
+                                {slot.patient?.mobile && (
+                                  <span
+                                    className="text-[9px] font-medium text-orange-600 font-sans flex items-center gap-1"
+                                    dir="ltr"
+                                  >
+                                    <Phone size={10} /> {slot.patient.mobile}
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
                         );
@@ -435,7 +496,8 @@ export default function ScheduleManagement() {
               <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
                 <h2 className="text-md font-bold text-gray-700 flex items-center gap-2 border-b border-gray-50 pb-3">
                   <Plus size={18} className="text-gadget-light" />
-                  اضافه کردن شیفت جدید برای {currentDate || "..."}
+                  اضافه کردن شیفت جدید{" "}
+                  {currentDate ? `برای ${formatShamsi(currentDate)}` : "..."}
                 </h2>
 
                 <div>
@@ -536,9 +598,9 @@ export default function ScheduleManagement() {
                     >
                       <div>
                         <p className="text-sm font-bold text-gray-800">
-                          {item.date}
+                          {formatShamsi(item.date)}
                         </p>
-                        <p className="text-[10px] text-gray-500">
+                        <p className="text-[10px] text-gray-500 mt-1">
                           {item.periods.length} شیفت (ویزیت‌های{" "}
                           {item.slotDuration} دقیقه‌ای)
                         </p>
