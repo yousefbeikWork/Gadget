@@ -19,52 +19,37 @@ import {
   LogOut,
   Calendar,
   CalendarDays,
+  Users,
+  FlaskConical,
+  Wrench
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 
-// اضافه کردن ویژگی hideFor به منوها
+// استفاده از allowedRoles به جای hideFor برای امنیت و خوانایی بیشتر
 const menuItems = [
-  { key: "home", path: "/", icon: Home },
-  {
-    key: "schedule",
-    path: "/schedule",
-    icon: Calendar,
-    hideFor: ["Patient", "guest", "MedicalCenter"],
-  },
-  {
-    key: "myAppointments",
-    path: "/my-appointments",
-    icon: CalendarDays,
-    hideFor: ["Doctor", "guest", "MedicalCenter"],
-  },
-  // لیست پزشکان: برای دکتری که لاگین کرده مخفی می‌شود
-  { key: "doctors", path: "/doctors", icon: Stethoscope, hideFor: ["Doctor"] },
+  // --- داشبورد اصلی ---
+  { key: "home", path: "/dashboard", icon: Home, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
 
-  // لیست بیماران: برای بیمار (و احتمالاً مهمان که لاگین نکرده) مخفی می‌شود
-  // اگر می‌خواهی کسی که لاگین نکرده هم لیست بیماران را نبیند، کلمه 'guest' را هم به آرایه اضافه می‌کنیم
-  {
-    key: "patients",
-    path: "/patients",
-    icon: User,
-    hideFor: ["Patient", "guest"],
-  },
-  {
-    key: "myDoctors", // در فایل ترجمه یا به صورت مستقیم بنویس "پزشکان من"
-    path: "/clinic-doctors",
-    icon: Stethoscope, // یا Users
-    hideFor: ["Patient", "Doctor", "guest"], // فقط کلینیک ببیند
-  },
-  { key: "hospitals", path: "/hospitals", icon: Building2 },
-  { key: "clinics", path: "/clinics", icon: Hospital },
-  { key: "airplanes", path: "/airplanes", icon: Plane },
-  { key: "travel", path: "/travel", icon: Map },
-  { key: "leader", path: "/leader", icon: Compass },
-  { key: "visa", path: "/visa", icon: Stamp },
-  { key: "guides", path: "/guides", icon: List },
-  { key: "search", path: "/search", icon: Search },
+  // --- منوهای ابزار شخصی و عملیاتی ---
+  { key: "schedule", path: "/schedule", icon: Calendar, allowedRoles: ["Doctor", "MedicalCenter"] },
+  { key: "myAppointments", path: "/my-appointments", icon: CalendarDays, allowedRoles: ["Patient"] },
+  { key: "myDoctors", path: "/clinic-doctors", icon: Stethoscope, allowedRoles: ["MedicalCenter"] },
+
+  // --- منوهای اصلی بر اساس نقشه خدمات ---
+  { key: "patients", path: "/patients", icon: Users, allowedRoles: ["Doctor", "MedicalCenter"] },
+  { key: "doctors", path: "/doctors", icon: Stethoscope, allowedRoles: ["Patient", "Doctor", "guest"] },
+  { key: "hospitals", path: "/hospitals", icon: Building2, allowedRoles: ["Patient", "Doctor", "guest"] },
+  { key: "clinics", path: "/clinics", icon: Hospital, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
+  { key: "laboratories", path: "/laboratories", icon: FlaskConical, allowedRoles: ["Patient", "Doctor", "guest"] },
+  { key: "calibration", path: "/calibration", icon: Wrench, allowedRoles: ["MedicalCenter"] },
+  { key: "airplanes", path: "/flights", icon: Plane, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
+  { key: "travel", path: "/travels", icon: Map, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
+  { key: "leader", path: "/leaders", icon: Compass, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
+  { key: "visa", path: "/visas", icon: Stamp, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
+  { key: "guides", path: "/guide", icon: List, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
+  { key: "search", path: "/search", icon: Search, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
 ];
 
-// تعریف پراپ‌های جدید برای کنترل منو
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -73,17 +58,15 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation();
   const { isLoggedIn, userRole, logout, userProfile } = useAuth();
+  
   // تعیین نقش فعلی (اگر لاگین نکرده بود، 'guest' در نظر می‌گیریم)
   const currentRole = isLoggedIn ? userRole : "guest";
 
-  // فیلتر کردن منوها بر اساس نقش
+  // فیلتر کردن منوها بر اساس نقش مجاز
   const filteredMenuItems = menuItems.filter((item) => {
-    // اگر ویژگی hideFor وجود داشت و نقش کاربر داخل آن آرایه بود، این آیتم را حذف کن (رندر نکن)
-    if (item.hideFor && item.hideFor.includes(currentRole as string)) {
-      return false;
-    }
-    return true; // در غیر این صورت نمایش بده
+    return item.allowedRoles.includes(currentRole as string);
   });
+
   const getRoleName = (role: string | null) => {
     switch (role) {
       case "Doctor":
@@ -96,6 +79,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         return "کاربر سامانه";
     }
   };
+
   return (
     <>
       {/* بک‌گراند تاریک برای موبایل وقتی منو باز است */}
@@ -126,8 +110,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* بخش لیست لینک‌ها */}
-        <div className="flex-1 py-6 md:py-8 overflow-y-auto overflow-x-hidden">
-          <ul className="space-y-2 md:space-y-6">
+        <div className="flex-1 py-6 md:py-8 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          <ul className="space-y-1.5 md:space-y-4">
             {filteredMenuItems.map((item, index) => {
               const Icon = item.icon;
               return (
@@ -140,15 +124,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   {({ isActive }) => (
                     <>
                       <div
-                        className={`p-1 transition-colors ${isActive ? "text-gadget-dark" : "text-gray-400 group-hover:text-gadget-dark"}`}
+                        className={`p-1.5 rounded-lg transition-colors ${isActive ? "text-white bg-gadget-dark shadow-md" : "text-gray-400 group-hover:text-gadget-dark"}`}
                       >
-                        <Icon strokeWidth={1.5} size={26} />
+                        <Icon strokeWidth={1.5} size={22} />
                       </div>
                       <div>
                         <h3
                           className={`text-sm transition-colors ${isActive ? "font-bold text-gadget-dark" : "font-medium text-gray-600 group-hover:text-gadget-dark"}`}
                         >
-                          {t(item.key)}
+                          {/* اگر کلید ترجمه در فایل i18n ندارید، می‌توانید موقتاً اسم فارسی را مستقیم اینجا بنویسید */}
+                          {t(item.key)} 
                         </h3>
                       </div>
                     </>
@@ -160,10 +145,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* بخش پایین سایدبار (احراز هویت + تغییر زبان) */}
-        {/* بخش پایین سایدبار (احراز هویت + تغییر زبان) */}
         <div className="mt-auto shrink-0 border-t border-gray-100 bg-gray-50/50 md:rounded-2xl">
           <div className="p-5 flex flex-col gap-3">
-            {/* اگر کاربر لاگین بود، کارت پروفایل را نشان بده */}
             {/* اگر کاربر لاگین بود، کارت پروفایل هوشمند را نشان بده */}
             {isLoggedIn ? (
               <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-xs">

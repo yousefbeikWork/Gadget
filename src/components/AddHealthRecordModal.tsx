@@ -7,9 +7,11 @@ import {
   Loader2,
   FileText,
   Calendar,
+  Paperclip, // 👈 آیکون گیره کاغذ
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../services/api";
+import FileUpload from "./FileUpload"; // 👈 ایمپورت کامپوننت آپلودر
 
 interface AddHealthRecordModalProps {
   isOpen: boolean;
@@ -33,7 +35,27 @@ export default function AddHealthRecordModal({
     prescription: "",
   });
 
+  // 👈 استیت برای نگهداری فایل‌های آپلود شده
+  const [attachments, setAttachments] = useState<string[]>([]);
+
   if (!isOpen) return null;
+
+  // هندلر موفقیت آپلود
+  const handleUploadSuccess = (minioObjectName: string) => {
+    setAttachments((prev) => [...prev, minioObjectName]);
+  };
+
+  // هندلر حذف فایل از لیست قبل از ثبت
+  const removeAttachment = (indexToRemove: number) => {
+    setAttachments((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleClose = () => {
+    // ریست کردن استیت‌ها هنگام بستن مودال
+    setFormData({ title: "", description: "", prescription: "" });
+    setAttachments([]);
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,16 +71,15 @@ export default function AddHealthRecordModal({
         title: formData.title,
         description: formData.description,
         prescription: formData.prescription,
-        attachments: [], // پیوست‌ها (در صورت نیاز به آپلود فایل در آینده)
+        attachments: attachments, // 👈 ارسال آرایه فایل‌ها
       };
 
       const response = await api.post("/healthRecords/addHelthRecord", payload);
 
       if (response.data) {
         toast.success("پرونده ویزیت با موفقیت ثبت شد");
-        setFormData({ title: "", description: "", prescription: "" }); // ریست فرم
         if (onSuccess) onSuccess();
-        onClose();
+        handleClose();
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "خطا در ثبت پرونده سلامت");
@@ -73,6 +94,7 @@ export default function AddHealthRecordModal({
       dir="rtl"
     >
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+        
         {/* هدر مودال */}
         <div className="bg-gadget-dark p-5 flex items-center justify-between text-white shrink-0">
           <div className="flex items-center gap-3">
@@ -85,7 +107,7 @@ export default function AddHealthRecordModal({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-300 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-lg transition-colors border-none outline-hidden cursor-pointer"
           >
             <X size={20} />
@@ -112,6 +134,7 @@ export default function AddHealthRecordModal({
                 })}
               </span>
             </div>
+            
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
                 عنوان ویزیت / علت مراجعه *
@@ -130,8 +153,7 @@ export default function AddHealthRecordModal({
 
             <div>
               <label className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5">
-                <Activity size={16} className="text-gray-400" /> شرح حال و تشخیص
-                پزشک *
+                <Activity size={16} className="text-gray-400" /> شرح حال و تشخیص پزشک *
               </label>
               <textarea
                 required
@@ -147,8 +169,7 @@ export default function AddHealthRecordModal({
 
             <div>
               <label className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5">
-                <Pill size={16} className="text-gadget-light" /> نسخه و داروی
-                تجویزی
+                <Pill size={16} className="text-gadget-light" /> نسخه و داروی تجویزی
               </label>
               <textarea
                 rows={3}
@@ -160,6 +181,42 @@ export default function AddHealthRecordModal({
                 className="w-full bg-gadget-light/5 border border-gadget-light/20 rounded-xl px-4 py-3 text-sm focus:outline-hidden focus:border-gadget-light transition-colors resize-none"
               />
             </div>
+
+            {/* 👈 بخش آپلود مدارک پزشکی */}
+            <div className="border-t border-gray-100 pt-5 mt-2">
+              <label className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5">
+                <Paperclip size={16} className="text-gray-400" /> مدارک و پیوست‌ها (اختیاری)
+              </label>
+              
+              <FileUpload 
+                label="آپلود عکس آزمایش، سونوگرافی یا فایل PDF" 
+                onUploadSuccess={handleUploadSuccess} 
+              />
+
+              {/* نمایش فایل‌هایی که آپلود شده‌اند */}
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  {attachments.map((file, index) => (
+                    <div 
+                      key={index} 
+                      className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-xs shadow-sm"
+                    >
+                      <FileText size={14} className="text-blue-500 shrink-0" />
+                      <span className="truncate max-w-37.5 font-medium text-gray-600" dir="ltr">{file}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(index)}
+                        className="text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 p-1 rounded-md transition-colors cursor-pointer shrink-0"
+                        title="حذف پیوست"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </form>
         </div>
 
@@ -167,7 +224,7 @@ export default function AddHealthRecordModal({
         <div className="p-5 border-t border-gray-100 bg-gray-50 shrink-0 flex gap-3">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="flex-1 bg-white border border-gray-200 hover:bg-gray-100 text-gray-700 py-3 rounded-xl text-sm font-bold transition-colors cursor-pointer"
           >
             انصراف

@@ -9,13 +9,13 @@ import {
   Calendar,
   User,
   Search,
-  X,
   Stethoscope,
-  Save,
+  Paperclip,
 } from "lucide-react";
-import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import AddHealthRecordModal from "../components/AddHealthRecordModal";
+import FileDownload from "../components/FileDownload"; // 👈 ایمپورت کامپوننت دانلود
 
 interface DoctorInfo {
   _id: string;
@@ -32,7 +32,7 @@ interface HealthRecord {
   prescription: string;
   attachments?: string[];
   createdAt: string;
-  doctor?: DoctorInfo; // 👈 هماهنگ با ساختار جدید شیء پزشک در API
+  doctor?: DoctorInfo;
 }
 
 export default function HealthRecords() {
@@ -50,14 +50,7 @@ export default function HealthRecords() {
     userRole === "Patient" ? userProfile?._id || "" : initialPatientId,
   );
   const [searchInput, setSearchInput] = useState(initialPatientId);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    prescription: "",
-  });
 
   const fetchRecords = useCallback(async () => {
     if (!targetPatientId) return;
@@ -71,7 +64,6 @@ export default function HealthRecords() {
         `/healthRecords/historyPationtsHelthRecord/${targetPatientId}${queryParam}`,
       );
 
-      // 👈 اصلاح شد: خواندن مستقیم آرایه از کلید records بر اساس فرمت نهایی بک‌اند
       if (response.data && response.data.records) {
         setRecords(response.data.records);
       } else {
@@ -92,47 +84,14 @@ export default function HealthRecords() {
     fetchRecords();
   }, [fetchRecords]);
 
-  const handleAddRecord = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!targetPatientId) {
-      toast.error("هیچ بیماری انتخاب نشده است.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const payload = {
-        patientId: targetPatientId,
-        title: formData.title,
-        description: formData.description,
-        prescription: formData.prescription,
-        attachments: [],
-      };
-
-      const response = await api.post("/healthRecords/addHelthRecord", payload);
-
-      if (response.data) {
-        toast.success("پرونده ویزیت با موفقیت ثبت شد");
-        setIsModalOpen(false);
-        setFormData({ title: "", description: "", prescription: "" });
-        fetchRecords();
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "خطا در ثبت پرونده");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div
-      className="flex-1 bg-white md:rounded-2xl shadow-lg p-6 md:p-8 overflow-y-auto custom-scrollbar font-sans"
+      className="flex-1 bg-white md:rounded-2xl shadow-lg p-6 md:p-8 overflow-y-auto custom-scrollbar font-sans relative"
       dir="rtl"
     >
-      {/* ================= هدر صفحه ================= */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-gray-100 pb-6">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-gadget-light/10 text-gadget-light rounded-2xl flex items-center justify-center">
+          <div className="w-14 h-14 bg-gadget-light/10 text-gadget-light rounded-2xl flex items-center justify-center shrink-0">
             <Activity size={28} />
           </div>
           <div>
@@ -143,13 +102,15 @@ export default function HealthRecords() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 self-start md:self-auto">
-          <button
-            onClick={() => navigate("/patients")}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
-          >
-            بازگشت به لیست بیماران
-          </button>
+        <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
+          {userRole === "Doctor" && (
+            <button
+              onClick={() => navigate("/patients")}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+            >
+              بازگشت به لیست بیماران
+            </button>
+          )}
 
           {userRole === "Doctor" && targetPatientId && (
             <button
@@ -162,7 +123,6 @@ export default function HealthRecords() {
         </div>
       </div>
 
-      {/* ================= باکس انتخاب بیمار ================= */}
       {userRole === "Doctor" && !initialPatientId && (
         <div className="bg-blue-50 border border-blue-100 p-5 rounded-2xl mb-8 flex flex-col md:flex-row gap-4 items-end">
           <div className="flex-1 w-full">
@@ -193,7 +153,6 @@ export default function HealthRecords() {
         </div>
       )}
 
-      {/* ================= تایم‌لاین پرونده‌ها ================= */}
       <div className="max-w-4xl mx-auto">
         {!targetPatientId ? (
           <div className="text-center py-16 text-gray-400">
@@ -249,6 +208,7 @@ export default function HealthRecords() {
                           <Calendar size={14} />
                           {new Date(record.createdAt).toLocaleDateString(
                             "fa-IR",
+                            { year: "numeric", month: "long", day: "numeric" },
                           )}
                         </span>
                         <span className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-lg">
@@ -276,7 +236,6 @@ export default function HealthRecords() {
                             },
                           )}
                         </span>
-                        {/* 👈 اصلاح شد: رندر هوشمند نام پزشک و تخصص بر اساس ساختار آبجکتی جدید */}
                         {record.doctor && (
                           <span className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg font-bold">
                             <Stethoscope size={14} />
@@ -308,6 +267,24 @@ export default function HealthRecords() {
                         </p>
                       </div>
                     )}
+
+                    {/* 👈 استفاده از کامپوننت جدید دانلود فایل */}
+                    {record.attachments && record.attachments.length > 0 && (
+                      <div className="pt-2 border-t border-gray-50 mt-4">
+                        <h4 className="text-xs font-bold text-gray-400 mb-2 flex items-center gap-1.5">
+                          <Paperclip size={14} /> مدارک پیوست:
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {record.attachments.map((file, i) => (
+                            <FileDownload
+                              key={i}
+                              fileName={file}
+                              className="text-xs text-blue-600 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg hover:bg-blue-100 hover:shadow-sm"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -316,105 +293,13 @@ export default function HealthRecords() {
         )}
       </div>
 
-      {/* ================== مودال ثبت پرونده جدید ================== */}
-      {isModalOpen && userRole === "Doctor" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="bg-gadget-dark p-5 flex items-center justify-between text-white shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center font-bold">
-                  <Plus size={20} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-md">ثبت ویزیت و پرونده جدید</h3>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-300 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-lg transition-colors border-none outline-hidden cursor-pointer"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-              <form
-                id="health-record-form"
-                onSubmit={handleAddRecord}
-                className="space-y-5"
-              >
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    عنوان ویزیت *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="مثال: چکاپ سالانه"
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-hidden focus:border-gadget-light"
-                  />
-                </div>
-                <div>
-                  <label className=" text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5">
-                    <Activity size={16} className="text-gray-400" /> شرح حال و
-                    تشخیص پزشک *
-                  </label>
-                  <textarea
-                    required
-                    rows={4}
-                    placeholder="علائم بیمار..."
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-hidden focus:border-gadget-light resize-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-1.5">
-                    <Pill size={16} className="text-gadget-light" /> نسخه و
-                    داروی تجویزی
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="لیست داروها..."
-                    value={formData.prescription}
-                    onChange={(e) =>
-                      setFormData({ ...formData, prescription: e.target.value })
-                    }
-                    className="w-full bg-gadget-light/5 border border-gadget-light/20 rounded-xl px-4 py-3 text-sm focus:outline-hidden focus:border-gadget-light resize-none"
-                  />
-                </div>
-              </form>
-            </div>
-            <div className="p-5 border-t border-gray-100 bg-gray-50 shrink-0 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="flex-1 bg-white border border-gray-200 hover:bg-gray-100 text-gray-700 py-3 rounded-xl text-sm font-bold transition-colors cursor-pointer"
-              >
-                انصراف
-              </button>
-              <button
-                form="health-record-form"
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-3 rounded-xl text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all disabled:opacity-70 border-none outline-hidden cursor-pointer"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="animate-spin" size={18} />
-                ) : (
-                  <Save size={18} />
-                )}
-                {isSubmitting ? "در حال ثبت..." : "ثبت در پرونده بیمار"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddHealthRecordModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        patientId={targetPatientId}
+        patientName="بیمار انتخاب شده"
+        onSuccess={fetchRecords}
+      />
     </div>
   );
 }

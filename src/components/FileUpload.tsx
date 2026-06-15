@@ -113,6 +113,7 @@ export default function FileUpload({
         onChange={handleFileChange} 
         accept={acceptedTypes}
         className="hidden" 
+        multiple
       />
     </div>
   );

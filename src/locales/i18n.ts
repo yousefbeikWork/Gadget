@@ -17,6 +17,7 @@ const resources = {
       search: "جست و جو",
       leader: "لیدر",
       visa: "ویزا",
+      laboratories: "آزمایشگاه",
       schedule: "مدیریت نوبت‌دهی",
       myAppointments: "نوبت های من",
 
@@ -42,6 +43,7 @@ const resources = {
       patients: "Patients",
       myAppointments: "My Appointments",
       hospitals: "Hospitals",
+      laboratories: "Laboratories",
       clinics: "Clinics",
       myDoctors: "My Doctors",
       airplanes: "Airplanes",

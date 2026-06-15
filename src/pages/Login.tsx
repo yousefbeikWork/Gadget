@@ -15,16 +15,16 @@ export default function Login() {
   const [password, setPassword] = useState("");
 
   // تغییر لیبل ورودی بر اساس نقش انتخاب شده (طبق فلوچارت‌ها)
-  const getUsernameLabel = () => {
-    switch (role) {
-      case "doctor":
-        return "شماره نظام پزشکی";
-      case "center":
-        return "نام کاربری مرکز";
-      case "patient":
-        return "کد ملی / کد اتباع";
-    }
-  };
+  // const getUsernameLabel = () => {
+  //   switch (role) {
+  //     case "doctor":
+  //       return "شماره نظام پزشکی";
+  //     case "center":
+  //       return "نام کاربری مرکز";
+  //     case "patient":
+  //       return "کد ملی / کد اتباع";
+  //   }
+  // };
   // یک تابع کوچک برای تبدیل اعداد فارسی به انگلیسی
   const toEnglishDigits = (str: string) => {
     const persianNumbers = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
@@ -84,13 +84,13 @@ export default function Login() {
           </div>
           <h1 className="text-2xl font-bold text-white mb-1">ورود به سامانه</h1>
           <p className=" text-gray-200 text-sm">
-            لطفاً نقش و اطلاعات کاربری خود را وارد کنید
+            لطفاً  اطلاعات کاربری خود را وارد کنید
           </p>
         </div>
 
         <div className="p-6">
           {/* انتخابگر نقش */}
-          <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+          {/* <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
             <button
               type="button"
               onClick={() => setRole("patient")}
@@ -124,13 +124,13 @@ export default function Login() {
             >
               <Building2 size={16} /> مرکز
             </button>
-          </div>
+          </div> */}
 
           {/* فرم ورود */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {getUsernameLabel()}
+                نام کاربری
               </label>
               <input
                 type="text"
@@ -156,7 +156,7 @@ export default function Login() {
               />
             </div>
 
-            <div className="flex items-center justify-between mt-2 mb-6">
+            {/* <div className="flex items-center justify-between mt-2 mb-6">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -170,7 +170,7 @@ export default function Login() {
               >
                 رمز عبور را فراموش کرده‌اید؟
               </a>
-            </div>
+            </div> */}
 
             <button
               type="submit"
