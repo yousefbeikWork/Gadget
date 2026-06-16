@@ -29,6 +29,7 @@ interface UserProfile {
   mobile?: string;
   age?: number;
   nationalId?: string;
+  imageProfile?: string; // 👈 فیلد جدید برای نگهداری لینک عکس پروفایل
   // فیلدهای مخصوص پزشک
   Expertise?: string;
   clinicAddress?: string;
@@ -59,7 +60,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   userRole: string | null;
   userProfile: UserProfile | null;
-  isLoading: boolean; // 👈 ۱. اضافه شدن به تایپ کانتکست
+  isLoading: boolean;
   login: (role: string) => void;
   logout: () => void;
   refreshProfile: () => Promise<void>;
@@ -71,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // استیت لودینگ اولیه
+  const [isLoading, setIsLoading] = useState(true);
 
   // تابع درخواست دریافت اطلاعات پروفایل از سرور
   const fetchUserProfile = async () => {
@@ -85,7 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ۲. اصلاح افکت لود اولیه برای مدیریت درست لودینگ و رفرش‌توکن
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem("accessToken");
@@ -94,14 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (token) {
         setIsLoggedIn(true);
         setUserRole(role);
-        // await می‌کنیم تا اگر توکن منقضی بود، ابتدا رفرش‌توکن کارش را تمام کند
         await fetchUserProfile();
       } else {
         setIsLoggedIn(false);
         setUserRole(null);
       }
 
-      // پس از پایان تمام بررسی‌ها (چه موفق، چه ناموفق)، لودینگ تمام می‌شود
       setIsLoading(false);
     };
 
@@ -127,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoggedIn,
         userRole,
         userProfile,
-        isLoading, // 👈 ۳. ارسال استیت به پرووایدر
+        isLoading,
         login,
         logout,
         refreshProfile: fetchUserProfile,

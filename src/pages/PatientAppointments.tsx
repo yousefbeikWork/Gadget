@@ -3,18 +3,23 @@ import {
   CalendarDays,
   MapPin,
   Phone,
-  User,
   Clock,
   Search,
   Loader2,
   CalendarX2,
   CheckCircle2,
   Clock4,
+  CreditCard,
 } from "lucide-react";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { default as DatePickerLib } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
+import DoctorAvatar from "../components/DoctorAvatar"; // 👈 ایمپورت کامپوننت آواتار
 
-// تایپ‌های مربوط به خروجی API
+const DatePicker = (DatePickerLib as any).default || DatePickerLib;
+
 interface DoctorInfo {
   id: string;
   firstName: string;
@@ -22,6 +27,7 @@ interface DoctorInfo {
   expertise: string;
   clinicPhone: string;
   clinicAddress: string;
+  imageProfile?: string; // 👈 اضافه شدن فیلد عکس به اینترفیس نوبت‌ها
 }
 
 interface Appointment {
@@ -39,14 +45,12 @@ export default function PatientAppointments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // استیت برای فیلتر تاریخ (اختیاری در API شما)
   const [filterDate, setFilterDate] = useState("");
 
   const fetchAppointments = async (dateFilter = "") => {
     try {
       setLoading(true);
       setError("");
-      // ساخت URL با پیجینیشن و فیلتر تاریخ (در صورت وجود)
       let url = `/book/patientAppointmentBooking?page=1&limit=10`;
       if (dateFilter) {
         url += `&date=${dateFilter}`;
@@ -65,12 +69,10 @@ export default function PatientAppointments() {
     }
   };
 
-  // دریافت اطلاعات در زمان لود اولیه و هر بار که فیلتر تاریخ عوض می‌شود
   useEffect(() => {
     fetchAppointments(filterDate);
   }, [filterDate]);
 
-  // تابع کمکی برای استایل‌دهی به وضعیت نوبت
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "CONFIRMED":
@@ -99,7 +101,6 @@ export default function PatientAppointments() {
     }
   };
 
-  // تابع کمکی برای فرمت کردن تاریخ میلادی به یک شکل خواناتر (برای نمایش)
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
     return date.toLocaleDateString("fa-IR", {
@@ -135,11 +136,29 @@ export default function PatientAppointments() {
                 className="absolute right-3 top-2.5 text-gray-400"
                 size={18}
               />
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2 text-sm focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors text-gray-600"
+              <DatePicker
+                calendar={persian}
+                locale={persian_fa}
+                value={filterDate ? new Date(filterDate) : ""}
+                onChange={(date: any) => {
+                  if (date && date.isValid) {
+                    const jsDate = date.toDate();
+                    const year = jsDate.getFullYear();
+                    const month = String(jsDate.getMonth() + 1).padStart(
+                      2,
+                      "0",
+                    );
+                    const day = String(jsDate.getDate()).padStart(2, "0");
+
+                    setFilterDate(`${year}-${month}-${day}`);
+                  } else {
+                    setFilterDate("");
+                  }
+                }}
+                format="YYYY/MM/DD"
+                containerClassName="w-full"
+                inputClass="w-full bg-white border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light cursor-pointer shadow-sm font-medium text-gray-700"
+                placeholder="انتخاب تاریخ از تقویم..."
               />
             </div>
             {filterDate && (
@@ -153,7 +172,6 @@ export default function PatientAppointments() {
           </div>
         </div>
 
-        {/* وضعیت لودینگ */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-20 text-gadget-light">
             <Loader2 className="animate-spin mb-4" size={40} />
@@ -161,14 +179,12 @@ export default function PatientAppointments() {
           </div>
         )}
 
-        {/* وضعیت خطا */}
         {error && !loading && (
           <div className="bg-red-50 text-red-600 p-4 rounded-xl text-center text-sm font-medium border border-red-100">
             {error}
           </div>
         )}
 
-        {/* حالت خالی (وقتی نوبتی وجود ندارد) */}
         {!loading && !error && appointments.length === 0 && (
           <div className="bg-gray-50 p-10 rounded-2xl border border-dashed border-gray-200 text-center">
             <div className="w-16 h-16 bg-white text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
@@ -183,7 +199,6 @@ export default function PatientAppointments() {
           </div>
         )}
 
-        {/* لیست نوبت‌ها */}
         {!loading && appointments.length > 0 && (
           <div className="space-y-4">
             {appointments.map((appointment) => (
@@ -193,13 +208,14 @@ export default function PatientAppointments() {
               >
                 {/* اطلاعات پزشک */}
                 <div className="flex items-center gap-4 md:w-1/3">
-                  <div className="w-14 h-14 bg-linear-to-br from-gadget-light to-gadget-dark text-white rounded-2xl flex items-center justify-center text-xl font-bold shadow-sm shrink-0">
-                    {appointment.doctor?.firstName ? (
-                      appointment.doctor.firstName[0]
-                    ) : (
-                      <User size={24} />
-                    )}
-                  </div>
+                  
+                  {/* 👈 استفاده از کامپوننت آواتار پزشک */}
+                  <DoctorAvatar 
+                    imageProfile={appointment.doctor.imageProfile} 
+                    firstName={appointment.doctor.firstName} 
+                    className="w-14 h-14 text-xl" 
+                  />
+
                   <div>
                     <h3 className="font-bold text-md text-gray-800">
                       دکتر {appointment.doctor.firstName}{" "}
@@ -256,7 +272,17 @@ export default function PatientAppointments() {
 
                 {/* وضعیت نوبت */}
                 <div className="shrink-0 flex md:flex-col items-center justify-between border-t md:border-t-0 md:border-r border-gray-100 pt-4 md:pt-0 md:pr-6 gap-3">
-                  {getStatusBadge(appointment.status)}
+                  
+                  {/* دکمه موقت پرداخت که فعلاً غیرفعال است */}
+                  <button 
+                    disabled
+                    className="flex items-center justify-center gap-1.5 bg-gray-50 text-gray-400 px-4 py-2 rounded-xl text-xs font-bold border border-gray-200 cursor-not-allowed w-full md:w-auto"
+                    title="درگاه پرداخت به زودی فعال می‌شود"
+                  >
+                    <CreditCard size={16} />
+                    پرداخت (بزودی)
+                  </button>
+
                   {appointment.notes && (
                     <span
                       className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-md max-w-30 truncate"

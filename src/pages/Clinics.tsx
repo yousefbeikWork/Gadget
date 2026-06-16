@@ -275,6 +275,7 @@ export default function Clinics() {
                 {/* دکمه رزرو فقط برای بیمار و مهمان نمایش داده می‌شود */}
                 {(userRole === "Patient" ||
                   userRole === "guest" ||
+                  userRole === "Doctor" ||
                   !userRole) &&
                   (isLoggedIn ? (
                     <button

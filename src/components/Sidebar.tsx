@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
+import api from "../services/api"; // 👈 اضافه شدن ایمپورت api برای دریافت عکس
 import {
   Home,
   Stethoscope,
@@ -21,21 +23,16 @@ import {
   CalendarDays,
   Users,
   FlaskConical,
-  Wrench
+  Wrench,
+  Loader2 // 👈 اضافه شدن لودر
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 
-// استفاده از allowedRoles به جای hideFor برای امنیت و خوانایی بیشتر
 const menuItems = [
-  // --- داشبورد اصلی ---
   { key: "home", path: "/dashboard", icon: Home, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
-
-  // --- منوهای ابزار شخصی و عملیاتی ---
   { key: "schedule", path: "/schedule", icon: Calendar, allowedRoles: ["Doctor", "MedicalCenter"] },
-  { key: "myAppointments", path: "/my-appointments", icon: CalendarDays, allowedRoles: ["Patient"] },
+  { key: "myAppointments", path: "/my-appointments", icon: CalendarDays, allowedRoles: ["Patient","Doctor"] },
   { key: "myDoctors", path: "/clinic-doctors", icon: Stethoscope, allowedRoles: ["MedicalCenter"] },
-
-  // --- منوهای اصلی بر اساس نقشه خدمات ---
   { key: "patients", path: "/patients", icon: Users, allowedRoles: ["Doctor", "MedicalCenter"] },
   { key: "doctors", path: "/doctors", icon: Stethoscope, allowedRoles: ["Patient", "Doctor", "guest"] },
   { key: "hospitals", path: "/hospitals", icon: Building2, allowedRoles: ["Patient", "Doctor", "guest"] },
@@ -59,10 +56,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation();
   const { isLoggedIn, userRole, logout, userProfile } = useAuth();
   
-  // تعیین نقش فعلی (اگر لاگین نکرده بود، 'guest' در نظر می‌گیریم)
+  // 👈 استیت‌های مربوط به دریافت و نمایش آواتار
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [loadingAvatar, setLoadingAvatar] = useState<boolean>(false);
+
   const currentRole = isLoggedIn ? userRole : "guest";
 
-  // فیلتر کردن منوها بر اساس نقش مجاز
   const filteredMenuItems = menuItems.filter((item) => {
     return item.allowedRoles.includes(currentRole as string);
   });
@@ -80,9 +79,41 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     }
   };
 
+  // 👈 افکت برای دریافت باینری عکس پروفایل از سرور
+  useEffect(() => {
+    let objectUrl = "";
+    
+    if (userProfile?.imageProfile) {
+      const fetchAvatar = async () => {
+        try {
+          setLoadingAvatar(true);
+          const response = await api.post(
+            "/recive/api/reciveListFile",
+            { minioObjectName: userProfile.imageProfile },
+            { responseType: "blob" }
+          );
+          const blob = new Blob([response.data]);
+          objectUrl = URL.createObjectURL(blob);
+          setAvatarUrl(objectUrl);
+        } catch (err) {
+          console.error("خطا در دریافت عکس سایدبار", err);
+        } finally {
+          setLoadingAvatar(false);
+        }
+      };
+
+      fetchAvatar();
+    } else {
+      setAvatarUrl("");
+    }
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [userProfile?.imageProfile]);
+
   return (
     <>
-      {/* بک‌گراند تاریک برای موبایل وقتی منو باز است */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-gadget-dark/60 backdrop-blur-sm z-40 md:hidden transition-opacity"
@@ -90,7 +121,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         ></div>
       )}
 
-      {/* کانتینر اصلی سایدبار */}
       <aside
         className={`fixed inset-y-0 rtl:right-0 ltr:left-0 z-50 w-64 bg-white md:rounded-2xl flex flex-col shrink-0 shadow-2xl md:shadow-lg transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:rtl:translate-x-0 md:ltr:translate-x-0 ${
           isOpen
@@ -98,7 +128,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             : "rtl:translate-x-full ltr:-translate-x-full"
         }`}
       >
-        {/* دکمه بستن منو (فقط در موبایل) */}
         <div className="flex items-center justify-between p-5 md:hidden border-b border-gray-100">
           <span className="font-bold text-gadget-dark">منوی کاربری</span>
           <button
@@ -109,7 +138,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
 
-        {/* بخش لیست لینک‌ها */}
         <div className="flex-1 py-6 md:py-8 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <ul className="space-y-1.5 md:space-y-4">
             {filteredMenuItems.map((item, index) => {
@@ -118,7 +146,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <NavLink
                   key={index}
                   to={item.path}
-                  onClick={onClose} // با کلیک روی هر لینک، منو در موبایل خودکار بسته می‌شود
+                  onClick={onClose} 
                   className="flex items-center gap-4 px-6 py-2 md:py-0 cursor-pointer group transition-all duration-300 md:hover:scale-105 rtl:origin-right ltr:origin-left"
                 >
                   {({ isActive }) => (
@@ -132,7 +160,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <h3
                           className={`text-sm transition-colors ${isActive ? "font-bold text-gadget-dark" : "font-medium text-gray-600 group-hover:text-gadget-dark"}`}
                         >
-                          {/* اگر کلید ترجمه در فایل i18n ندارید، می‌توانید موقتاً اسم فارسی را مستقیم اینجا بنویسید */}
                           {t(item.key)} 
                         </h3>
                       </div>
@@ -144,10 +171,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </ul>
         </div>
 
-        {/* بخش پایین سایدبار (احراز هویت + تغییر زبان) */}
         <div className="mt-auto shrink-0 border-t border-gray-100 bg-gray-50/50 md:rounded-2xl">
           <div className="p-5 flex flex-col gap-3">
-            {/* اگر کاربر لاگین بود، کارت پروفایل هوشمند را نشان بده */}
             {isLoggedIn ? (
               <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-xs">
                 <Link
@@ -156,9 +181,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   className="flex items-center gap-3 mb-2 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer group"
                   title="مشاهده و ویرایش پروفایل"
                 >
-                  <div className="w-10 h-10 bg-gadget-light/10 text-gadget-light rounded-lg flex items-center justify-center font-bold text-sm shrink-0 group-hover:scale-105 transition-transform">
-                    {/* تشخیص حرف اول نام بر اساس نقش */}
-                    {userRole === "MedicalCenter" && userProfile?.centerName ? (
+                  {/* 👈 رندر هوشمند دایره پروفایل */}
+                  <div className="w-10 h-10 bg-gadget-light/10 text-gadget-light rounded-lg flex items-center justify-center font-bold text-sm shrink-0 group-hover:scale-105 transition-transform overflow-hidden relative">
+                    {loadingAvatar ? (
+                      <Loader2 size={16} className="animate-spin text-gadget-light" />
+                    ) : avatarUrl ? (
+                      <img src={avatarUrl} alt="پروفایل" className="w-full h-full object-cover" />
+                    ) : userRole === "MedicalCenter" && userProfile?.centerName ? (
                       userProfile.centerName[0]
                     ) : userProfile?.firstName ? (
                       userProfile.firstName[0]
@@ -166,9 +195,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       <User size={20} />
                     )}
                   </div>
+
                   <div className="overflow-hidden">
                     <h4 className="text-sm font-bold text-gray-800 truncate group-hover:text-gadget-light transition-colors">
-                      {/* نمایش نام مرکز یا نام فرد بر اساس نقش */}
                       {userRole === "MedicalCenter"
                         ? userProfile?.centerName
                         : userProfile
@@ -194,7 +223,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </button>
               </div>
             ) : (
-              /* اگر کاربر لاگین نبود، همان دکمه‌های ورود و ثبت‌نام را نشان بده */
               <>
                 <Link
                   to="/login"

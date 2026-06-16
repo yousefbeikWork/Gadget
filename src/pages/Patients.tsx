@@ -13,7 +13,7 @@ interface PatientItem {
   firstName: string;
   lastName: string;
   nationalId: string;
-  phoneNumber?: string; 
+  mobile?: string; 
   totalAppointments: number;
   lastAppointmentDate: string;
   lastAppointmentStatus: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | string;
@@ -177,7 +177,7 @@ export default function Patients() {
                 <div className="space-y-3 flex-1 mb-6">
                   <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
                     <Phone size={16} className="text-gray-400 shrink-0" />
-                    <span className="font-medium font-sans" dir="ltr">{patient.phoneNumber || 'ثبت نشده'}</span>
+                    <span className="font-medium font-sans" dir="ltr">{patient.mobile || 'ثبت نشده'}</span>
                   </div>
                   
                   <div className="bg-orange-50/50 border border-orange-100/50 rounded-lg p-3 mt-2">

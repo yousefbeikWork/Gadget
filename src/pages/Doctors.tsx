@@ -12,6 +12,7 @@ import {
   X,
   Calendar,
   AlignRight,
+  User,
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -30,6 +31,7 @@ interface Doctor {
   clinicAddress: string;
   clinicPhone: string;
   medicalCouncilCode: string;
+  imageProfile?: string; // 👈 فیلد عکس پروفایل اضافه شد
 }
 
 interface Slot {
@@ -37,11 +39,78 @@ interface Slot {
   endTime: string;
 }
 
+// =====================================================================
+// 👈 کامپوننت هوشمند برای مدیریت دانلود و نمایش عکس هر پزشک به صورت مجزا
+// =====================================================================
+const DoctorAvatar = ({
+  imageProfile,
+  firstName,
+  className = "w-14 h-14 text-xl",
+}: {
+  imageProfile?: string;
+  firstName: string;
+  className?: string;
+}) => {
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    let objectUrl = "";
+
+    if (imageProfile) {
+      const fetchAvatar = async () => {
+        try {
+          setLoading(true);
+          const response = await api.post(
+            "/recive/api/reciveListFile",
+            { minioObjectName: imageProfile },
+            { responseType: "blob" }
+          );
+          const blob = new Blob([response.data]);
+          objectUrl = URL.createObjectURL(blob);
+          setAvatarUrl(objectUrl);
+        } catch (err) {
+          console.error("خطا در دریافت عکس پزشک", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchAvatar();
+    } else {
+      setAvatarUrl("");
+    }
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [imageProfile]);
+
+  return (
+    <div
+      className={`${className} rounded-2xl flex items-center justify-center font-bold shadow-sm shrink-0 overflow-hidden bg-linear-to-br from-gadget-light to-[#1f8c87] text-white`}
+    >
+      {loading ? (
+        <Loader2 className="animate-spin opacity-70" size={20} />
+      ) : avatarUrl ? (
+        <img src={avatarUrl} alt={firstName} className="w-full h-full object-cover" />
+      ) : firstName ? (
+        firstName[0]
+      ) : (
+        <User size={20} />
+      )}
+    </div>
+  );
+};
+// =====================================================================
+
 export default function Doctors() {
   const { isLoggedIn } = useAuth();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   // استیت‌های مودال رزرو نوبت
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,7 +119,7 @@ export default function Doctors() {
   const [availableSlots, setAvailableSlots] = useState<Slot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
-  const [bookingNotes, setBookingNotes] = useState(""); // استیت جدید برای توضیحات
+  const [bookingNotes, setBookingNotes] = useState("");
 
   const fetchDoctors = async () => {
     try {
@@ -72,13 +141,22 @@ export default function Doctors() {
     fetchDoctors();
   }, []);
 
+  const filteredDoctors = doctors.filter((doctor) => {
+    const fullName = `${doctor.firstName} ${doctor.lastName}`.toLowerCase();
+    const query = searchQuery.toLowerCase();
+    return (
+      fullName.includes(query) ||
+      (doctor.Expertise && doctor.Expertise.toLowerCase().includes(query))
+    );
+  });
+
   const openBookingModal = (doctor: Doctor) => {
     setSelectedDoctor(doctor);
     setIsModalOpen(true);
     setSelectedDate("");
     setAvailableSlots([]);
     setSelectedSlot(null);
-    setBookingNotes(""); // ریست کردن توضیحات
+    setBookingNotes("");
   };
 
   const closeModal = () => {
@@ -104,7 +182,7 @@ export default function Doctors() {
           toast("در این تاریخ نوبت خالی وجود ندارد.", { icon: "ℹ️" });
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       if (err.response && err.response.status === 404) {
         setAvailableSlots([]);
       } else {
@@ -117,7 +195,6 @@ export default function Doctors() {
     }
   };
 
-  // اتصال به API رزرو نوبت
   const handleConfirmBooking = () => {
     if (!selectedSlot || !selectedDate || !selectedDoctor) return;
 
@@ -134,7 +211,6 @@ export default function Doctors() {
     toast.promise(bookingPromise, {
       loading: "در حال ثبت نوبت شما...",
       success: (_response) => {
-        // بستن مودال بعد از موفقیت
         closeModal();
         return "نوبت شما با موفقیت رزرو شد!";
       },
@@ -171,6 +247,8 @@ export default function Doctors() {
             />
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="جستجوی نام یا تخصص..."
               className="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2 text-sm focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors"
             />
@@ -206,22 +284,39 @@ export default function Doctors() {
           </div>
         )}
 
-        {!loading && doctors.length > 0 && (
+        {!loading && doctors.length > 0 && filteredDoctors.length === 0 && (
+          <div className="bg-orange-50 p-10 rounded-2xl border border-dashed border-orange-200 text-center">
+            <div className="w-16 h-16 bg-white text-orange-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <Search size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-orange-700 mb-1">
+              نتیجه‌ای یافت نشد
+            </h3>
+            <p className="text-orange-500 text-sm">
+              پزشکی با نام یا تخصص "{searchQuery}" در سیستم وجود ندارد.
+            </p>
+          </div>
+        )}
+
+        {!loading && filteredDoctors.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {doctors.map((doctor) => (
+            {filteredDoctors.map((doctor) => (
               <div
                 key={doctor._id}
                 className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col h-full group"
               >
                 <div className="flex items-center gap-4 mb-5 border-b border-gray-100 pb-4">
-                  <div className="w-14 h-14 bg-linear-to-br from-gadget-light to-[#1f8c87] text-white rounded-2xl flex items-center justify-center text-xl font-bold shadow-sm shrink-0 group-hover:scale-105 transition-transform">
-                    {doctor.firstName[0]}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-800">
+                  {/* 👈 استفاده از کامپوننت هوشمند آواتار */}
+                  <DoctorAvatar
+                    imageProfile={doctor.imageProfile}
+                    firstName={doctor.firstName}
+                    className="w-14 h-14 text-xl group-hover:scale-105 transition-transform"
+                  />
+                  <div className="overflow-hidden">
+                    <h3 className="font-bold text-lg text-gray-800 truncate">
                       دکتر {doctor.firstName} {doctor.lastName}
                     </h3>
-                    <span className="inline-block bg-gadget-light/10 text-[#239c97] text-xs font-bold px-2 py-1 rounded-md mt-1">
+                    <span className="inline-block bg-gadget-light/10 text-[#239c97] text-xs font-bold px-2 py-1 rounded-md mt-1 truncate max-w-full">
                       {doctor.Expertise}
                     </span>
                   </div>
@@ -291,9 +386,12 @@ export default function Doctors() {
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
             <div className="bg-gadget-dark p-5 flex items-center justify-between text-white shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center font-bold">
-                  {selectedDoctor.firstName[0]}
-                </div>
+                {/* 👈 استفاده از آواتار برای هدر مودال رزرو */}
+                <DoctorAvatar
+                  imageProfile={selectedDoctor.imageProfile}
+                  firstName={selectedDoctor.firstName}
+                  className="w-10 h-10 text-sm border border-white/20"
+                />
                 <div>
                   <h3 className="font-bold text-sm">
                     دکتر {selectedDoctor.firstName} {selectedDoctor.lastName}
@@ -341,10 +439,9 @@ export default function Doctors() {
                             );
 
                             const gregorianDate = `${year}-${month}-${day}`;
-                            // 👈 اینجا مستقیماً تابع دریافت ساعت‌های خالی را صدا می‌زنیم
                             fetchSlotsForDate(gregorianDate);
                           } else {
-                            fetchSlotsForDate(""); // پاک کردن تاریخ
+                            fetchSlotsForDate("");
                           }
                         }}
                         format="YYYY/MM/DD"
@@ -396,7 +493,6 @@ export default function Doctors() {
                       </div>
                     </div>
 
-                    {/* فیلد اختیاری توضیحات که بعد از انتخاب ساعت نمایش داده می‌شود */}
                     {selectedSlot && (
                       <div className="animate-in fade-in slide-in-from-top-2">
                         <label className="block text-sm font-bold text-gray-700 mb-2">

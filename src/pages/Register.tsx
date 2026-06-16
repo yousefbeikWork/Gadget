@@ -16,7 +16,7 @@ import {
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-type Role = "Patient" | "Doctor"; // نقش Hospital از اینجا حذف شد چون صفحه مجزا دارد
+type Role = "Patient" | "Doctor"; 
 
 const medicalSpecialties = [
   "پزشک عمومی",
@@ -222,7 +222,6 @@ export default function Register() {
               </span>
             </button>
 
-            {/* 👈 تغییر کلیدی: هدایت مستقیم به صفحه کلینیک با کلیک روی این تب */}
             <button
               type="button"
               onClick={() => navigate("/register-clinic")}
@@ -406,13 +405,9 @@ export default function Register() {
                     </select>
                   </div>
 
-                  {/* ---------- بخش قیم (پویا) ---------- */}
-                  <div
-                    className={`md:col-span-2 border rounded-xl p-4 mt-2 transition-colors duration-300 border-gray-100 bg-gray-50/50`}
-                  >
-                    <div
-                      className={`flex items-center gap-2 mb-4 text-gray-600`}
-                    >
+                  {/* ---------- بخش قیم ---------- */}
+                  <div className="md:col-span-2 border rounded-xl p-4 mt-2 transition-colors duration-300 border-gray-100 bg-gray-50/50">
+                    <div className="flex items-center gap-2 mb-4 text-gray-600">
                       <Users size={18} />
                       <h3 className="text-sm font-bold">اطلاعات قیم</h3>
                     </div>
@@ -428,7 +423,7 @@ export default function Register() {
                           onChange={handleChange}
                           required
                           type="text"
-                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white border border-gray-200 focus:border-gadget-light`}
+                          className="w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white border border-gray-200 focus:border-gadget-light"
                         />
                       </div>
                       <div>
@@ -441,7 +436,7 @@ export default function Register() {
                           onChange={handleChange}
                           required
                           type="text"
-                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white border border-gray-200 focus:border-gadget-light`}
+                          className="w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white border border-gray-200 focus:border-gadget-light"
                         />
                       </div>
                       <div>
@@ -455,7 +450,7 @@ export default function Register() {
                           onChange={handleChange}
                           required
                           type="text"
-                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white text-left border border-gray-200 focus:border-gadget-light`}
+                          className="w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white text-left border border-gray-200 focus:border-gadget-light"
                           dir="ltr"
                         />
                       </div>
@@ -470,7 +465,7 @@ export default function Register() {
                           onChange={handleChange}
                           required
                           type="tel"
-                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white text-left border border-gray-200 focus:border-gadget-light`}
+                          className="w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white text-left border border-gray-200 focus:border-gadget-light"
                           dir="ltr"
                           placeholder="09"
                         />
@@ -485,7 +480,7 @@ export default function Register() {
                           onChange={handleChange}
                           required
                           rows={2}
-                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white border border-gray-200 focus:border-gadget-light`}
+                          className="w-full rounded-lg px-3 py-2 text-sm focus:outline-hidden bg-white border border-gray-200 focus:border-gadget-light"
                         ></textarea>
                       </div>
                     </div>
@@ -526,27 +521,18 @@ export default function Register() {
                         onChange={handleChange}
                         required
                         className={`w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light transition-colors appearance-none cursor-pointer ${
-                          !formData.Expertise
-                            ? "text-gray-400"
-                            : "text-gray-800"
+                          !formData.Expertise ? "text-gray-400" : "text-gray-800"
                         }`}
                       >
                         <option value="" disabled>
                           لطفاً تخصص خود را انتخاب کنید...
                         </option>
-
                         {medicalSpecialties.map((specialty, index) => (
-                          <option
-                            key={index}
-                            value={specialty}
-                            className="text-gray-800"
-                          >
+                          <option key={index} value={specialty} className="text-gray-800">
                             {specialty}
                           </option>
                         ))}
                       </select>
-
-                      {/* یک آیکون فلش کوچک برای زیبایی بیشتر دراپ‌داون */}
                       <div className="absolute left-4 top-3 pointer-events-none text-gray-400">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -626,16 +612,31 @@ export default function Register() {
               )}
             </div>
 
-            <div className="pt-6 border-t border-gray-100">
+            {/* ================= دکمه‌های پایانی فرم و دکمه کارت RFID ================= */}
+            <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              
+              {/* 👈 دکمه موقت صدور کارت هوشمند RFID (فقط برای نقش بیمار نمایش داده می‌شود) */}
+              {role === "Patient" ? (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gray-50 text-gray-400 border border-gray-200 px-5 py-3 rounded-xl text-sm font-bold cursor-not-allowed"
+                  title="سرویس صدور کارت RFID به زودی فعال می‌شود"
+                >
+                  <CreditCard size={18} />
+                  پرداخت و صدور کارت RFID (بزودی)
+                </button>
+              ) : (
+                <div></div> // یک دیو خالی برای حفظ چینش دکمه تکمیل ثبت‌نام در سمت چپ
+              )}
+
               <button
                 type="submit"
-                className={`w-full md:w-auto md:min-w-50 float-left py-3 px-6 rounded-xl text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer bg-gadget-dark hover:bg-gadget-dark/90 text-white
-                `}
+                className="w-full sm:w-auto sm:min-w-50 py-3 px-6 rounded-xl text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer bg-gadget-dark hover:bg-gadget-dark/90 text-white"
               >
                 تکمیل ثبت‌نام
                 <ArrowRight size={18} />
               </button>
-              <div className="clear-both"></div>
             </div>
           </form>
 
@@ -648,7 +649,6 @@ export default function Register() {
             >
               وارد شوید
             </Link>
-            {/* 👈 لینک کمکی اضافه شده برای هدایت مدیران کلینیک */}
             <div className="mt-6 pt-6 border-t border-gray-100">
               <p className="text-sm text-gray-500 mb-3">
                 آیا نماینده یک بیمارستان یا کلینیک هستید؟
