@@ -22,6 +22,7 @@ import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import FileUpload from "../components/FileUpload";
+import DoctorAvatar from "../components/DoctorAvatar";
 
 interface DoctorInfo {
   _id: string;
@@ -65,10 +66,6 @@ export default function Profile() {
     avatar: "",
   });
 
-  // 👈 استیت جدید برای نگهداری آدرس تصویر دریافتی از سرور (بای‌دیفالت خالی)
-  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string>("");
-  const [loadingAvatar, setLoadingAvatar] = useState<boolean>(false);
-
   const [clinicDocs, setClinicDocs] = useState({
     establishmentLicenseFile: "",
     exploitationLicenseFile: "",
@@ -102,41 +99,6 @@ export default function Profile() {
       });
     }
   }, [userProfile]);
-
-  // 👈 افکت جدید: هر زمان نام فایل آواتار تغییر کرد، آن را از سرور بگیر و تبدیل به عکس قابل نمایش کن
-  useEffect(() => {
-    let objectUrl = "";
-
-    if (formData.avatar) {
-      const fetchAvatarFile = async () => {
-        try {
-          setLoadingAvatar(true);
-          const response = await api.post(
-            "/recive/api/reciveListFile",
-            { minioObjectName: formData.avatar },
-            { responseType: "blob" }, // دریافت به صورت باینری
-          );
-
-          const blob = new Blob([response.data]);
-          objectUrl = URL.createObjectURL(blob); // ساخت لینک موقت مرورگر
-          setAvatarPreviewUrl(objectUrl);
-        } catch (err) {
-          console.error("خطا در دریافت فایل عکس از سرور", err);
-        } finally {
-          setLoadingAvatar(false);
-        }
-      };
-
-      fetchAvatarFile();
-    } else {
-      setAvatarPreviewUrl("");
-    }
-
-    // پاکسازی حافظه هنگام Unmount شدن کامپوننت
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [formData.avatar]);
 
   useEffect(() => {
     if (userRole === "Patient" && userProfile?._id) {
@@ -401,23 +363,11 @@ export default function Profile() {
               {userRole === "Doctor" && (
                 <div className="flex flex-col md:flex-row items-center gap-6 bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mb-6">
                   <div className="relative shrink-0">
-                    <div className="w-24 h-24 rounded-full border-4 border-white shadow-md bg-gadget-light/10 flex items-center justify-center overflow-hidden text-gadget-light relative">
-                      {loadingAvatar ? (
-                        <Loader2
-                          className="animate-spin text-gadget-light"
-                          size={24}
-                        />
-                      ) : avatarPreviewUrl ? (
-                        // 👈 نمایش فایل باینری واقعی لود شده از سرور
-                        <img
-                          src={avatarPreviewUrl}
-                          alt="پروفایل پزشک"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User size={40} strokeWidth={1.5} />
-                      )}
-                    </div>
+                    <DoctorAvatar
+                      imageProfile={formData.avatar}
+                      firstName={formData.firstName}
+                      className="w-24 h-24 border-4 border-white shadow-md text-3xl shrink-0"
+                    />
                   </div>
                   <div className="flex-1 w-full text-center md:text-right">
                     <h3 className="font-bold text-gray-700 text-sm mb-1">

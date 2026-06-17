@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
-import api from "../services/api"; // 👈 اضافه شدن ایمپورت api برای دریافت عکس
 import {
   Home,
   Stethoscope,
@@ -14,7 +12,6 @@ import {
   Search,
   Compass,
   Stamp,
-  User,
   X,
   LogIn,
   UserPlus,
@@ -23,10 +20,10 @@ import {
   CalendarDays,
   Users,
   FlaskConical,
-  Wrench,
-  Loader2 // 👈 اضافه شدن لودر
+  Wrench
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
+import DoctorAvatar from "./DoctorAvatar"; // 👈 ایمپورت کامپوننت عکس پروفایل
 
 const menuItems = [
   { key: "home", path: "/dashboard", icon: Home, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
@@ -56,10 +53,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation();
   const { isLoggedIn, userRole, logout, userProfile } = useAuth();
   
-  // 👈 استیت‌های مربوط به دریافت و نمایش آواتار
-  const [avatarUrl, setAvatarUrl] = useState<string>("");
-  const [loadingAvatar, setLoadingAvatar] = useState<boolean>(false);
-
   const currentRole = isLoggedIn ? userRole : "guest";
 
   const filteredMenuItems = menuItems.filter((item) => {
@@ -78,39 +71,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         return "کاربر سامانه";
     }
   };
-
-  // 👈 افکت برای دریافت باینری عکس پروفایل از سرور
-  useEffect(() => {
-    let objectUrl = "";
-    
-    if (userProfile?.imageProfile) {
-      const fetchAvatar = async () => {
-        try {
-          setLoadingAvatar(true);
-          const response = await api.post(
-            "/recive/api/reciveListFile",
-            { minioObjectName: userProfile.imageProfile },
-            { responseType: "blob" }
-          );
-          const blob = new Blob([response.data]);
-          objectUrl = URL.createObjectURL(blob);
-          setAvatarUrl(objectUrl);
-        } catch (err) {
-          console.error("خطا در دریافت عکس سایدبار", err);
-        } finally {
-          setLoadingAvatar(false);
-        }
-      };
-
-      fetchAvatar();
-    } else {
-      setAvatarUrl("");
-    }
-
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [userProfile?.imageProfile]);
 
   return (
     <>
@@ -181,20 +141,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   className="flex items-center gap-3 mb-2 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer group"
                   title="مشاهده و ویرایش پروفایل"
                 >
-                  {/* 👈 رندر هوشمند دایره پروفایل */}
-                  <div className="w-10 h-10 bg-gadget-light/10 text-gadget-light rounded-lg flex items-center justify-center font-bold text-sm shrink-0 group-hover:scale-105 transition-transform overflow-hidden relative">
-                    {loadingAvatar ? (
-                      <Loader2 size={16} className="animate-spin text-gadget-light" />
-                    ) : avatarUrl ? (
-                      <img src={avatarUrl} alt="پروفایل" className="w-full h-full object-cover" />
-                    ) : userRole === "MedicalCenter" && userProfile?.centerName ? (
-                      userProfile.centerName[0]
-                    ) : userProfile?.firstName ? (
-                      userProfile.firstName[0]
-                    ) : (
-                      <User size={20} />
-                    )}
-                  </div>
+                  {/* 👈 استفاده از کامپوننت دایره پروفایل (DoctorAvatar) */}
+                  <DoctorAvatar 
+                    imageProfile={userProfile?.imageProfile} 
+                    firstName={userRole === "MedicalCenter" ? userProfile?.centerName : userProfile?.firstName} 
+                    className="w-10 h-10 text-sm group-hover:scale-105 transition-transform" 
+                  />
 
                   <div className="overflow-hidden">
                     <h4 className="text-sm font-bold text-gray-800 truncate group-hover:text-gadget-light transition-colors">

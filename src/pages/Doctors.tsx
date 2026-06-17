@@ -12,7 +12,6 @@ import {
   X,
   Calendar,
   AlignRight,
-  User,
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -20,6 +19,7 @@ import toast from "react-hot-toast";
 import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
+import DoctorAvatar from "../components/DoctorAvatar"; // 👈 ایمپورت کامپوننت مستقل عکس پزشک
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 
@@ -31,78 +31,13 @@ interface Doctor {
   clinicAddress: string;
   clinicPhone: string;
   medicalCouncilCode: string;
-  imageProfile?: string; // 👈 فیلد عکس پروفایل اضافه شد
+  imageProfile?: string;
 }
 
 interface Slot {
   startTime: string;
   endTime: string;
 }
-
-// =====================================================================
-// 👈 کامپوننت هوشمند برای مدیریت دانلود و نمایش عکس هر پزشک به صورت مجزا
-// =====================================================================
-const DoctorAvatar = ({
-  imageProfile,
-  firstName,
-  className = "w-14 h-14 text-xl",
-}: {
-  imageProfile?: string;
-  firstName: string;
-  className?: string;
-}) => {
-  const [avatarUrl, setAvatarUrl] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-
-  useEffect(() => {
-    let objectUrl = "";
-
-    if (imageProfile) {
-      const fetchAvatar = async () => {
-        try {
-          setLoading(true);
-          const response = await api.post(
-            "/recive/api/reciveListFile",
-            { minioObjectName: imageProfile },
-            { responseType: "blob" }
-          );
-          const blob = new Blob([response.data]);
-          objectUrl = URL.createObjectURL(blob);
-          setAvatarUrl(objectUrl);
-        } catch (err) {
-          console.error("خطا در دریافت عکس پزشک", err);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchAvatar();
-    } else {
-      setAvatarUrl("");
-    }
-
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [imageProfile]);
-
-  return (
-    <div
-      className={`${className} rounded-2xl flex items-center justify-center font-bold shadow-sm shrink-0 overflow-hidden bg-linear-to-br from-gadget-light to-[#1f8c87] text-white`}
-    >
-      {loading ? (
-        <Loader2 className="animate-spin opacity-70" size={20} />
-      ) : avatarUrl ? (
-        <img src={avatarUrl} alt={firstName} className="w-full h-full object-cover" />
-      ) : firstName ? (
-        firstName[0]
-      ) : (
-        <User size={20} />
-      )}
-    </div>
-  );
-};
-// =====================================================================
 
 export default function Doctors() {
   const { isLoggedIn } = useAuth();
@@ -306,7 +241,7 @@ export default function Doctors() {
                 className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col h-full group"
               >
                 <div className="flex items-center gap-4 mb-5 border-b border-gray-100 pb-4">
-                  {/* 👈 استفاده از کامپوننت هوشمند آواتار */}
+                  {/* 👈 استفاده از کامپوننت هوشمند آواتار وارد شده */}
                   <DoctorAvatar
                     imageProfile={doctor.imageProfile}
                     firstName={doctor.firstName}
