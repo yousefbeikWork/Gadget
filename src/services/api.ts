@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // آدرس پایه بک‌اند شما
-const API_URL = "http://localhost:5000";
+const API_URL = "http://109.122.250.250:5000/";
 
 // ساخت یک نمونه (Instance) از عکسویس
 const api = axios.create({

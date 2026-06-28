@@ -1,20 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;200;300;400;500;600;700;800;900&display=swap');
+/* ۱. ایمپورت گوگل پاک شد */
 @import "tailwindcss";
 
+/* ۲. معرفی فونت لوکال */
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-RD-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap; /* برای جلوگیری از نامرئی شدن متن قبل از لود فونت */
+}
+
+/* ۳. تنظیمات تم تیلویند */
 @theme {
   --color-gadget-dark: #0f6d6d;
   --color-gadget-light: #29b6b0;
   --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
-
 }
 
-/* @layer base {
-
-  html,
-  body {
-    font-family: var(--font-sans);
-  }
-} */
+html,
+body {
+  font-family: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
+}
 
 /* استایل‌دهی مدرن به نوار اسکرول فقط برای دسکتاپ (دستگاه‌های دارای موس) */
 @media (hover: hover) and (pointer: fine) {
