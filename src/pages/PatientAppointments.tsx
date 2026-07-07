@@ -7,8 +7,8 @@ import {
   Search,
   Loader2,
   CalendarX2,
-  CheckCircle2,
-  Clock4,
+  // CheckCircle2,
+  // Clock4,
   CreditCard,
 } from "lucide-react";
 import api from "../services/api";
@@ -73,33 +73,33 @@ export default function PatientAppointments() {
     fetchAppointments(filterDate);
   }, [filterDate]);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "CONFIRMED":
-        return (
-          <span className="flex items-center gap-1 bg-green-50 text-green-600 px-3 py-1 rounded-lg text-xs font-bold border border-green-100">
-            <CheckCircle2 size={14} />
-            تایید شده
-          </span>
-        );
-      case "PENDING":
-        return (
-          <span className="flex items-center gap-1 bg-orange-50 text-orange-600 px-3 py-1 rounded-lg text-xs font-bold border border-orange-100">
-            <Clock4 size={14} />
-            در انتظار تایید
-          </span>
-        );
-      case "CANCELLED":
-        return (
-          <span className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1 rounded-lg text-xs font-bold border border-red-100">
-            <CalendarX2 size={14} />
-            لغو شده
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
+  // const getStatusBadge = (status: string) => {
+  //   switch (status) {
+  //     case "CONFIRMED":
+  //       return (
+  //         <span className="flex items-center gap-1 bg-green-50 text-green-600 px-3 py-1 rounded-lg text-xs font-bold border border-green-100">
+  //           <CheckCircle2 size={14} />
+  //           تایید شده
+  //         </span>
+  //       );
+  //     case "PENDING":
+  //       return (
+  //         <span className="flex items-center gap-1 bg-orange-50 text-orange-600 px-3 py-1 rounded-lg text-xs font-bold border border-orange-100">
+  //           <Clock4 size={14} />
+  //           در انتظار تایید
+  //         </span>
+  //       );
+  //     case "CANCELLED":
+  //       return (
+  //         <span className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1 rounded-lg text-xs font-bold border border-red-100">
+  //           <CalendarX2 size={14} />
+  //           لغو شده
+  //         </span>
+  //       );
+  //     default:
+  //       return null;
+  //   }
+  // };
 
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);

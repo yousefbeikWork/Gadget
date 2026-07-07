@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Stethoscope, Building2, Lock, ArrowRight } from "lucide-react";
+import { /*User, Stethoscope, Building2,*/ Lock, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -10,7 +10,7 @@ type Role = "patient" | "doctor" | "center";
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [role, setRole] = useState<Role>("patient");
+  const [role, /*setRole*/] = useState<Role>("patient");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
