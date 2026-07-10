@@ -21,6 +21,15 @@ interface Manager {
   mobile?: string;
   nationalId?: string;
 }
+interface TestItem {
+  _id?: string;
+  testName: string;
+  testCode: string;
+  department: string;
+  price: number;
+  isAvailable: boolean;
+  preparationInstructions?: string;
+}
 interface UserProfile {
   _id?: string;
   firstName: string;
@@ -29,20 +38,22 @@ interface UserProfile {
   mobile?: string;
   age?: number;
   nationalId?: string;
-  imageProfile?: string; // 👈 فیلد جدید برای نگهداری لینک عکس پروفایل
+  imageProfile?: string;
+
   // فیلدهای مخصوص پزشک
   Expertise?: string;
   clinicAddress?: string;
   orgAddress?: string;
   clinicPhone?: string;
   medicalCouncilCode?: string;
+
   // فیلدهای مخصوص بیمار
   fatherName?: string;
   gender?: "MALE" | "FEMALE" | string;
   maritalStatus?: "SINGLE" | "MARRIED" | string;
-  // قیم بیمار
   guardian?: Guardian;
-  // فیلدهای مخصوص کلینیک (MedicalCenter)
+
+  // فیلدهای مشترک کلینیک و آزمایشگاه (مراکز)
   centerName?: string;
   centerType?: string;
   licenseCode?: string;
@@ -54,6 +65,13 @@ interface UserProfile {
   specialty?: string;
   isActive?: boolean;
   manager?: Manager;
+
+  // 👈 فیلدهای اختصاصی آزمایشگاه
+  otherSpecialties?: string[];
+  activeDepartments?: string[];
+  specialFacilities?: string[];
+  availableTests?: TestItem[];
+  laboratorImages?: string[];
 }
 
 interface AuthContextType {

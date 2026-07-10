@@ -20,28 +20,136 @@ import {
   CalendarDays,
   Users,
   FlaskConical,
-  Wrench
+  Wrench,
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
-import DoctorAvatar from "./DoctorAvatar"; // 👈 ایمپورت کامپوننت عکس پروفایل
+import DoctorAvatar from "./DoctorAvatar";
 
+// 👈 هماهنگ‌سازی دقیق دسترسی‌ها با App.tsx
 const menuItems = [
-  { key: "home", path: "/dashboard", icon: Home, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
-  { key: "schedule", path: "/schedule", icon: Calendar, allowedRoles: ["Doctor", "MedicalCenter"] },
-  { key: "myAppointments", path: "/my-appointments", icon: CalendarDays, allowedRoles: ["Patient","Doctor"] },
-  { key: "myDoctors", path: "/clinic-doctors", icon: Stethoscope, allowedRoles: ["MedicalCenter"] },
-  { key: "patients", path: "/patients", icon: Users, allowedRoles: ["Doctor", "MedicalCenter"] },
-  { key: "doctors", path: "/doctors", icon: Stethoscope, allowedRoles: ["Patient", "Doctor", "guest"] },
-  { key: "hospitals", path: "/hospitals", icon: Building2, allowedRoles: ["Patient", "Doctor", "guest"] },
-  { key: "clinics", path: "/clinics", icon: Hospital, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
-  { key: "laboratories", path: "/laboratories", icon: FlaskConical, allowedRoles: ["Patient", "Doctor", "guest"] },
-  { key: "calibration", path: "/calibration", icon: Wrench, allowedRoles: ["MedicalCenter"] },
-  { key: "airplanes", path: "/flights", icon: Plane, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
-  { key: "travel", path: "/travels", icon: Map, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
-  { key: "leader", path: "/leaders", icon: Compass, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
-  { key: "visa", path: "/visas", icon: Stamp, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
-  { key: "guides", path: "/guide", icon: List, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
-  { key: "search", path: "/search", icon: Search, allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"] },
+  {
+    key: "home",
+    path: "/dashboard",
+    icon: Home,
+    allowedRoles: [
+      "Patient",
+      "Doctor",
+      "MedicalCenter",
+      "laboratorCenter",
+      "Leader",
+      "guest",
+    ],
+  },
+  {
+    key: "schedule",
+    path: "/schedule",
+    icon: Calendar,
+    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter"],
+  },
+  {
+    key: "myAppointments",
+    path: "/my-appointments",
+    icon: CalendarDays,
+    allowedRoles: ["Patient", "Doctor"],
+  },
+  {
+    key: "myDoctors",
+    path: "/clinic-doctors",
+    icon: Stethoscope,
+    allowedRoles: ["MedicalCenter"],
+  },
+  {
+    key: "patients",
+    path: "/patients",
+    icon: Users,
+    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter"],
+  },
+  {
+    key: "doctors",
+    path: "/doctors",
+    icon: Stethoscope,
+    allowedRoles: ["Patient", "Leader", "guest"],
+  },
+  {
+    key: "hospitals",
+    path: "/hospitals",
+    icon: Building2,
+    allowedRoles: ["Patient", "Leader", "guest", "Doctor"],
+  },
+  {
+    key: "clinics",
+    path: "/clinics",
+    icon: Hospital,
+    allowedRoles: ["Patient", "Leader", "guest", "Doctor"],
+  },
+  {
+    key: "laboratories",
+    path: "/laboratories",
+    icon: FlaskConical,
+    allowedRoles: ["Patient", "Leader", "guest"], // آزمایشگاه عمومی
+  },
+  {
+    key: "myLaboratories",
+    path: "/Collaborating-lab",
+    icon: FlaskConical,
+    allowedRoles: ["laboratorCenter"], // 👈 اختصاصی برای خود آزمایشگاه
+  },
+  {
+    key: "calibration",
+    path: "/calibration",
+    icon: Wrench,
+    allowedRoles: ["MedicalCenter", "laboratorCenter"],
+  },
+  {
+    key: "airplanes",
+    path: "/flights",
+    icon: Plane,
+    allowedRoles: ["Patient", "Leader", "guest"],
+  },
+  {
+    key: "travel",
+    path: "/travels",
+    icon: Map,
+    allowedRoles: ["MedicalCenter", "Leader", "guest", "Patient"], // 👈 فقط کلینیک و لیدر
+  },
+  {
+    key: "leader",
+    path: "/leaders",
+    icon: Compass,
+    allowedRoles: ["MedicalCenter", "guest", "Patient"], // 👈 فقط کلینیک
+  },
+  {
+    key: "visa",
+    path: "/visas",
+    icon: Stamp,
+    allowedRoles: ["Patient", "Leader", "guest"],
+  },
+  {
+    key: "guides",
+    path: "/guide",
+    icon: List,
+    allowedRoles: [
+      "Patient",
+      "Doctor",
+      "MedicalCenter",
+      "laboratorCenter",
+      "Leader",
+      "guest",
+    ],
+  },
+  {
+    key: "search",
+    path: "/search",
+    icon: Search,
+    allowedRoles: [
+      "Patient",
+      "Doctor",
+      "MedicalCenter",
+      "laboratorCenter",
+      "Leader",
+      "guest",
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -52,9 +160,10 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation();
   const { isLoggedIn, userRole, logout, userProfile } = useAuth();
-  
+
   const currentRole = isLoggedIn ? userRole : "guest";
 
+  // فیلتر کردن منوها بر اساس نقش کاربر
   const filteredMenuItems = menuItems.filter((item) => {
     return item.allowedRoles.includes(currentRole as string);
   });
@@ -67,6 +176,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         return "بیمار";
       case "MedicalCenter":
         return "مرکز درمانی";
+      case "laboratorCenter":
+        return "مرکز آزمایشگاهی";
+      case "Leader": // 👈 نقش لیدر اضافه شد
+        return "لیدر (راهنما)";
       default:
         return "کاربر سامانه";
     }
@@ -106,7 +219,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <NavLink
                   key={index}
                   to={item.path}
-                  onClick={onClose} 
+                  onClick={onClose}
                   className="flex items-center gap-4 px-6 py-2 md:py-0 cursor-pointer group transition-all duration-300 md:hover:scale-105 rtl:origin-right ltr:origin-left"
                 >
                   {({ isActive }) => (
@@ -120,7 +233,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <h3
                           className={`text-sm transition-colors ${isActive ? "font-bold text-gadget-dark" : "font-medium text-gray-600 group-hover:text-gadget-dark"}`}
                         >
-                          {t(item.key)} 
+                          {/* 👈 مدیریت استثنائات نام‌گذاری (آزمایشگاه همکار) */}
+                          {item.key === "myLaboratories"
+                            ? "آزمایشگاه‌های همکار"
+                            : t(item.key)}
                         </h3>
                       </div>
                     </>
@@ -142,15 +258,21 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   title="مشاهده و ویرایش پروفایل"
                 >
                   {/* 👈 استفاده از کامپوننت دایره پروفایل (DoctorAvatar) */}
-                  <DoctorAvatar 
-                    imageProfile={userProfile?.imageProfile} 
-                    firstName={userRole === "MedicalCenter" ? userProfile?.centerName : userProfile?.firstName} 
-                    className="w-10 h-10 text-sm group-hover:scale-105 transition-transform" 
+                  <DoctorAvatar
+                    imageProfile={userProfile?.imageProfile}
+                    firstName={
+                      userRole === "MedicalCenter" ||
+                      userRole === "laboratorCenter" // 👈 شرط آزمایشگاه اضافه شد
+                        ? userProfile?.centerName
+                        : userProfile?.firstName
+                    }
+                    className="w-10 h-10 text-sm group-hover:scale-105 transition-transform shrink-0"
                   />
 
                   <div className="overflow-hidden">
                     <h4 className="text-sm font-bold text-gray-800 truncate group-hover:text-gadget-light transition-colors">
-                      {userRole === "MedicalCenter"
+                      {userRole === "MedicalCenter" ||
+                      userRole === "laboratorCenter" // 👈 شرط آزمایشگاه اضافه شد
                         ? userProfile?.centerName
                         : userProfile
                           ? `${userProfile.firstName || ""} ${userProfile.lastName || ""}`

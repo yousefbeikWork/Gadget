@@ -12,7 +12,7 @@ import ClinicRegisterDocs from "./pages/ClinicRegisterDocs";
 
 // ایمپورت صفحات اختصاصی سیستم
 import Home from "./pages/Home";
-import Profile from "./pages/Profile";
+// import Profile from "./pages/Profile";
 import ServicesDashboard from "./pages/ServicesDashboard";
 import Doctors from "./pages/Doctors";
 import Clinics from "./pages/Clinics";
@@ -21,6 +21,8 @@ import ScheduleManagement from "./pages/ScheduleManagement";
 import PatientAppointments from "./pages/PatientAppointments";
 import Patients from "./pages/Patients";
 import HealthRecords from "./pages/HealthRecords";
+import Profile from "./pages/Profile/";
+import Laboratories from "./pages/Laboratories";
 
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div
@@ -37,7 +39,7 @@ function App() {
       <BrowserRouter>
         <Toaster position="top-center" />
         <Routes>
-          {/* ================= مسیرهای عمومی (بدون نیاز به لاگین) ================= */}
+          {/* مسیرهای عمومی */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/register-clinic" element={<ClinicRegister />} />
@@ -46,21 +48,14 @@ function App() {
             element={<ClinicRegisterDocs />}
           />
 
-          {/* ================= مسیرهای اصلی داخل داشبورد ================= */}
           <Route element={<DashboardLayout />}>
-            {/* صفحه فرود یا لندینگ پیج اصلی سیستم */}
             <Route path="/" element={<Home />} />
 
-            {/* ۱. دسترسی کاملاً عمومی (مهمان + تمام کاربران لاگین شده) */}
+            {/* روت‌های عمومی (همه) */}
             <Route
-              element={
-                <ProtectedRoute
-                  allowedRoles={["Patient", "Doctor", "MedicalCenter", "guest"]}
-                />
-              }
+              element={<ProtectedRoute allowedRoles={["guest", "Patient"]} />}
             >
-              <Route path="/dashboard" element={<ServicesDashboard />} />
-              <Route path="/clinics" element={<Clinics />} />
+              <Route path="/laboratories" element={<Laboratories />} />
               <Route
                 path="/flights"
                 element={<PlaceholderPage title="هواپیما" />}
@@ -69,25 +64,39 @@ function App() {
                 path="/travels"
                 element={<PlaceholderPage title="سفر" />}
               />
-              <Route
-                path="/leaders"
-                element={<PlaceholderPage title="لیدر" />}
-              />
               <Route path="/visas" element={<PlaceholderPage title="ویزا" />} />
+            </Route>
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    "Patient",
+                    "Doctor",
+                    "MedicalCenter",
+                    "Leader",
+                    "laboratorCenter",
+                    "guest",
+                  ]}
+                />
+              }
+            >
+              <Route path="/dashboard" element={<ServicesDashboard />} />
+              <Route
+                path="/search"
+                element={<PlaceholderPage title="جستجو" />}
+              />
               <Route
                 path="/guide"
                 element={<PlaceholderPage title="راهنما" />}
               />
-              <Route
-                path="/search"
-                element={<PlaceholderPage title="جستوجو" />}
-              />
             </Route>
 
-            {/* ۲. دسترسی عمومی محدود (مهمان + بیمار + پزشک) */}
+            {/* روت‌های پزشک و لیدر و بیمار و مهمان */}
             <Route
               element={
-                <ProtectedRoute allowedRoles={["Patient", "Doctor", "guest"]} />
+                <ProtectedRoute
+                  allowedRoles={["Patient", "Doctor", "Leader", "guest"]}
+                />
               }
             >
               <Route path="/doctors" element={<Doctors />} />
@@ -95,27 +104,15 @@ function App() {
                 path="/hospitals"
                 element={<PlaceholderPage title="بیمارستان" />}
               />
-              <Route
-                path="/laboratories"
-                element={<PlaceholderPage title="آزمایشگاه" />}
-              />
+              <Route path="/clinics" element={<Clinics />} />
             </Route>
 
-            {/* ۳. دسترسی پایه برای همه کاربران لاگین شده (بدون مهمان) */}
+            {/* روت‌های تخصصی (پزشک، مرکز، آزمایشگاه) */}
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={["Patient", "Doctor", "MedicalCenter"]}
+                  allowedRoles={["Doctor", "MedicalCenter", "laboratorCenter"]}
                 />
-              }
-            >
-              <Route path="/profile" element={<Profile />} />
-            </Route>
-
-            {/* ۴. دسترسی مشترک فقط برای (پزشک و کلینیک) */}
-            <Route
-              element={
-                <ProtectedRoute allowedRoles={["Doctor", "MedicalCenter"]} />
               }
             >
               <Route path="/patients" element={<Patients />} />
@@ -123,27 +120,72 @@ function App() {
               <Route path="/schedule" element={<ScheduleManagement />} />
             </Route>
 
-            {/* ۵. دسترسی انحصاری فقط برای (بیمار) */}
-            <Route element={<ProtectedRoute allowedRoles={["Patient","Doctor"]} />}>
-              <Route
-                path="/my-appointments"
-                element={<PatientAppointments />}
-              />
-            </Route>
-
-            {/* ۶. دسترسی انحصاری فقط برای (کلینیک / مرکز درمانی) */}
+            {/* روت‌های مرکز درمانی و آزمایشگاه */}
             <Route
-              element={<ProtectedRoute allowedRoles={["MedicalCenter"]} />}
+              element={
+                <ProtectedRoute
+                  allowedRoles={["MedicalCenter", "laboratorCenter"]}
+                />
+              }
             >
-              <Route path="/clinic-doctors" element={<ClinicDoctors />} />
               <Route
                 path="/calibration"
                 element={<PlaceholderPage title="کالیبراسیون" />}
               />
             </Route>
+
+            {/* روت‌های اختصاصی */}
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={["MedicalCenter", "guest", "Patient"]}
+                />
+              }
+            >
+              <Route
+                path="/leaders"
+                element={<PlaceholderPage title="لیدر" />}
+              />
+              <Route path="/clinic-doctors" element={<ClinicDoctors />} />
+            </Route>
+
+            <Route
+              element={<ProtectedRoute allowedRoles={["laboratorCenter"]} />}
+            >
+              <Route
+                path="/Collaborating-lab"
+                element={<PlaceholderPage title="آزمایشگاه‌های همکار" />}
+              />
+            </Route>
+
+            {/* پروفایل */}
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    "Patient",
+                    "Doctor",
+                    "MedicalCenter",
+                    "Leader",
+                    "laboratorCenter",
+                  ]}
+                />
+              }
+            >
+              <Route path="/profile" element={<Profile />} />
+            </Route>
+
+            {/* نوبت‌ها */}
+            <Route
+              element={<ProtectedRoute allowedRoles={["Patient", "Doctor"]} />}
+            >
+              <Route
+                path="/my-appointments"
+                element={<PatientAppointments />}
+              />
+            </Route>
           </Route>
 
-          {/* هدایت روت‌های ناشناخته به صفحه اصلی */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

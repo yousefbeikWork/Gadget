@@ -12,14 +12,33 @@ import {
   CreditCard,
   CheckSquare,
   Users,
+  Plus,
+  Trash2,
+  FlaskConical,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../services/api";
 
+interface TestItem {
+  testName: string;
+  testCode: string;
+  department: string;
+  price: string;
+  isAvailable: boolean;
+  preparationInstructions: string;
+}
+
 export default function ClinicRegister() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-
+  const [newTest, setNewTest] = useState<TestItem>({
+    testName: "",
+    testCode: "",
+    department: "",
+    price: "",
+    isAvailable: true,
+    preparationInstructions: "",
+  });
   // استیت جامع منطبق بر ساختار API
   const [formData, setFormData] = useState({
     mobile: "",
@@ -34,6 +53,7 @@ export default function ClinicRegister() {
     activeStaffCount: "",
     specialty: "",
     agreement: false,
+    availableTests: [] as TestItem[],
     manager: {
       firstName: "",
       lastName: "",
@@ -100,7 +120,33 @@ export default function ClinicRegister() {
       },
     }));
   };
+  // 👈 توابع مدیریت تست‌های آزمایشگاهی
+  const handleAddTest = () => {
+    if (!newTest.testName.trim()) {
+      toast.error("وارد کردن نام تست (Test Name) الزامی است.");
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      availableTests: [...prev.availableTests, newTest],
+    }));
+    // ریست کردن فرم تست موقت
+    setNewTest({
+      testName: "",
+      testCode: "",
+      department: "",
+      price: "",
+      isAvailable: true,
+      preparationInstructions: "",
+    });
+  };
 
+  const handleRemoveTest = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      availableTests: prev.availableTests.filter((_, i) => i !== index),
+    }));
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -118,6 +164,11 @@ export default function ClinicRegister() {
     try {
       // آماده‌سازی دیتای نهایی برای سرور
       const payload = {
+        // تعیین هوشمند نقش بر اساس نوع مرکز
+        role:
+          formData.centerType === "Laboratory"
+            ? "LaboratoryCenter"
+            : "MedicalCenter",
         mobile: formData.mobile,
         password: formData.password,
         centerName: formData.centerName,
@@ -133,6 +184,15 @@ export default function ClinicRegister() {
         activeStaffCount: Number(formData.activeStaffCount) || 0,
         specialty: formData.specialty,
         agreement: formData.agreement,
+
+        // ارسال لیست تست‌ها فقط اگر آزمایشگاه بود
+        ...(formData.centerType === "Laboratory" && {
+          availableTests: formData.availableTests.map((t) => ({
+            ...t,
+            price: t.price ? Number(t.price) : 0,
+          })),
+        }),
+
         manager: {
           firstName: formData.manager.firstName,
           lastName: formData.manager.lastName,
@@ -141,17 +201,24 @@ export default function ClinicRegister() {
         },
       };
 
-      const response = await api.post("/clinic/registerClinic", payload);
+      // 👈 تشخیص هوشمند آدرس API (اندپوینت)
+      const endpoint =
+        formData.centerType === "Laboratory"
+          ? "/laboratory/registerLaboratory"
+          : "/clinic/registerClinic";
 
-      if (response.data && response.data.clinicId) {
-        // تغییر پیام و مسیر هدایت
+      // 👈 ارسال درخواست به اندپوینت انتخاب شده
+      const response = await api.post(endpoint, payload);
+
+      // (شرط بررسی را کمی منعطف‌تر کردم تا اگر API آزمایشگاه clinicId برنگرداند هم درست کار کند)
+      if (response.data) {
         toast.success(
           "ثبت‌نام اولیه با موفقیت انجام شد. لطفاً برای بارگذاری مدارک وارد حساب خود شوید.",
         );
         navigate("/login", { replace: true });
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "خطا در ثبت اطلاعات کلینیک.");
+      toast.error(err.response?.data?.message || "خطا در ثبت اطلاعات مرکز.");
     } finally {
       setLoading(false);
     }
@@ -326,7 +393,142 @@ export default function ClinicRegister() {
                 </div>
               </div>
             </div>
+            {/* --- گروه اختصاصی: لیست تست‌های آزمایشگاه --- */}
+            {formData.centerType === "Laboratory" && (
+              <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-6 animate-in fade-in slide-in-from-top-4">
+                <h3 className="text-sm font-bold text-purple-800 mb-4 flex items-center gap-2 border-b border-purple-100 pb-2">
+                  <FlaskConical size={18} />
+                  لیست تست‌ها و آزمایش‌های قابل ارائه
+                </h3>
 
+                {/* فرم افزودن تست جدید */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end bg-white p-4 rounded-xl border border-purple-100 mb-4 shadow-sm">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      نام تست *
+                    </label>
+                    <input
+                      type="text"
+                      value={newTest.testName}
+                      onChange={(e) =>
+                        setNewTest({ ...newTest, testName: e.target.value })
+                      }
+                      placeholder="مثال: CBC"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:border-purple-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      کد تست
+                    </label>
+                    <input
+                      type="text"
+                      value={newTest.testCode}
+                      onChange={(e) =>
+                        setNewTest({ ...newTest, testCode: e.target.value })
+                      }
+                      placeholder="LAB-01"
+                      dir="ltr"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:border-purple-400 text-left"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      بخش (دپارتمان)
+                    </label>
+                    <input
+                      type="text"
+                      value={newTest.department}
+                      onChange={(e) =>
+                        setNewTest({ ...newTest, department: e.target.value })
+                      }
+                      placeholder="مثال: هماتولوژی"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:border-purple-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      قیمت (تومان)
+                    </label>
+                    <input
+                      type="text"
+                      value={newTest.price}
+                      onChange={(e) =>
+                        setNewTest({
+                          ...newTest,
+                          price: onlyNumbers(e.target.value),
+                        })
+                      }
+                      placeholder="0"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:border-purple-400"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      شرایط قبل از آزمایش
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newTest.preparationInstructions}
+                        onChange={(e) =>
+                          setNewTest({
+                            ...newTest,
+                            preparationInstructions: e.target.value,
+                          })
+                        }
+                        placeholder="مثال: ۸ ساعت ناشتایی نیاز است"
+                        className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:border-purple-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddTest}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                      >
+                        <Plus size={16} /> افزودن
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* لیست تست‌های وارد شده */}
+                {formData.availableTests.length > 0 && (
+                  <div className="space-y-2 mt-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                    {formData.availableTests.map((test, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-purple-100 shadow-xs gap-3"
+                      >
+                        <div>
+                          <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                            {test.testName}{" "}
+                            <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                              {test.department || "عمومی"}
+                            </span>
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            کد: {test.testCode || "-"} | قیمت:{" "}
+                            {test.price
+                              ? Number(test.price).toLocaleString()
+                              : "0"}{" "}
+                            تومان
+                            {test.preparationInstructions &&
+                              ` | شرایط: ${test.preparationInstructions}`}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTest(index)}
+                          className="text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-colors cursor-pointer shrink-0 self-end sm:self-auto"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {/* --- گروه ۳: اطلاعات تماس مرکز --- */}
             <div className="space-y-4">
               <h3 className="text-sm font-bold text-gadget-dark flex items-center gap-2 border-b border-gray-100 pb-2">

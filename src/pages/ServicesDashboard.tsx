@@ -40,7 +40,14 @@ export default function ServicesDashboard() {
       title: "خانه",
       icon: Home,
       path: "/",
-      allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"], // مهمان دسترسی دارد
+      // 👈 دسترسی آزمایشگاه اضافه شد
+      allowedRoles: [
+        "Patient",
+        "Doctor",
+        "MedicalCenter",
+        "laboratorCenter",
+        "guest",
+      ],
       color: "bg-blue-50 text-blue-600 border-blue-100",
       description: "داشبورد اصلی و خلاصه وضعیت",
     },
@@ -49,7 +56,8 @@ export default function ServicesDashboard() {
       title: "بیماران",
       icon: Users,
       path: "/patients",
-      allowedRoles: ["Doctor", "MedicalCenter"], // مهمان دسترسی ندارد
+      // 👈 دسترسی آزمایشگاه اضافه شد
+      allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter"],
       color: "bg-emerald-50 text-emerald-600 border-emerald-100",
       description: "مدیریت و مشاهده لیست بیماران",
     },
@@ -58,7 +66,7 @@ export default function ServicesDashboard() {
       title: "پزشک",
       icon: Stethoscope,
       path: "/doctors",
-      allowedRoles: ["Patient", "Doctor", "guest"], // مهمان دسترسی دارد (برای مشاهده لیست پزشکان)
+      allowedRoles: ["Patient", "Leader", "guest"],
       color: "bg-indigo-50 text-indigo-600 border-indigo-100",
       description: "لیست پزشکان و رزرو نوبت",
     },
@@ -67,7 +75,7 @@ export default function ServicesDashboard() {
       title: "بیمارستان",
       icon: Building2,
       path: "/hospitals",
-      allowedRoles: ["Patient", "Doctor", "guest"], // مهمان دسترسی دارد
+      allowedRoles: ["Patient", "Doctor", "Leader", "guest"],
       color: "bg-rose-50 text-rose-600 border-rose-100",
       description: "مراکز درمانی و بیمارستان‌ها",
     },
@@ -76,7 +84,7 @@ export default function ServicesDashboard() {
       title: "کلینیک",
       icon: Building,
       path: "/clinics",
-      allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"], // مهمان دسترسی دارد
+      allowedRoles: ["Patient", "Doctor", "Leader", "guest"],
       color: "bg-teal-50 text-teal-600 border-teal-100",
       description: "درمانگاه‌ها و کلینیک‌های تخصصی",
     },
@@ -85,16 +93,26 @@ export default function ServicesDashboard() {
       title: "آزمایشگاه",
       icon: FlaskConical,
       path: "/laboratories",
-      allowedRoles: ["Patient", "Doctor", "guest"], // مهمان دسترسی دارد
+      // 👈 دسترسی آزمایشگاه (برای دیدن همکاران) اضافه شد
+      allowedRoles: ["Patient", "Leader", "guest"],
       color: "bg-purple-50 text-purple-600 border-purple-100",
       description: "مراکز پاتولوژی و آزمایشگاهی",
     },
+    // {
+    //   id: "myLaboratories",
+    //   title: "آزمایشگاه همکار",
+    //   icon: FlaskConical,
+    //   path: "/Collaborating-lab",
+    //   allowedRoles: ["laboratorCenter"],
+    //   color: "bg-purple-50 text-purple-600 border-purple-100",
+    //   description: "مراکز پاتولوژی و آزمایشگاهی",
+    // },
     {
       id: "calibration",
       title: "کالیبراسیون",
       icon: Wrench,
       path: "/calibration",
-      allowedRoles: ["MedicalCenter"], // مهمان دسترسی ندارد
+      allowedRoles: ["MedicalCenter", "laboratorCenter"],
       color: "bg-slate-50 text-slate-600 border-slate-200",
       description: "تنظیم و کالیبراسیون تجهیزات",
     },
@@ -103,7 +121,7 @@ export default function ServicesDashboard() {
       title: "هواپیما",
       icon: Plane,
       path: "/flights",
-      allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"], // مهمان دسترسی دارد
+      allowedRoles: ["Patient", "Leader", "guest"],
       color: "bg-sky-50 text-sky-600 border-sky-100",
       description: "رزرو بلیت هواپیما و پرواز",
     },
@@ -112,7 +130,7 @@ export default function ServicesDashboard() {
       title: "سفر",
       icon: Map,
       path: "/travels",
-      allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"], // مهمان دسترسی دارد
+      allowedRoles: ["MedicalCenter", "Leader", "guest","Patient"],
       color: "bg-amber-50 text-amber-600 border-amber-100",
       description: "خدمات گردشگری و اقامت",
     },
@@ -121,7 +139,7 @@ export default function ServicesDashboard() {
       title: "لیدر",
       icon: Flag,
       path: "/leaders",
-      allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"], // مهمان دسترسی دارد
+      allowedRoles: ["Patient", "MedicalCenter", "guest"],
       color: "bg-orange-50 text-orange-600 border-orange-100",
       description: "راهنمای تور و مترجم",
     },
@@ -130,7 +148,7 @@ export default function ServicesDashboard() {
       title: "ویزا",
       icon: FileCheck,
       path: "/visas",
-      allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"], // مهمان دسترسی دارد
+      allowedRoles: ["Patient", "Leader", "guest"],
       color: "bg-cyan-50 text-cyan-600 border-cyan-100",
       description: "خدمات اخذ ویزای درمانی",
     },
@@ -139,7 +157,15 @@ export default function ServicesDashboard() {
       title: "راهنما",
       icon: HelpCircle,
       path: "/guide",
-      allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"], // مهمان دسترسی دارد
+      // 👈 دسترسی آزمایشگاه اضافه شد
+      allowedRoles: [
+        "Patient",
+        "Doctor",
+        "MedicalCenter",
+        "laboratorCenter",
+        "guest",
+        "Leader"
+      ],
       color: "bg-gray-50 text-gray-600 border-gray-200",
       description: "پشتیبانی و راهنمای سیستم",
     },
@@ -148,15 +174,20 @@ export default function ServicesDashboard() {
       title: "جستوجو",
       icon: Search,
       path: "/search",
-      allowedRoles: ["Patient", "Doctor", "MedicalCenter", "guest"], // مهمان دسترسی دارد
+      // 👈 دسترسی آزمایشگاه اضافه شد
+      allowedRoles: [
+        "Patient",
+        "Doctor",
+        "MedicalCenter",
+        "laboratorCenter",
+        "guest",
+        "Leader"
+      ],
       color: "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100",
       description: "جستجوی جامع در سامانه",
     },
   ];
 
-  // ==========================================
-  // منطق فیلتر هوشمند: مهمان همه را می‌بیند، کاربر لاگین شده فقط روت‌های خودش را
-  // ==========================================
   const visibleServices =
     currentRole === "guest"
       ? allServices
@@ -164,11 +195,7 @@ export default function ServicesDashboard() {
           service.allowedRoles.includes(currentRole || ""),
         );
 
-  // ==========================================
-  // مدیریت کلیک روی خدمات جهت احراز هویت
-  // ==========================================
   const handleServiceNavigation = (path: string, allowedRoles: string[]) => {
-    // اگر کاربر لاگین نکرده بود و این صفحه روتِ مجاز برای مهمان نبود
     if (!isLoggedIn && !allowedRoles.includes("guest")) {
       toast.error(
         "برای استفاده از این بخش، لطفا ابتدا وارد حساب کاربری خود شوید یا ثبت‌نام کنید.",
@@ -176,8 +203,6 @@ export default function ServicesDashboard() {
       navigate("/login");
       return;
     }
-
-    // در غیر این صورت اجازه ورود داده می‌شود
     navigate(path);
   };
 
@@ -187,7 +212,6 @@ export default function ServicesDashboard() {
       dir="rtl"
     >
       <div className="max-w-7xl mx-auto">
-        {/* هدر بخش خدمات */}
         <div className="mb-8 border-b border-gray-50 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
@@ -209,11 +233,9 @@ export default function ServicesDashboard() {
           )}
         </div>
 
-        {/* گرید نمایش کارت‌های خدمات */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
           {visibleServices.map((service) => {
             const Icon = service.icon;
-            // بررسی اینکه آیا این بخش برای مهمان قفل است یا خیر
             const isLockedForGuest =
               !isLoggedIn && !service.allowedRoles.includes("guest");
 
@@ -225,26 +247,22 @@ export default function ServicesDashboard() {
                 }
                 className="group relative bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center overflow-hidden w-full outline-hidden border-none cursor-pointer"
               >
-                {/* افکت نوری پس‌زمینه در حالت هاور */}
                 <div
                   className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 ${service.color.split(" ")[0]}`}
                 ></div>
 
-                {/* آیکون وضعیت قفل برای کاربر مهمان */}
                 {isLockedForGuest && (
                   <div className="absolute top-3 left-3 bg-gray-100 text-gray-400 p-1 rounded-md text-[10px] font-bold border border-gray-200">
                     نیازمند ورود
                   </div>
                 )}
 
-                {/* آیکون خدمت */}
                 <div
                   className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 border ${service.color}`}
                 >
                   <Icon size={28} strokeWidth={1.5} />
                 </div>
 
-                {/* عنوان و توضیحات */}
                 <h3 className="font-bold text-gray-800 mb-1 text-sm md:text-base">
                   {service.title}
                 </h3>
