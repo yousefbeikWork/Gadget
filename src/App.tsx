@@ -17,7 +17,7 @@ import ServicesDashboard from "./pages/ServicesDashboard";
 import Doctors from "./pages/Doctors";
 import Clinics from "./pages/Clinics";
 import ClinicDoctors from "./pages/ClinicDoctors";
-import ScheduleManagement from "./pages/ScheduleManagement";
+import ScheduleManagement from "./pages/ScheduleManagement/";
 import PatientAppointments from "./pages/PatientAppointments";
 import Patients from "./pages/Patients";
 import HealthRecords from "./pages/HealthRecords";
@@ -60,11 +60,20 @@ function App() {
                 path="/flights"
                 element={<PlaceholderPage title="هواپیما" />}
               />
+              <Route path="/visas" element={<PlaceholderPage title="ویزا" />} />
+            </Route>
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={["guest", "Patient", "MedicalCenter", "Leader"]}
+                />
+              }
+            >
+              {" "}
               <Route
                 path="/travels"
                 element={<PlaceholderPage title="سفر" />}
               />
-              <Route path="/visas" element={<PlaceholderPage title="ویزا" />} />
             </Route>
             <Route
               element={
