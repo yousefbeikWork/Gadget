@@ -19,10 +19,11 @@ import Clinics from "./pages/Clinics";
 import ClinicDoctors from "./pages/ClinicDoctors";
 import ScheduleManagement from "./pages/ScheduleManagement/";
 import PatientAppointments from "./pages/PatientAppointments";
-import Patients from "./pages/Patients";
+import Patients from "./pages/Patients/";
 import HealthRecords from "./pages/HealthRecords";
 import Profile from "./pages/Profile/";
 import Laboratories from "./pages/Laboratories";
+import Leaders from "./pages/Leaders";
 
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div
@@ -153,7 +154,7 @@ function App() {
             >
               <Route
                 path="/leaders"
-                element={<PlaceholderPage title="لیدر" />}
+                element={<Leaders />}
               />
               <Route path="/clinic-doctors" element={<ClinicDoctors />} />
             </Route>
