@@ -16,14 +16,13 @@ import {
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 
-// تایپ پزشک داخل کلینیک
 interface ClinicDoctor {
   id: string;
   firstName: string;
@@ -46,6 +45,7 @@ interface Slot {
 }
 
 export default function Clinics() {
+  const navigate = useNavigate();
   const { userRole, isLoggedIn } = useAuth();
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -73,7 +73,7 @@ export default function Clinics() {
           headers: { accept: "application/json" },
         });
 
-        const result = await response.data;
+        const result = response.data;
 
         if (result.success && result.data) {
           const mappedData: Clinic[] = result.data.map((item: any) => ({
@@ -108,6 +108,16 @@ export default function Clinics() {
 
   // --- توابع رزرو نوبت (برای بیمار) ---
   const openBookingProcess = (clinic: Clinic) => {
+    if (!isLoggedIn) {
+      toast.error("برای رزرو نوبت ابتدا باید وارد حساب کاربری خود شوید.");
+      navigate("/login");
+      return;
+    }
+    if (userRole && userRole !== "Patient") {
+      toast.error("فقط کاربران با نقش «بیمار» قادر به رزرو نوبت هستند.");
+      return;
+    }
+
     setBookingClinic(clinic);
     setBookingStep("select-doctor");
     setBookingDoctor(null);
@@ -178,222 +188,244 @@ export default function Clinics() {
   };
 
   return (
-    <div className="flex-1 bg-white md:rounded-2xl shadow-lg p-6 md:p-8 overflow-y-auto custom-scrollbar relative">
-      {/* ================= هدر ================= */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gadget-dark">
-            مراکز درمانی و کلینیک‌ها
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {userRole === "Patient"
-              ? "کلینیک مورد نظر خود را انتخاب کرده و نوبت بگیرید"
-              : "لیست مراکز درمانی ثبت شده در سامانه"}
-          </p>
-        </div>
-      </div>
-
-      {/* ================= جستجو ================= */}
-      <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl mb-8 flex items-center max-w-md focus-within:border-gadget-light focus-within:bg-white transition-colors">
-        <div className="text-gray-400 ml-3">
-          <Search size={20} />
-        </div>
-        <input
-          type="text"
-          placeholder="جستجوی نام کلینیک یا تخصص..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full text-sm text-gray-700 bg-transparent outline-hidden"
-        />
-      </div>
-
-      {/* ================= لیست کلینیک‌ها ================= */}
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-gadget-light">
-          <Loader2 className="animate-spin mb-4" size={40} />
-          <p className="text-sm font-medium">
-            در حال دریافت اطلاعات کلینیک‌ها...
-          </p>
-        </div>
-      ) : error ? (
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl text-center text-sm font-medium border border-red-100">
-          {error}
-        </div>
-      ) : filteredClinics.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredClinics.map((clinic) => (
-            <div
-              key={clinic.id}
-              className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col h-full group"
-            >
-              <div className="flex items-center justify-between mb-5 border-b border-gray-100 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gadget-light/10 text-gadget-light rounded-xl flex items-center justify-center font-bold shadow-sm shrink-0 group-hover:scale-105 transition-transform">
-                    {clinic.name ? clinic.name[0] : <Building2 size={24} />}
-                  </div>
-                  <div>
-                    <h3
-                      className="font-bold text-md text-gray-800 line-clamp-1"
-                      title={clinic.name}
-                    >
-                      {clinic.name}
-                    </h3>
-                    <span
-                      className={`inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${clinic.status === "فعال" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}
-                    >
-                      {clinic.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 flex-1 mb-6">
-                <div className="flex items-center gap-2 text-sm">
-                  <Activity className="text-gray-400 shrink-0" size={16} />
-                  <span className="text-gray-600 font-medium truncate">
-                    {clinic.specialty}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="text-gray-400 shrink-0" size={16} />
-                  <span className="text-gray-600 font-medium" dir="ltr">
-                    {clinic.phone}
-                  </span>
-                </div>
-                <div className="flex items-start gap-2 text-sm">
-                  <MapPin className="text-gray-400 shrink-0 mt-0.5" size={16} />
-                  <span
-                    className="text-gray-600 leading-relaxed line-clamp-2 text-xs"
-                    title={clinic.address}
-                  >
-                    {clinic.address}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-auto pt-4 border-t border-gray-100">
-                {/* دکمه رزرو فقط برای بیمار و مهمان نمایش داده می‌شود */}
-                {(userRole === "Patient" ||
-                  userRole === "guest" ||
-                  userRole === "Doctor" ||
-                  !userRole) &&
-                  (isLoggedIn ? (
-                    <button
-                      onClick={() => openBookingProcess(clinic)}
-                      className="w-full flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      <CalendarDays size={16} /> مشاهده پزشکان و رزرو
-                    </button>
-                  ) : (
-                    <Link
-                      to="/login"
-                      className="w-full flex items-center justify-center gap-2 bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light py-2.5 rounded-xl text-xs font-bold transition-all"
-                    >
-                      <User size={16} /> برای رزرو وارد شوید
-                    </Link>
-                  ))}
-              </div>
+    <div
+      className="bg-white rounded-2xl md:rounded-3xl w-full h-full overflow-y-auto custom-scrollbar p-4 md:p-8"
+      dir="rtl"
+    >
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* ================= هدر و جستجو (دقیقاً هماهنگ با بقیه صفحات) ================= */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="text-gadget-dark">
+              <Building2 size={32} strokeWidth={1.5} />
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-gray-50 p-10 rounded-2xl border border-dashed border-gray-200 text-center">
-          <div className="w-16 h-16 bg-white text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-            <Building2 size={32} />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">
+                مراکز درمانی و کلینیک‌ها
+              </h1>
+              <p className="text-gray-500 text-sm mt-1">
+                {userRole === "Patient"
+                  ? "کلینیک مورد نظر خود را انتخاب کرده و نوبت بگیرید"
+                  : "لیست مراکز درمانی ثبت شده در سامانه"}
+              </p>
+            </div>
           </div>
-          <h3 className="text-lg font-bold text-gray-700 mb-1">
-            کلینیکی یافت نشد
-          </h3>
-          <p className="text-gray-500 text-sm">
-            هیچ مرکز درمانی با این مشخصات در سیستم ثبت نشده است.
-          </p>
-        </div>
-      )}
 
-      {/* ================= مودال رزرو کلینیک (دو مرحله‌ای) ================= */}
+          <div className="relative w-full md:w-87.5">
+            <input
+              type="text"
+              placeholder="جستجوی نام کلینیک یا تخصص..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white border border-gray-200 rounded-full pr-4 pl-10 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:ring-1 focus:ring-gadget-light transition-all shadow-sm text-gray-700"
+            />
+            <Search
+              className="absolute left-4 top-2.5 text-gray-400"
+              size={18}
+            />
+          </div>
+        </div>
+
+        {/* ================= لیست کارت‌ها ================= */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-gadget-light">
+            <Loader2 className="animate-spin mb-4" size={40} />
+            <p className="text-sm font-medium">
+              در حال دریافت اطلاعات کلینیک‌ها...
+            </p>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl text-center text-sm font-medium border border-red-100">
+            {error}
+          </div>
+        ) : filteredClinics.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredClinics.map((clinic) => (
+              <div
+                key={clinic.id}
+                className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
+              >
+                <div>
+                  {/* بخش بالای کارت: نام و آواتار کپسولی */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex flex-col gap-1.5">
+                      <h3
+                        className="font-bold text-gray-900 text-lg line-clamp-1"
+                        title={clinic.name}
+                      >
+                        {clinic.name}
+                      </h3>
+                      <div>
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                            clinic.status === "فعال"
+                              ? "bg-green-50 text-green-600"
+                              : "bg-red-50 text-red-600"
+                          }`}
+                        >
+                          {clinic.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* آواتار هوشمند با حرف اول نام کلینیک */}
+                    <div className="w-12 h-12 rounded-xl shrink-0 bg-gadget-dark text-white flex items-center justify-center text-xl font-bold shadow-sm">
+                      {clinic.name ? (
+                        clinic.name.charAt(0)
+                      ) : (
+                        <Building2 size={20} />
+                      )}
+                    </div>
+                  </div>
+
+                  <hr className="border-gray-100 mb-4" />
+
+                  {/* بخش میانی: مشخصات با چینش دقیق راست‌چین */}
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      <span className="font-medium text-left truncate max-w-[70%]">
+                        {clinic.specialty || "---"}
+                      </span>
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <span>تخصص:</span>
+                        <Activity size={16} strokeWidth={1.5} />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm text-gray-600">
+                      <span className="font-medium" dir="ltr">
+                        {clinic.phone || "---"}
+                      </span>
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <span>تلفن تماس:</span>
+                        <Phone size={16} strokeWidth={1.5} />
+                      </div>
+                    </div>
+
+                    <div className="flex items-start justify-between text-sm text-gray-600">
+                      <span
+                        className="font-medium text-left leading-relaxed max-w-[80%] line-clamp-2"
+                        title={clinic.address}
+                      >
+                        {clinic.address || "---"}
+                      </span>
+                      <div className="flex items-center gap-2 text-gray-500 shrink-0 mt-0.5">
+                        <MapPin size={16} strokeWidth={1.5} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* دکمه پایین کارت با دکور تمام عرض */}
+                <div className="pt-4 border-t border-gray-50">
+                  <button
+                    onClick={() => openBookingProcess(clinic)}
+                    className="w-full bg-gadget-dark hover:bg-gadget-dark/90 text-white text-center py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <CalendarDays size={16} /> مشاهده پزشکان و رزرو
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white border border-dashed border-gray-200 p-12 text-center rounded-2xl text-gray-500">
+            <Building2
+              size={48}
+              strokeWidth={1}
+              className="mx-auto mb-3 text-gray-300"
+            />
+            <p className="font-medium text-lg">کلینیکی یافت نشد.</p>
+            <p className="text-sm mt-1">
+              هیچ مرکز درمانی با این مشخصات در سیستم ثبت نشده است.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ================= مودال رزرو کلینیک شکیل با متریال دیزاین جدید ================= */}
       {bookingClinic && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-gray-700/50 backdrop-blur-sm transition-opacity"
+            onClick={closeBookingProcess}
+          ></div>
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl z-10 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border border-gray-100">
             {/* هدر مودال */}
-            <div className="bg-gadget-dark p-5 flex items-center justify-between text-white shrink-0">
+            <div className="flex items-center justify-between bg-gray-50 border-b border-gray-100 px-6 py-4">
               <div className="flex items-center gap-3">
                 {bookingStep === "select-slot" && (
                   <button
                     onClick={() => setBookingStep("select-doctor")}
-                    className="hover:bg-white/20 p-1.5 rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 hover:bg-gray-200/70 rounded-xl transition-colors cursor-pointer text-gray-600"
                   >
                     <ChevronRight size={20} />
                   </button>
                 )}
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center font-bold">
-                  {bookingClinic.name[0]}
-                </div>
                 <div>
-                  <h3 className="font-bold text-sm">{bookingClinic.name}</h3>
-                  <p className="text-xs text-gray-300">
+                  <h3 className="font-bold text-gray-800 text-base">
+                    {bookingClinic.name}
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
                     {bookingStep === "select-doctor"
-                      ? "انتخاب پزشک"
-                      : `رزرو نوبت دکتر ${bookingDoctor?.lastName}`}
+                      ? "مرحله اول: انتخاب پزشک معالج"
+                      : `مرحله دوم: رزرو نوبت دکتر ${bookingDoctor?.lastName}`}
                   </p>
                 </div>
               </div>
               <button
                 onClick={closeBookingProcess}
-                className="text-gray-300 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-lg transition-colors cursor-pointer border-none outline-hidden"
+                className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-colors cursor-pointer"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             {/* بدنه مودال */}
-            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 min-h-105">
-              {/* مرحله 1: لیست پزشکان */}
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 min-h-100">
               {bookingStep === "select-doctor" && (
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-4">
-                    پزشک مورد نظر را انتخاب کنید:
+                <div className="space-y-4">
+                  <label className="block text-sm font-bold text-gray-700">
+                    لیست پزشکان فعال کلینیک:
                   </label>
                   {bookingClinic.doctors && bookingClinic.doctors.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                       {bookingClinic.doctors.map((doc) => (
                         <div
                           key={doc.id}
                           onClick={() => selectDoctorToBook(doc)}
-                          className="flex items-center justify-between p-3 rounded-xl border border-gray-200 hover:border-gadget-light hover:bg-gadget-light/5 cursor-pointer transition-colors group"
+                          className="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 hover:border-gadget-light hover:bg-gadget-light/5 cursor-pointer transition-all group shadow-2xs"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gray-100 group-hover:bg-white text-gray-500 group-hover:text-gadget-light rounded-lg flex items-center justify-center">
+                            <div className="w-10 h-10 bg-gray-50 group-hover:bg-white text-gray-400 group-hover:text-gadget-light rounded-xl border border-gray-100 flex items-center justify-center transition-colors shadow-2xs">
                               <User size={18} />
                             </div>
-                            <div>
-                              <p className="text-sm font-bold text-gray-800">
-                                دکتر {doc.firstName} {doc.lastName}
-                              </p>
-                            </div>
+                            <p className="text-sm font-bold text-gray-700 group-hover:text-gray-900 transition-colors">
+                              دکتر {doc.firstName} {doc.lastName}
+                            </p>
                           </div>
-                          <CalendarDays
-                            size={18}
-                            className="text-gray-400 group-hover:text-gadget-light"
+                          <ChevronRight
+                            size={16}
+                            className="text-gray-400 rotate-180 group-hover:text-gadget-light transition-colors"
                           />
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                      <p className="text-sm text-gray-500 font-medium">
-                        این کلینیک هنوز پزشکی ثبت نکرده است.
+                    <div className="text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 text-gray-400">
+                      <p className="text-sm font-medium">
+                        پزک فعال مستقلی در این کلینیک یافت نشد.
                       </p>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* مرحله 2: انتخاب تاریخ و ساعت */}
               {bookingStep === "select-slot" && (
-                <div>
-                  <div className="mb-6">
+                <div className="space-y-5">
+                  <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">
-                      تاریخ مراجعه:
+                      تاریخ حضور در کلینیک:
                     </label>
                     <div className="relative">
                       <Calendar
@@ -416,9 +448,7 @@ export default function Clinics() {
                               2,
                               "0",
                             );
-
-                            const gregorianDate = `${year}-${month}-${day}`;
-                            fetchSlotsForDate(gregorianDate);
+                            fetchSlotsForDate(`${year}-${month}-${day}`);
                           } else {
                             fetchSlotsForDate("");
                           }
@@ -426,26 +456,26 @@ export default function Clinics() {
                         format="YYYY/MM/DD"
                         containerClassName="w-full"
                         inputClass="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors cursor-pointer text-gray-700"
-                        placeholder="انتخاب تاریخ از تقویم..."
+                        placeholder="انتخاب روز از تقویم..."
                       />
                     </div>
                   </div>
 
                   {loadingSlots ? (
                     <div className="flex flex-col items-center justify-center py-10 text-gadget-light">
-                      <Loader2 className="animate-spin mb-2" size={30} />
+                      <Loader2 className="animate-spin mb-2" size={26} />
                       <p className="text-xs font-medium">
-                        در حال بررسی نوبت‌های خالی...
+                        بررسی تقویم کلینیک...
                       </p>
                     </div>
                   ) : selectedDate ? (
                     availableSlots.length > 0 ? (
-                      <div className="animate-in fade-in slide-in-from-bottom-2 space-y-6">
+                      <div className="space-y-5 animate-in fade-in duration-200">
                         <div>
                           <label className="block text-sm font-bold text-gray-700 mb-3">
-                            ساعت‌های خالی:
+                            ساعت‌های ویزیت خالی:
                           </label>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-2 gap-2.5">
                             {availableSlots.map((slot, index) => {
                               const isSelected =
                                 selectedSlot?.startTime === slot.startTime;
@@ -453,16 +483,16 @@ export default function Clinics() {
                                 <button
                                   key={index}
                                   onClick={() => setSelectedSlot(slot)}
-                                  className={`py-2.5 px-2 rounded-xl text-sm font-bold transition-all outline-hidden border-none cursor-pointer ${
+                                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs ${
                                     isSelected
-                                      ? "bg-gadget-light text-white shadow-md transform scale-105"
-                                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                      ? "bg-gadget-dark text-white border-gadget-dark transform scale-[1.02]"
+                                      : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300"
                                   }`}
                                 >
-                                  <span dir="ltr">{slot.startTime}</span>{" "}
-                                  <span className="text-[10px] font-normal opacity-80 mx-0.5">
+                                  <span dir="ltr">{slot.startTime}</span>
+                                  <span className="text-[10px] font-normal mx-1 opacity-60">
                                     تا
-                                  </span>{" "}
+                                  </span>
                                   <span dir="ltr">{slot.endTime}</span>
                                 </button>
                               );
@@ -471,47 +501,39 @@ export default function Clinics() {
                         </div>
 
                         {selectedSlot && (
-                          <div className="animate-in fade-in slide-in-from-top-2">
+                          <div className="animate-in fade-in duration-200">
                             <label className="block text-sm font-bold text-gray-700 mb-2">
-                              توضیحات یا علت مراجعه (اختیاری):
+                              علت نوبت یا یادداشت (اختیاری):
                             </label>
                             <div className="relative">
                               <AlignRight
                                 className="absolute right-3 top-3 text-gray-400"
-                                size={18}
+                                size={16}
                               />
                               <textarea
                                 value={bookingNotes}
                                 onChange={(e) =>
                                   setBookingNotes(e.target.value)
                                 }
-                                placeholder="مثال: سردرد شدید دارم..."
+                                placeholder="توضیحات کوتاه برای پزشک..."
                                 rows={2}
-                                className="w-full bg-white border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light transition-colors resize-none"
-                              ></textarea>
+                                className="w-full bg-white border border-gray-200 rounded-xl pr-9 pl-4 py-2.5 text-xs focus:outline-hidden focus:border-gadget-light transition-colors resize-none shadow-2xs text-gray-700"
+                              />
                             </div>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="text-center py-8 bg-orange-50 rounded-2xl border border-orange-100">
-                        <p className="text-sm font-bold text-orange-600">
-                          نوبت خالی در این تاریخ وجود ندارد.
-                        </p>
-                        <p className="text-xs text-orange-400 mt-1">
-                          لطفاً روز دیگری را بررسی کنید.
+                      <div className="text-center py-6 bg-orange-50/60 rounded-2xl border border-orange-100">
+                        <p className="text-xs font-bold text-orange-700">
+                          هیچ نوبت خالی برای این پزشک ثبت نشده است.
                         </p>
                       </div>
                     )
                   ) : (
-                    <div className="text-center py-10 text-gray-400">
-                      <Calendar
-                        size={40}
-                        strokeWidth={1}
-                        className="mx-auto mb-2 opacity-50"
-                      />
-                      <p className="text-sm">
-                        برای مشاهده ساعت‌ها، تقویم را انتخاب کنید
+                    <div className="text-center py-8 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
+                      <p className="text-xs">
+                        لطفاً برای بارگذاری زمان‌ها یک تاریخ را انتخاب کنید.
                       </p>
                     </div>
                   )}
@@ -519,21 +541,21 @@ export default function Clinics() {
               )}
             </div>
 
-            {/* فوتر مودال (فقط در مرحله دوم) */}
+            {/* فوتر مودال */}
             {bookingStep === "select-slot" && (
-              <div className="p-5 border-t border-gray-100 bg-gray-50 shrink-0">
+              <div className="p-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
                 <button
                   disabled={!selectedSlot}
                   onClick={handleConfirmBooking}
-                  className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all outline-hidden border-none ${
+                  className={`w-full py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
                     selectedSlot
-                      ? "bg-gadget-dark hover:bg-gadget-dark/90 text-white shadow-lg cursor-pointer transform hover:-translate-y-0.5"
+                      ? "bg-gadget-dark hover:bg-gadget-dark/90 text-white shadow-md cursor-pointer"
                       : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
                 >
                   {selectedSlot
-                    ? `تایید و رزرو ساعت ${selectedSlot.startTime}`
-                    : "لطفاً یک ساعت را انتخاب کنید"}
+                    ? `تایید و ثبت نهایی رزرو ساعت ${selectedSlot.startTime}`
+                    : "انتخاب ساعت ویزیت الزامی است"}
                 </button>
               </div>
             )}

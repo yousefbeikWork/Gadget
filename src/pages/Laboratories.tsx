@@ -237,7 +237,7 @@ export default function Laboratories() {
       {isModalOpen && selectedSlot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div
-            className="absolute inset-0 bg-gadget-dark/60 backdrop-blur-sm transition-opacity"
+            className="absolute inset-0 bg-gray-700/50 backdrop-blur-sm transition-opacity"
             onClick={() => !isReserving && setIsModalOpen(false)}
           ></div>
 
