@@ -6,7 +6,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 // ایمپورت صفحات عمومی و احراز هویت
 import Login from "./pages/Login";
-import Register from "./pages/Register";
+import Register from "./pages/Register/";
 import ClinicRegister from "./pages/ClinicRegister";
 import ClinicRegisterDocs from "./pages/ClinicRegisterDocs";
 

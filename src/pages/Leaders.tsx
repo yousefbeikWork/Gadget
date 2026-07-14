@@ -9,11 +9,22 @@ import {
   UserX,
   UserCheck,
   Mail,
-  Phone
+  Phone,
+  CreditCard,
+  MapPin,
+  // Banknote,
+  Car,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Layers,
+  Palette,
+  User
 } from "lucide-react";
 import api from "../services/api";
 import toast from "react-hot-toast";
 
+// === بروزرسانی اینترفیس بر اساس دیتای جدید دیتابیس ===
 interface Leader {
   _id: string;
   firstName: string;
@@ -21,6 +32,19 @@ interface Leader {
   mobile: string;
   email?: string;
   isActive: boolean;
+  nationalId: string;
+  age: number;
+  city: string;
+  DailyPrice: number;
+  Address: string;
+  hasCar: boolean;
+  car?: {
+    brand: string;
+    model: string;
+    color: string;
+    plateNumber: string;
+    manufactureYear: number;
+  };
   createdAt?: string;
 }
 
@@ -35,7 +59,9 @@ export default function Leaders() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   
-  // استیت‌های مربوط به صفحه‌بندی
+  // استیت ذخیره آیدی کارت‌های باز شده جهت نمایش جزئیات کامل
+  const [expandedLeaderId, setExpandedLeaderId] = useState<string | null>(null);
+
   const [pagination, setPagination] = useState<PaginationInfo>({
     totalItems: 0,
     currentPage: 1,
@@ -45,11 +71,9 @@ export default function Leaders() {
   const fetchLeaders = async (page = 1, search = "") => {
     try {
       setLoading(true);
-      
-      // ساخت آدرس اندپوینت به همراه پارامترهای سرچ و صفحه‌بندی
       let url = `/users/LedearList?page=${page}&limit=10`;
       if (search) {
-        url += `&search=${search}`; // یا هر پارامتری که بک‌اند برای سرچ فامیل دریافت می‌کند
+        url += `&search=${search}`;
       }
 
       const response = await api.get(url);
@@ -70,11 +94,10 @@ export default function Leaders() {
     }
   };
 
-  // دیبانس یا تریگر کردن سرچ با تغییر استیت متنی
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       fetchLeaders(1, searchTerm);
-    }, 400); // تاخیر ۴۰۰ میلی‌ثانیه‌ای برای جلوگیری از تعداد درخواست بالا به سرور
+    }, 400);
 
     return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
@@ -83,6 +106,15 @@ export default function Leaders() {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       fetchLeaders(newPage, searchTerm);
     }
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedLeaderId(expandedLeaderId === id ? null : id);
+  };
+
+  const formatPrice = (price: number) => {
+    if (!price) return "---";
+    return new Intl.NumberFormat("fa-IR").format(price) + " تومان";
   };
 
   return (
@@ -96,14 +128,13 @@ export default function Leaders() {
               <Users size={28} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gadget-dark">مدیریت و لیست لیدرها</h1>
+              <h1 className="text-2xl font-bold text-gray-800">مدیریت و لیست لیدرها</h1>
               <p className="text-gray-500 text-sm mt-1">
-                مشاهده، جستجو و ارزیابی لیدرهای فعال در سامانه‌ی مرکزی
+                مشاهده اطلاعات هویتی، ترابری و دستمزد روزانه لیدرهای سامانه
               </p>
             </div>
           </div>
 
-          {/* سرچ بر اساس نام خانوادگی */}
           <div className="relative w-full md:w-80">
             <input
               type="text"
@@ -123,7 +154,6 @@ export default function Leaders() {
             <p className="text-sm font-medium">در حال بارگذاری لیست لیدرها...</p>
           </div>
         ) : leaders.length === 0 ? (
-          /* ================= حالت خالی بودن سیستم (Empty State) ================= */
           <div className="bg-white border border-dashed border-gray-200 p-16 text-center rounded-2xl text-gray-500 max-w-2xl mx-auto shadow-2xs">
             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 text-gray-300">
               <UserX size={32} />
@@ -134,63 +164,141 @@ export default function Leaders() {
             </p>
           </div>
         ) : (
-          /* ================= رندر کردن کارت لیدرها در صورت وجود دیتای سرور ================= */
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {leaders.map((leader) => (
-                <div
-                  key={leader._id}
-                  className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group"
-                >
-                  <div className="absolute top-0 right-0 w-1.5 h-full bg-gadget-dark opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex flex-col gap-1">
-                        <h3 className="font-bold text-gray-900 text-lg">
-                          {leader.firstName} {leader.lastName}
-                        </h3>
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold w-fit ${
-                          leader.isActive ? "bg-green-50 text-green-600 border border-green-100" : "bg-red-50 text-red-600 border border-red-100"
-                        }`}>
-                          {leader.isActive ? <UserCheck size={12} /> : <ShieldAlert size={12} />}
-                          {leader.isActive ? "حساب فعال" : "غیرفعال"}
-                        </span>
-                      </div>
-
-                      <div className="w-11 h-11 rounded-xl bg-gadget-dark/5 border border-gray-100 text-gadget-dark flex items-center justify-center text-lg font-bold">
-                        {leader.lastName.charAt(0)}
-                      </div>
-                    </div>
-
-                    <hr className="border-gray-50 mb-4" />
-
-                    <div className="space-y-2.5 mb-2">
-                      <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100/50" dir="ltr">
-                        <Phone size={14} className="text-gray-400 shrink-0" />
-                        <span className="w-full text-right font-medium">{leader.mobile}</span>
-                      </div>
-                      
-                      {leader.email && (
-                        <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100/50" dir="ltr">
-                          <Mail size={14} className="text-gray-400 shrink-0" />
-                          <span className="w-full text-right font-medium truncate">{leader.email}</span>
+            {/* ================= لیست کارت لیدرها ================= */}
+            <div className="grid grid-cols-1 gap-4">
+              {leaders.map((leader) => {
+                const isExpanded = expandedLeaderId === leader._id;
+                return (
+                  <div
+                    key={leader._id}
+                    className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs hover:shadow-sm transition-all flex flex-col relative overflow-hidden group"
+                  >
+                    <div className="absolute top-0 right-0 w-1.5 h-full bg-gadget-dark opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    
+                    {/* بخش اصلی و خلاصه کارت */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gadget-dark text-white flex items-center justify-center text-xl font-bold shrink-0">
+                          {leader.lastName ? leader.lastName.charAt(0) : "L"}
                         </div>
-                      )}
-                    </div>
-                  </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900 text-lg">
+                            {leader.firstName} {leader.lastName}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              leader.isActive ? "bg-green-50 text-green-600 border border-green-100" : "bg-amber-50 text-amber-600 border border-amber-100"
+                            }`}>
+                              {leader.isActive ? <UserCheck size={12} /> : <ShieldAlert size={12} />}
+                              {leader.isActive ? "حساب فعال" : "غیرفعال"}
+                            </span>
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-medium">
+                              شهر {leader.city}
+                            </span>
+                            <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-bold">
+                              {formatPrice(leader.DailyPrice)} / روزانه
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
-                  {leader.createdAt && (
-                    <div className="mt-4 pt-3 border-t border-gray-50 text-[11px] text-gray-400 flex justify-between items-center">
-                      <span>تاریخ عضویت:</span>
-                      <span>{new Date(leader.createdAt).toLocaleDateString("fa-IR")}</span>
+                      {/* اطلاعات تماس و دکمه باز کردن جزئیات */}
+                      <div className="flex items-center justify-between sm:justify-end gap-6 border-t sm:border-t-0 pt-3 sm:pt-0">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-600" dir="ltr">
+                            <Phone size={14} className="text-gray-400" />
+                            <span>{leader.mobile}</span>
+                          </div>
+                          {leader.email && (
+                            <div className="flex items-center gap-1.5 text-xs text-gray-400" dir="ltr">
+                              <Mail size={14} className="text-gray-400" />
+                              <span className="max-w-40 truncate">{leader.email}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => toggleExpand(leader._id)}
+                          className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 transition-colors cursor-pointer"
+                          title="نمایش جزئیات کامل"
+                        >
+                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {/* 👈 بخش جزئیات کامل (Collapse Section) */}
+                    {isExpanded && (
+                      <div className="mt-5 pt-5 border-t border-gray-100 space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
+                        
+                        {/* فیلدهای عمومی ثبتی */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <CreditCard size={16} className="text-gray-400" />
+                            <span className="text-gray-400">کد ملی:</span>
+                            <span className="font-medium" dir="ltr">{leader.nationalId || "---"}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <User size={16} className="text-gray-400" />
+                            <span className="text-gray-400">سن لیدر:</span>
+                            <span className="font-medium">{leader.age} سال</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 sm:col-span-2 md:col-span-1">
+                            <MapPin size={16} className="text-gray-400" />
+                            <span className="text-gray-400">آدرس:</span>
+                            <span className="font-medium truncate max-w-62.5" title={leader.Address}>{leader.Address || "---"}</span>
+                          </div>
+                        </div>
+
+                        {/* مشخصات خودرو ترابری (اگر خودرو دارد) */}
+                        {leader.hasCar && leader.car ? (
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                              <Car size={15} className="text-amber-500" /> اطلاعات و مشخصات فنی خودرو
+                            </h4>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                              <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-2xs">
+                                <span className="block text-[10px] text-gray-400 mb-0.5">برند خودرو</span>
+                                <span className="font-bold text-sm text-gray-700">{leader.car.brand}</span>
+                              </div>
+                              <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-2xs">
+                                <span className="block text-[10px] text-gray-400 mb-0.5">مدل خودرو</span>
+                                <span className="font-bold text-sm text-gray-700">{leader.car.model}</span>
+                              </div>
+                              <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-2xs">
+                                <span className=" text-[10px] text-gray-400 mb-0.5 flex items-center gap-1">
+                                  <Palette size={12}/> رنگ
+                                </span>
+                                <span className="font-bold text-sm text-gray-700">{leader.car.color}</span>
+                              </div>
+                              <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-2xs">
+                                <span className=" text-[10px] text-gray-400 mb-0.5 flex items-center gap-1">
+                                  <Calendar size={12}/> سال ساخت
+                                </span>
+                                <span className="font-bold text-sm text-gray-700" dir="ltr">{leader.car.manufactureYear}</span>
+                              </div>
+                              <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-2xs col-span-2 sm:col-span-1">
+                                <span className=" text-[10px] text-gray-400 mb-0.5 flex items-center gap-1">
+                                  <Layers size={12}/> شماره پلاک
+                                </span>
+                                <span className="font-bold text-xs text-gray-700" dir="ltr">{leader.car.plateNumber}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-400 bg-gray-100/50 p-3 rounded-xl border border-dashed border-gray-200">
+                            این لیدر فاقد خودروی شخصی ثبت شده جهت ترابری بیماران است.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* ================= کنترلر صفحه‌بندی (Pagination UI) ================= */}
+            {/* ================= کنترلر صفحه‌بندی ================= */}
             {pagination.totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 pt-6">
                 <button

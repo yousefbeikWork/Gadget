@@ -86,7 +86,7 @@ const menuItems = [
     key: "laboratories",
     path: "/laboratories",
     icon: FlaskConical,
-    allowedRoles: ["Patient", "Leader", "guest"], // آزمایشگاه عمومی
+    allowedRoles: ["Patient", "guest"], // آزمایشگاه عمومی
   },
   {
     key: "myLaboratories",
@@ -104,7 +104,7 @@ const menuItems = [
     key: "airplanes",
     path: "/flights",
     icon: Plane,
-    allowedRoles: ["Patient", "Leader", "guest"],
+    allowedRoles: ["Patient", "guest"],
   },
   {
     key: "travel",
@@ -122,7 +122,7 @@ const menuItems = [
     key: "visa",
     path: "/visas",
     icon: Stamp,
-    allowedRoles: ["Patient", "Leader", "guest"],
+    allowedRoles: ["Patient", "guest"],
   },
   {
     key: "guides",

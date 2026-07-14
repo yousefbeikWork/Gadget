@@ -1,6 +1,5 @@
 import { ShieldCheck, Lock } from "lucide-react";
 
-// اگر تایپ UserProfile رو جای دیگه‌ای اکسپورت کردی، آدرسش رو درست کن
 interface Props {
   userProfile: any; 
   userRole: string | null;
@@ -8,12 +7,14 @@ interface Props {
 
 export default function SharedBasicInfo({ userProfile, userRole }: Props) {
   return (
-    <div className="bg-gray-50 border border-gray-100 p-6 rounded-2xl space-y-4">
+    <div className="bg-gray-50 border border-gray-100 p-6 rounded-2xl space-y-4 font-sans">
       <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4">
         <ShieldCheck size={18} className="text-gray-400" />
         اطلاعات سیستمی (غیرقابل تغییر)
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        
+        {/* بخش نقش کاربری */}
         <div>
           <label className="block text-xs font-bold text-gray-500 mb-1">
             نقش کاربری
@@ -26,11 +27,15 @@ export default function SharedBasicInfo({ userProfile, userRole }: Props) {
                   ? "بیمار"
                   : userRole === "laboratorCenter"
                     ? "مرکز آزمایشگاهی"
-                    : "مرکز درمانی"}
+                    : userRole === "Leader"
+                      ? "لیدر سیستم" // 👈 اضافه شدن ترجمه نقش لیدر
+                      : "مرکز درمانی"}
             </span>
             <Lock size={14} className="opacity-50" />
           </div>
         </div>
+
+        {/* شماره موبایل سیستم */}
         <div>
           <label className="block text-xs font-bold text-gray-500 mb-1">
             شماره موبایل سیستم
@@ -41,6 +46,7 @@ export default function SharedBasicInfo({ userProfile, userRole }: Props) {
           </div>
         </div>
 
+        {/* فیلد داینامیک نام مرکز یا کد ملی */}
         {userRole === "MedicalCenter" || userRole === "laboratorCenter" ? (
           <div className="md:col-span-2">
             <label className="block text-xs font-bold text-gray-500 mb-1">
@@ -63,6 +69,7 @@ export default function SharedBasicInfo({ userProfile, userRole }: Props) {
           </div>
         )}
 
+        {/* اطلاعات اختصاصی نظام پزشکی برای پزشکان */}
         {userRole === "Doctor" && (
           <>
             <div>
