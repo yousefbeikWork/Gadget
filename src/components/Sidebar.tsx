@@ -25,7 +25,6 @@ import {
 import LanguageSwitcher from "./LanguageSwitcher";
 import DoctorAvatar from "./DoctorAvatar";
 
-// 👈 هماهنگ‌سازی دقیق دسترسی‌ها با App.tsx
 const menuItems = [
   {
     key: "home",
@@ -86,13 +85,13 @@ const menuItems = [
     key: "laboratories",
     path: "/laboratories",
     icon: FlaskConical,
-    allowedRoles: ["Patient", "guest"], // آزمایشگاه عمومی
+    allowedRoles: ["Patient", "guest"],
   },
   {
     key: "myLaboratories",
     path: "/Collaborating-lab",
     icon: FlaskConical,
-    allowedRoles: ["laboratorCenter"], // 👈 اختصاصی برای خود آزمایشگاه
+    allowedRoles: ["laboratorCenter"],
   },
   {
     key: "calibration",
@@ -110,13 +109,13 @@ const menuItems = [
     key: "travel",
     path: "/travels",
     icon: Map,
-    allowedRoles: ["MedicalCenter", "Leader", "guest", "Patient"], // 👈 فقط کلینیک و لیدر
+    allowedRoles: ["MedicalCenter", "Leader", "guest", "Patient"],
   },
   {
     key: "leader",
     path: "/leaders",
     icon: Compass,
-    allowedRoles: ["MedicalCenter", "guest", "Patient"], // 👈 فقط کلینیک
+    allowedRoles: ["MedicalCenter", "guest", "Patient"],
   },
   {
     key: "visa",
@@ -163,7 +162,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const currentRole = isLoggedIn ? userRole : "guest";
 
-  // فیلتر کردن منوها بر اساس نقش کاربر
   const filteredMenuItems = menuItems.filter((item) => {
     return item.allowedRoles.includes(currentRole as string);
   });
@@ -178,7 +176,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         return "مرکز درمانی";
       case "laboratorCenter":
         return "مرکز آزمایشگاهی";
-      case "Leader": // 👈 نقش لیدر اضافه شد
+      case "Leader":
         return "لیدر (راهنما)";
       default:
         return "کاربر سامانه";
@@ -195,14 +193,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed inset-y-0 rtl:right-0 ltr:left-0 z-50 w-64 bg-white md:rounded-2xl flex flex-col shrink-0 shadow-2xl md:shadow-lg transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:rtl:translate-x-0 md:ltr:translate-x-0 ${
-          isOpen
-            ? "translate-x-0"
-            : "rtl:translate-x-full ltr:-translate-x-full"
+        className={`fixed inset-y-0 royal-sidebar right-0 z-50 w-64 bg-white md:rounded-2xl flex flex-col shrink-0 shadow-2xl md:shadow-lg transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:rtl:translate-x-0 ${
+          isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between p-5 md:hidden border-b border-gray-100">
-          <span className="font-bold text-gadget-dark">منوی کاربری</span>
+        {/* ================== هدر موبایل به همراه لوگو ================== */}
+        <div className="flex items-center justify-between mt-2 pl-2 md:hidden border-b border-gray-100 shrink-0">
+          <div className="flex items-center">
+            <img
+              src="/logo.png"
+              alt="لوگو"
+              className="w-25 h-15"
+            />
+            <span className="font-bold text-gray-800 text-sm">منوی کاربری</span>
+          </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-colors cursor-pointer"
@@ -211,7 +215,27 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
 
-        <div className="flex-1 py-6 md:py-8 overflow-y-auto overflow-x-hidden custom-scrollbar">
+        {/* ================== بخش لوگوی ثابت در دسکتاپ (ساختار عمودی و بزرگتر) ================== */}
+        <div className="hidden md:flex flex-col items-center text-center pb-1 shrink-0">
+          <div className="w-60 h-40 flex items-center justify-center hover:scale-105 transition-transform duration-300">
+            <img
+              src="/logo.png"
+              alt="لوگوی سامانه"
+              className="w-full h-full"
+            />
+          </div>
+          {/* <div className="flex flex-col">
+            <span className="font-bold text-gray-800 text-base tracking-tight">
+              سامانه هوشمند سلامت
+            </span>
+            <span className="text-gadget-light text-xs font-bold mt-2 opacity-90">
+              مدیریت درمان و ترابری
+            </span>
+          </div> */}
+        </div>
+
+        {/* لیست منوها */}
+        <div className="flex-1 py-6 md:py-6 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <ul className="space-y-1.5 md:space-y-4">
             {filteredMenuItems.map((item, index) => {
               const Icon = item.icon;
@@ -233,7 +257,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <h3
                           className={`text-sm transition-colors ${isActive ? "font-bold text-gadget-dark" : "font-medium text-gray-600 group-hover:text-gadget-dark"}`}
                         >
-                          {/* 👈 مدیریت استثنائات نام‌گذاری (آزمایشگاه همکار) */}
                           {item.key === "myLaboratories"
                             ? "آزمایشگاه‌های همکار"
                             : t(item.key)}
@@ -247,6 +270,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </ul>
         </div>
 
+        {/* بخش کاربری پایین سایدبار */}
         <div className="mt-auto shrink-0 border-t border-gray-100 bg-gray-50/50 md:rounded-2xl">
           <div className="p-5 flex flex-col gap-3">
             {isLoggedIn ? (
@@ -257,12 +281,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   className="flex items-center gap-3 mb-2 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer group"
                   title="مشاهده و ویرایش پروفایل"
                 >
-                  {/* 👈 استفاده از کامپوننت دایره پروفایل (DoctorAvatar) */}
                   <DoctorAvatar
                     imageProfile={userProfile?.imageProfile}
                     firstName={
                       userRole === "MedicalCenter" ||
-                      userRole === "laboratorCenter" // 👈 شرط آزمایشگاه اضافه شد
+                      userRole === "laboratorCenter"
                         ? userProfile?.centerName
                         : userProfile?.firstName
                     }
@@ -272,7 +295,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   <div className="overflow-hidden">
                     <h4 className="text-sm font-bold text-gray-800 truncate group-hover:text-gadget-light transition-colors">
                       {userRole === "MedicalCenter" ||
-                      userRole === "laboratorCenter" // 👈 شرط آزمایشگاه اضافه شد
+                      userRole === "laboratorCenter"
                         ? userProfile?.centerName
                         : userProfile
                           ? `${userProfile.firstName || ""} ${userProfile.lastName || ""}`
