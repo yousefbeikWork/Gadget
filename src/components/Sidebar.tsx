@@ -43,7 +43,7 @@ const menuItems = [
     key: "schedule",
     path: "/schedule",
     icon: Calendar,
-    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter"],
+    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter","Leader"],
   },
   {
     key: "myAppointments",
@@ -61,7 +61,7 @@ const menuItems = [
     key: "patients",
     path: "/patients",
     icon: Users,
-    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter"],
+    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter","Leader"],
   },
   {
     key: "doctors",

@@ -46,6 +46,7 @@ export default function ServicesDashboard() {
         "Doctor",
         "MedicalCenter",
         "laboratorCenter",
+        "Leader",
         "guest",
       ],
       color: "bg-blue-50 text-blue-600 border-blue-100",
@@ -56,8 +57,7 @@ export default function ServicesDashboard() {
       title: "بیماران",
       icon: Users,
       path: "/patients",
-      // 👈 دسترسی آزمایشگاه اضافه شد
-      allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter"],
+      allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter","Leader"],
       color: "bg-emerald-50 text-emerald-600 border-emerald-100",
       description: "مدیریت و مشاهده لیست بیماران",
     },

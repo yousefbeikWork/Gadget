@@ -14,6 +14,7 @@ interface Guardian {
   mobile: string;
   address: string;
 }
+
 interface Manager {
   firstName: string;
   lastName: string;
@@ -21,6 +22,7 @@ interface Manager {
   mobile?: string;
   nationalId?: string;
 }
+
 interface TestItem {
   _id?: string;
   testName: string;
@@ -30,6 +32,53 @@ interface TestItem {
   isAvailable: boolean;
   preparationInstructions?: string;
 }
+
+// === اینترفیس‌های اختصاصی لیدر ===
+interface LeaderPricing {
+  fullDay?: number;
+  dayShift?: number;
+  nightShift?: number;
+  hourlyDay?: number;
+  hourlyNight?: number;
+}
+
+interface LeaderCar {
+  brand?: string;
+  model?: string;
+  color?: string;
+  plateNumber?: string;
+  manufactureYear?: number;
+  documents?: {
+    vehicleCardFront?: string | null;
+    vehicleCardBack?: string | null;
+    insurancePhoto?: string | null;
+    drivingLicenseFront?: string | null;
+    drivingLicenseBack?: string | null;
+  };
+}
+
+// 👈 اضافه شدن اینترفیس‌های مربوط به برنامه زمانی لیدر
+interface HourlySlot {
+  time: string;
+  isBooked: boolean;
+  _id?: string;
+}
+
+interface ShiftDetails {
+  startTime: string;
+  endTime: string;
+  isBooked: boolean;
+  hours: HourlySlot[];
+}
+
+interface AvailableDay {
+  _id?: string;
+  date: string;
+  isFullDayBooked: boolean;
+  dayShift?: ShiftDetails | null;
+  nightShift?: ShiftDetails | null;
+}
+
 interface UserProfile {
   _id?: string;
   firstName: string;
@@ -66,12 +115,27 @@ interface UserProfile {
   isActive?: boolean;
   manager?: Manager;
 
-  // 👈 فیلدهای اختصاصی آزمایشگاه
+  // فیلدهای اختصاصی آزمایشگاه
   otherSpecialties?: string[];
   activeDepartments?: string[];
   specialFacilities?: string[];
   availableTests?: TestItem[];
   laboratorImages?: string[];
+
+  // فیلدهای الحاق شده‌ی اختصاصی نقش لیدر
+  Address?: string; 
+  city?: string;
+  // DailyPrice?: number;
+  hasCar?: boolean;
+  pricing?: LeaderPricing;
+  car?: LeaderCar;
+  nationalIdPhotos?: {
+    front?: string | null;
+    back?: string | null;
+  };
+  availableDays?: AvailableDay[]; // 👈 اضافه شدن آرایه روزهای کاری لیدر
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface AuthContextType {

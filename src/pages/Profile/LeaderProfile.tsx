@@ -4,7 +4,7 @@ import {
   ShieldAlert,
   User,
   MapPin,
-  Banknote,
+  // Banknote,
   Car,
   FileCheck,
   Loader2,
@@ -116,10 +116,10 @@ export default function LeaderProfile({ userProfile, refreshProfile }: Props) {
     }
   };
 
-  const formatPrice = (price: number) => {
-    if (!price) return "---";
-    return new Intl.NumberFormat("fa-IR").format(price) + " تومان";
-  };
+  // const formatPrice = (price: number) => {
+  //   if (!price) return "---";
+  //   return new Intl.NumberFormat("fa-IR").format(price) + " تومان";
+  // };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200 font-sans" dir="rtl">
@@ -184,12 +184,12 @@ export default function LeaderProfile({ userProfile, refreshProfile }: Props) {
               <Building size={14} className="text-gray-400" /> {userProfile?.city || "---"}
             </div>
           </div>
-          <div>
+          {/* <div>
             <label className="block text-xs font-bold text-gray-400 mb-1">دستمزد مصوب روزانه</label>
             <div className="w-full bg-gray-50/80 border border-gray-100 text-emerald-600 rounded-xl px-4 py-2.5 text-sm font-bold cursor-not-allowed flex items-center gap-1.5">
               <Banknote size={14} /> {formatPrice(userProfile?.DailyPrice)}
             </div>
-          </div>
+          </div> */}
           <div className="md:col-span-2">
             <label className="block text-xs font-bold text-gray-400 mb-1">آدرس سکونت</label>
             <div className="w-full bg-gray-50/80 border border-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-sm font-medium cursor-not-allowed truncate" title={userProfile?.Address}>

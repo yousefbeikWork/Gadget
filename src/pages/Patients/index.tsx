@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import DoctorPatients from "./DoctorPatients";
 import LaboratoryPatients from "./LaboratoryPatients";
 import ClinicPatients from "./ClinicPatients";
+import LeaderPatients from "./LeaderPatients";
 
 export default function Patients() {
   const { userRole, userProfile, isLoading } = useAuth();
@@ -28,9 +29,13 @@ export default function Patients() {
     return <ClinicPatients />;
   }
 
+  if (userRole === "Leader") {
+    return <LeaderPatients />;
+  }
+
   return (
     <div className="text-center p-8 mt-20 font-bold text-gray-500 font-sans" dir="rtl">
-      شما دسترسی لازم برای مشاهده لیست بیماران را ندارید.
+      شما دسترسی لازم برای مشاهده لیست بیماران/رزروها را ندارید.
     </div>
   );
 }

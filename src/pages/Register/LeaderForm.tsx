@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { User, Phone, Lock, CreditCard, MapPin, ArrowRight, Banknote, Car, Building } from "lucide-react";
+import { User, Phone, Lock, CreditCard, MapPin, ArrowRight, /*Banknote,*/ Car, Building } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 
@@ -18,14 +18,14 @@ export default function LeaderForm() {
     password: "",
     Address: "",
     city: "",
-    DailyPrice: "",
+    // DailyPrice: "",
     hasCar: "false",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     // عددی کردن مقادیر خاص
-    const numericFields = ["nationalId", "mobile", "age", "DailyPrice"];
+    const numericFields = ["nationalId", "mobile", "age", /*"DailyPrice"*/];
     const finalValue = numericFields.includes(name) ? value.replace(/\D/g, "") : value;
     
     setFormData((prev) => ({ ...prev, [name]: finalValue }));
@@ -49,7 +49,7 @@ export default function LeaderForm() {
       password: formData.password,
       Address: formData.Address,
       city: formData.city,
-      DailyPrice: Number(toEnglishDigits(formData.DailyPrice)) || 0,
+      // DailyPrice: Number(toEnglishDigits(formData.DailyPrice)) || 0,
       hasCar: formData.hasCar === "true", // تبدیل استرینگ آپشن به Boolean
     };
 
@@ -132,13 +132,13 @@ export default function LeaderForm() {
           </div>
         </div>
 
-        <div>
+        {/* <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">هزینه دستمزد روزانه (تومان)</label>
           <div className="relative">
             <Banknote className="absolute left-3 top-2.5 text-gray-400" size={16} />
             <input name="DailyPrice" value={formData.DailyPrice} onChange={handleChange} required type="text" className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:border-gadget-light text-left outline-hidden" dir="ltr" placeholder="مبلغ به عدد" />
           </div>
-        </div>
+        </div> */}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">وضعیت مالکیت خودرو</label>

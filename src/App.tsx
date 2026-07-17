@@ -18,7 +18,7 @@ import Doctors from "./pages/Doctors";
 import Clinics from "./pages/Clinics";
 import ClinicDoctors from "./pages/ClinicDoctors";
 import ScheduleManagement from "./pages/ScheduleManagement/";
-import PatientAppointments from "./pages/PatientAppointments";
+import PatientAppointments from "./pages/PatientAppointments/";
 import Patients from "./pages/Patients/";
 import HealthRecords from "./pages/HealthRecords";
 import Profile from "./pages/Profile/";
@@ -121,7 +121,7 @@ function App() {
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={["Doctor", "MedicalCenter", "laboratorCenter"]}
+                  allowedRoles={["Doctor", "MedicalCenter", "laboratorCenter","Leader"]}
                 />
               }
             >
