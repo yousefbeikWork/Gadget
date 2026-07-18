@@ -9,7 +9,6 @@ import {
   ShieldAlert,
   UserX,
   UserCheck,
-  // Mail,
   Phone,
   CreditCard,
   MapPin,
@@ -23,7 +22,7 @@ import {
   X,
   CheckCircle2,
   Banknote,
-  LogIn
+  LogIn,
 } from "lucide-react";
 import api from "../services/api";
 import toast from "react-hot-toast";
@@ -74,7 +73,7 @@ interface HourlySlot {
 interface ShiftDetails {
   startTime: string;
   endTime: string;
-  isBooked: boolean;
+  isBooked: boolean; // 👈 وضعیت پر بودن شیفت
   hours: HourlySlot[];
 }
 
@@ -104,7 +103,7 @@ export default function Leaders() {
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const [expandedLeaderId, setExpandedLeaderId] = useState<string | null>(null);
 
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -118,10 +117,10 @@ export default function Leaders() {
   const [bookingLeader, setBookingLeader] = useState<Leader | null>(null);
   const [availabilityData, setAvailabilityData] = useState<LeaderAvailability | null>(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
-  
+
   // استیت‌های فرم رزرو
   const [selectedDate, setSelectedDate] = useState<string>("");
-  const [bookingType, setBookingType] = useState<"FULL_DAY" | "SHIFT" | "HOURLY" | "">("");
+  const [bookingType, setBookingType] = useState<"FULL_DAY" | "DAY_SHIFT" | "NIGHT_SHIFT" | "HOURLY" | "">("");
   const [shiftType, setShiftType] = useState<"DAY" | "NIGHT" | "">("");
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<string[]>([]);
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
@@ -217,15 +216,15 @@ export default function Leaders() {
     } else {
       setSelectedDate("");
     }
-    // با هر بار تغییر تاریخ، انتخاب‌های قبلی رزرو ریست می‌شوند
+    // ریست شدن با هر بار تغییر تاریخ
     setBookingType("");
     setShiftType("");
     setSelectedTimeSlots([]);
   };
 
   const handleTimeSlotToggle = (time: string) => {
-    setSelectedTimeSlots((prev) => 
-      prev.includes(time) ? prev.filter(t => t !== time) : [...prev, time]
+    setSelectedTimeSlots((prev) =>
+      prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]
     );
   };
 
@@ -234,9 +233,8 @@ export default function Leaders() {
     const pricing = availabilityData.pricing;
 
     if (bookingType === "FULL_DAY") return pricing.fullDay;
-    if (bookingType === "SHIFT") {
-      return shiftType === "DAY" ? pricing.dayShift : pricing.nightShift;
-    }
+    if (bookingType === "DAY_SHIFT") return pricing.dayShift;
+    if (bookingType === "NIGHT_SHIFT") return pricing.nightShift;
     if (bookingType === "HOURLY") {
       const hourlyRate = shiftType === "DAY" ? pricing.hourlyDay : pricing.hourlyNight;
       return selectedTimeSlots.length * hourlyRate;
@@ -281,13 +279,14 @@ export default function Leaders() {
     }
   };
 
-  const selectedDayData = availabilityData?.availableDays.find(d => d.date === selectedDate);
+  const selectedDayData = availabilityData?.availableDays.find(
+    (d) => d.date === selectedDate
+  );
 
   return (
     <div className="bg-gray-50 rounded-2xl md:rounded-3xl w-full h-full overflow-y-auto custom-scrollbar p-4 md:p-8 font-sans" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
-        
-        {/* هدر و باکس جستجو */}
+        {/* هدر و جستجو */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-gadget-dark/10 text-gadget-dark rounded-2xl">
@@ -299,12 +298,18 @@ export default function Leaders() {
             </div>
           </div>
           <div className="relative w-full md:w-80">
-            <input type="text" placeholder="جستجو بر اساس نام خانوادگی..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-white border border-gray-200 rounded-full pr-4 pl-10 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:ring-1 focus:ring-gadget-light transition-all shadow-sm text-gray-700" />
+            <input
+              type="text"
+              placeholder="جستجو بر اساس نام خانوادگی..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white border border-gray-200 rounded-full pr-4 pl-10 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:ring-1 focus:ring-gadget-light transition-all shadow-sm text-gray-700"
+            />
             <Search className="absolute left-4 top-2.5 text-gray-400" size={18} />
           </div>
         </div>
 
-        {/* وضعیت بارگذاری لیست */}
+        {/* لیست لیدرها */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-gadget-light">
             <Loader2 className="animate-spin mb-4" size={40} />
@@ -320,14 +325,13 @@ export default function Leaders() {
           </div>
         ) : (
           <>
-            {/* لیست کارت لیدرها */}
             <div className="grid grid-cols-1 gap-4">
               {leaders.map((leader) => {
                 const isExpanded = expandedLeaderId === leader._id;
                 return (
                   <div key={leader._id} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs hover:shadow-sm transition-all flex flex-col relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-1.5 h-full bg-gadget-dark opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    
+
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-gadget-dark text-white flex items-center justify-center text-xl font-bold shrink-0">
@@ -362,22 +366,20 @@ export default function Leaders() {
 
                     {isExpanded && (
                       <div className="mt-5 pt-5 border-t border-gray-100 space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
-                        
-                        {/* دکمه رزرو لیدر */}
                         {leader.isActive && (
-                           <div className="flex justify-end mb-4">
-                             {isLoggedIn ? (
-                               <button onClick={() => openBookingModal(leader)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 text-sm shadow-md transition-colors cursor-pointer">
-                                 <CalendarIcon size={16} />
-                                 رزرو و هماهنگی لیدر
-                               </button>
-                             ) : (
-                               <button onClick={() => navigate("/login")} className="bg-gadget-dark/10 hover:bg-gadget-dark/20 text-gadget-dark font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 text-sm shadow-xs transition-colors cursor-pointer border border-gadget-dark/20">
-                                 <LogIn size={16} />
-                                 برای رزرو وارد شوید
-                               </button>
-                             )}
-                           </div>
+                          <div className="flex justify-end mb-4">
+                            {isLoggedIn ? (
+                              <button onClick={() => openBookingModal(leader)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 text-sm shadow-md transition-colors cursor-pointer">
+                                <CalendarIcon size={16} />
+                                رزرو و هماهنگی لیدر
+                              </button>
+                            ) : (
+                              <button onClick={() => navigate("/login")} className="bg-gadget-dark/10 hover:bg-gadget-dark/20 text-gadget-dark font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 text-sm shadow-xs transition-colors cursor-pointer border border-gadget-dark/20">
+                                <LogIn size={16} />
+                                برای رزرو وارد شوید
+                              </button>
+                            )}
+                          </div>
                         )}
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
@@ -400,9 +402,7 @@ export default function Leaders() {
 
                         {leader.hasCar && leader.car ? (
                           <div className="space-y-3">
-                            <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
-                              <Car size={15} className="text-amber-500" /> اطلاعات و مشخصات فنی خودرو
-                            </h4>
+                            <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1.5"><Car size={15} className="text-amber-500" /> اطلاعات و مشخصات فنی خودرو</h4>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                               <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-2xs">
                                 <span className="block text-[10px] text-gray-400 mb-0.5">برند خودرو</span>
@@ -413,15 +413,15 @@ export default function Leaders() {
                                 <span className="font-bold text-sm text-gray-700">{leader.car.model}</span>
                               </div>
                               <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-2xs">
-                                <span className=" text-[10px] text-gray-400 mb-0.5 flex items-center gap-1"><Palette size={12}/> رنگ</span>
+                                <span className=" text-[10px] text-gray-400 mb-0.5 flex items-center gap-1"><Palette size={12} /> رنگ</span>
                                 <span className="font-bold text-sm text-gray-700">{leader.car.color}</span>
                               </div>
                               <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-2xs">
-                                <span className=" text-[10px] text-gray-400 mb-0.5 flex items-center gap-1"><CalendarIcon size={12}/> سال ساخت</span>
+                                <span className=" text-[10px] text-gray-400 mb-0.5 flex items-center gap-1"><CalendarIcon size={12} /> سال ساخت</span>
                                 <span className="font-bold text-sm text-gray-700" dir="ltr">{leader.car.manufactureYear}</span>
                               </div>
                               <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-2xs col-span-2 sm:col-span-1">
-                                <span className=" text-[10px] text-gray-400 mb-0.5 flex items-center gap-1"><Layers size={12}/> شماره پلاک</span>
+                                <span className=" text-[10px] text-gray-400 mb-0.5 flex items-center gap-1"><Layers size={12} /> شماره پلاک</span>
                                 <span className="font-bold text-xs text-gray-700" dir="ltr">{leader.car.plateNumber}</span>
                               </div>
                             </div>
@@ -449,25 +449,24 @@ export default function Leaders() {
         )}
       </div>
 
-     {/* ===================== مُدال رزرو لیدر ===================== */}
+      {/* ===================== مُدال رزرو لیدر ===================== */}
       {bookingModalOpen && bookingLeader && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/60 backdrop-blur-sm animate-in fade-in" dir="rtl">
-          {/* 👈 ۱. اضافه شدن min-h-[550px] برای تضمین ارتفاع کلی مدال */}
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh] min-h-137.5 overflow-hidden">
-            
             <div className="flex items-center justify-between p-5 md:p-6 border-b border-gray-100 bg-gray-50/50 shrink-0">
               <div>
                 <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                   <CalendarIcon size={20} className="text-emerald-600" /> رزرو و زمان‌بندی لیدر
                 </h2>
-                <p className="text-xs text-gray-500 mt-1 font-medium">لیدر انتخابی: {bookingLeader.firstName} {bookingLeader.lastName}</p>
+                <p className="text-xs text-gray-500 mt-1 font-medium">
+                  لیدر انتخابی: {bookingLeader.firstName} {bookingLeader.lastName}
+                </p>
               </div>
               <button onClick={closeBookingModal} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer">
                 <X size={20} />
               </button>
             </div>
 
-            {/* 👈 ۲. اضافه شدن flex-1 و min-h-[450px] تا با باز شدن تقویم اسکرول مزاحم ایجاد نشود */}
             <div className="p-5 md:p-6 overflow-y-auto custom-scrollbar space-y-6 flex-1 min-h-112.5">
               {availabilityLoading ? (
                 <div className="flex flex-col items-center justify-center py-10">
@@ -482,10 +481,10 @@ export default function Leaders() {
                 </div>
               ) : (
                 <>
-                  {/* انتخاب تاریخ آزاد با تقویم شمسی */}
+                  {/* انتخاب تاریخ */}
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
-                      <CalendarIcon size={16} className="text-gadget-light"/> ۱. انتخاب تاریخ رزرو
+                      <CalendarIcon size={16} className="text-gadget-light" /> ۱. انتخاب تاریخ رزرو
                     </label>
                     <div className="relative">
                       <DatePicker
@@ -502,60 +501,97 @@ export default function Leaders() {
                     </div>
                   </div>
 
-                  {/* پیام در صورت عدم ثبت شیفت در تاریخ انتخابی */}
+                  {/* پیام خطای تاریخ */}
                   {selectedDate && !selectedDayData && (
-                     <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-center animate-in fade-in">
-                       <span className="text-red-600 font-bold text-sm">لیدر در این تاریخ برنامه آزادی در سیستم ثبت نکرده است.</span>
-                     </div>
+                    <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-center animate-in fade-in">
+                      <span className="text-red-600 font-bold text-sm">لیدر در این تاریخ برنامه آزادی در سیستم ثبت نکرده است.</span>
+                    </div>
+                  )}
+                  {selectedDate && selectedDayData && selectedDayData.isFullDayBooked && (
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl text-center animate-in fade-in">
+                      <span className="text-amber-600 font-bold text-sm">تمام ظرفیت لیدر در این تاریخ رزرو شده است.</span>
+                    </div>
                   )}
 
-                  {/* انتخاب نوع رزرو */}
+                  {/* 👈 ۲. انتخاب نوع رزرو با بررسی هوشمند ظرفیت‌ها */}
                   {selectedDayData && !selectedDayData.isFullDayBooked && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                      <label className="text-sm font-bold text-gray-700 flex items-center gap-1.5"><Clock size={16} className="text-gadget-light"/> ۲. نوع رزرو خود را مشخص کنید</label>
+                      <label className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                        <Clock size={16} className="text-gadget-light" /> ۲. نوع رزرو خود را مشخص کنید
+                      </label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         
                         {/* رزرو کل روز */}
                         {selectedDayData.dayShift && selectedDayData.nightShift && (
-                          <button 
-                            onClick={() => { setBookingType("FULL_DAY"); setShiftType(""); setSelectedTimeSlots([]); }}
-                            className={`p-4 rounded-xl border transition-all flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer ${bookingType === "FULL_DAY" ? "border-emerald-500 bg-emerald-50 shadow-xs" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                          <button
+                            disabled={selectedDayData.dayShift.isBooked || selectedDayData.nightShift.isBooked}
+                            onClick={() => {
+                              setBookingType("FULL_DAY");
+                              setShiftType("");
+                              setSelectedTimeSlots([]);
+                            }}
+                            className={`p-4 rounded-xl border transition-all flex flex-col items-center justify-center text-center gap-1.5 ${
+                              selectedDayData.dayShift.isBooked || selectedDayData.nightShift.isBooked
+                                ? "opacity-60 cursor-not-allowed bg-gray-50 border-gray-200"
+                                : bookingType === "FULL_DAY" ? "border-emerald-500 bg-emerald-50 shadow-xs cursor-pointer" : "border-gray-200 bg-white hover:bg-gray-50 cursor-pointer"
+                            }`}
                           >
                             <span className="font-bold text-sm text-gray-800">روزانه (کل روز)</span>
-                            <span className="text-[11px] text-gray-500">پوشش کامل روز و شب</span>
+                            <span className="text-[11px] text-gray-500">
+                              {selectedDayData.dayShift.isBooked || selectedDayData.nightShift.isBooked 
+                                ? <span className="text-red-500 font-bold">تکمیل ظرفیت</span> 
+                                : "پوشش کامل روز و شب"
+                              }
+                            </span>
                           </button>
                         )}
 
                         {/* رزرو شیفت روز */}
                         {selectedDayData.dayShift && (
-                          <button 
-                            onClick={() => { 
-                              setBookingType(selectedDayData.dayShift!.hours.length > 0 ? "HOURLY" : "SHIFT"); 
-                              setShiftType("DAY"); 
-                              setSelectedTimeSlots([]); 
+                          <button
+                            disabled={selectedDayData.dayShift.isBooked}
+                            onClick={() => {
+                              setBookingType(selectedDayData.dayShift!.hours.length > 0 ? "HOURLY" : "DAY_SHIFT");
+                              setShiftType("DAY");
+                              setSelectedTimeSlots([]);
                             }}
-                            className={`p-4 rounded-xl border transition-all flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer ${shiftType === "DAY" ? "border-blue-500 bg-blue-50 shadow-xs" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                            className={`p-4 rounded-xl border transition-all flex flex-col items-center justify-center text-center gap-1.5 ${
+                              selectedDayData.dayShift.isBooked
+                                ? "opacity-60 cursor-not-allowed bg-gray-50 border-gray-200"
+                                : shiftType === "DAY" ? "border-blue-500 bg-blue-50 shadow-xs cursor-pointer" : "border-gray-200 bg-white hover:bg-gray-50 cursor-pointer"
+                            }`}
                           >
                             <span className="font-bold text-sm text-gray-800">شیفت روز</span>
                             <span className="text-[11px] text-gray-500">
-                              {selectedDayData.dayShift.hours.length > 0 ? "انتخاب ساعت" : "پوشش کل شیفت"}
+                              {selectedDayData.dayShift.isBooked
+                                ? <span className="text-red-500 font-bold">تکمیل ظرفیت</span>
+                                : selectedDayData.dayShift.hours.length > 0 ? "انتخاب ساعت" : "پوشش کل شیفت"
+                              }
                             </span>
                           </button>
                         )}
 
                         {/* رزرو شیفت شب */}
                         {selectedDayData.nightShift && (
-                          <button 
-                            onClick={() => { 
-                              setBookingType(selectedDayData.nightShift!.hours.length > 0 ? "HOURLY" : "SHIFT"); 
-                              setShiftType("NIGHT"); 
-                              setSelectedTimeSlots([]); 
+                          <button
+                            disabled={selectedDayData.nightShift.isBooked}
+                            onClick={() => {
+                              setBookingType(selectedDayData.nightShift!.hours.length > 0 ? "HOURLY" : "NIGHT_SHIFT");
+                              setShiftType("NIGHT");
+                              setSelectedTimeSlots([]);
                             }}
-                            className={`p-4 rounded-xl border transition-all flex flex-col items-center justify-center text-center gap-1.5 cursor-pointer ${shiftType === "NIGHT" ? "border-indigo-500 bg-indigo-50 shadow-xs" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                            className={`p-4 rounded-xl border transition-all flex flex-col items-center justify-center text-center gap-1.5 ${
+                              selectedDayData.nightShift.isBooked
+                                ? "opacity-60 cursor-not-allowed bg-gray-50 border-gray-200"
+                                : shiftType === "NIGHT" ? "border-indigo-500 bg-indigo-50 shadow-xs cursor-pointer" : "border-gray-200 bg-white hover:bg-gray-50 cursor-pointer"
+                            }`}
                           >
                             <span className="font-bold text-sm text-gray-800">شیفت شب</span>
                             <span className="text-[11px] text-gray-500">
-                              {selectedDayData.nightShift.hours.length > 0 ? "انتخاب ساعت" : "پوشش کل شیفت"}
+                              {selectedDayData.nightShift.isBooked
+                                ? <span className="text-red-500 font-bold">تکمیل ظرفیت</span>
+                                : selectedDayData.nightShift.hours.length > 0 ? "انتخاب ساعت" : "پوشش کل شیفت"
+                              }
                             </span>
                           </button>
                         )}
@@ -570,11 +606,20 @@ export default function Leaders() {
                           </span>
                           <div className="flex flex-wrap gap-2">
                             {(shiftType === "DAY" ? selectedDayData.dayShift?.hours : selectedDayData.nightShift?.hours)?.map((slot) => {
-                              if (slot.isBooked) return <span key={slot.time} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-200 text-gray-500 line-through decoration-gray-400 cursor-not-allowed border border-gray-300" dir="ltr">{slot.time}</span>;
-                              
+                              if (slot.isBooked) return (
+                                <span key={slot.time} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-200 text-gray-400 line-through decoration-gray-400 cursor-not-allowed border border-gray-300" dir="ltr">
+                                  {slot.time}
+                                </span>
+                              );
+
                               const isSelected = selectedTimeSlots.includes(slot.time);
                               return (
-                                <button key={slot.time} onClick={() => handleTimeSlotToggle(slot.time)} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border shadow-2xs ${isSelected ? "bg-gadget-dark text-white border-gadget-dark" : "bg-white text-gray-700 border-gray-300 hover:border-gadget-light hover:text-gadget-dark"}`} dir="ltr">
+                                <button
+                                  key={slot.time}
+                                  onClick={() => handleTimeSlotToggle(slot.time)}
+                                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border shadow-2xs ${isSelected ? "bg-gadget-dark text-white border-gadget-dark" : "bg-white text-gray-700 border-gray-300 hover:border-gadget-light hover:text-gadget-dark"}`}
+                                  dir="ltr"
+                                >
                                   {slot.time}
                                 </button>
                               );
@@ -597,7 +642,11 @@ export default function Leaders() {
                           <p className="text-lg font-bold mt-0.5">{formatPrice(calculateTotalPrice())}</p>
                         </div>
                       </div>
-                      <button onClick={submitBooking} disabled={isSubmittingBooking} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 text-sm shadow-md transition-all cursor-pointer disabled:opacity-70">
+                      <button
+                        onClick={submitBooking}
+                        disabled={isSubmittingBooking}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 text-sm shadow-md transition-all cursor-pointer disabled:opacity-70"
+                      >
                         {isSubmittingBooking ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
                         تایید و ثبت رزرو
                       </button>

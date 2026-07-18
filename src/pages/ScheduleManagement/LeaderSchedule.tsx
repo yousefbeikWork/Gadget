@@ -10,7 +10,8 @@ import {
   Trash2,
   Moon,
   Sun,
-  Award
+  Award,
+  Lock // 👈 آیکون قفل برای نمایش رزرو
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -29,7 +30,6 @@ interface HourlySlot {
 type ShiftMode = "CLOSED" | "FULL_SHIFT" | "HOURLY";
 
 export default function LeaderSchedule() {
-  // 👈 اضافه کردن refreshProfile برای آپدیت لحظه‌ای دیتا بعد از ثبت
   const { userProfile, refreshProfile } = useAuth();
   
   const [isSubmittingTime, setIsSubmittingTime] = useState(false);
@@ -45,6 +45,9 @@ export default function LeaderSchedule() {
 
   const [currentDate, setCurrentDate] = useState("");
   
+  // 👈 استیت جدید برای قفل کردن روزهایی که رزرو دارند
+  const [isDayLocked, setIsDayLocked] = useState(false);
+
   const [dayShiftMode, setDayShiftMode] = useState<ShiftMode>("FULL_SHIFT");
   const [nightShiftMode, setNightShiftMode] = useState<ShiftMode>("CLOSED");
 
@@ -71,14 +74,26 @@ export default function LeaderSchedule() {
     }
   }, [userProfile]);
 
-  // ۲. 👈 لود خودکار شیفت‌ها و ساعت‌ها با انتخاب هر تاریخ از تقویم
+  // ۲. لود خودکار شیفت‌ها و ساعت‌ها با انتخاب تقویم
   useEffect(() => {
-    if (!currentDate) return;
+    if (!currentDate) {
+      setIsDayLocked(false);
+      return;
+    }
 
-    // جستجوی تاریخ انتخاب شده در لیست روزهای ثبت شده‌ی قبلی لیدر
     const existingDay = userProfile?.availableDays?.find((d: any) => d.date === currentDate);
 
     if (existingDay) {
+      // 👈 بررسی اینکه آیا در این روز رزروی انجام شده یا خیر
+      const hasBookings = 
+        existingDay.isFullDayBooked ||
+        existingDay.dayShift?.isBooked ||
+        existingDay.nightShift?.isBooked ||
+        existingDay.dayShift?.hours?.some((h: any) => h.isBooked) ||
+        existingDay.nightShift?.hours?.some((h: any) => h.isBooked);
+
+      setIsDayLocked(!!hasBookings); // اگر رزرو داشت، روز قفل می‌شود
+
       // --- بارگذاری تنظیمات شیفت روز ---
       if (existingDay.dayShift) {
         setDayStartTime(existingDay.dayShift.startTime || "08:00");
@@ -116,7 +131,8 @@ export default function LeaderSchedule() {
       }
 
     } else {
-      // اگر لیدر در این تاریخ دیتایی نداشت، فرم به حالت پیش‌فرض (خالی) ریست می‌شود
+      // فرم خالی برای روز جدید
+      setIsDayLocked(false);
       setDayShiftMode("FULL_SHIFT");
       setNightShiftMode("CLOSED");
       setDayStartTime("08:00");
@@ -176,7 +192,7 @@ export default function LeaderSchedule() {
       const response = await api.put("/leader/updateLeaderPricing", payload);
       if (response.data?.success) {
         toast.success(response.data.message || "تعرفه‌ها با موفقیت بروزرسانی شدند.");
-        await refreshProfile(); // 👈 رفرش پروفایل برای آپدیت استیت کانتکست
+        await refreshProfile();
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "خطا در آپدیت لیست قیمت‌ها.");
@@ -187,6 +203,8 @@ export default function LeaderSchedule() {
 
   const handleAvailabilitySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isDayLocked) return; // اطمینان از عدم ارسال اگر روز قفل است
+
     if (!currentDate) {
       toast.error("لطفاً ابتدا تاریخ مورد نظر خود را از تقویم انتخاب کنید.");
       return;
@@ -223,7 +241,7 @@ export default function LeaderSchedule() {
       const response = await api.put("/leader/updateLeaderAvailability", payload);
       if (response.data?.success) {
         toast.success(response.data.message || "برنامه زمانی این تاریخ ثبت و تایید شد.");
-        await refreshProfile(); // 👈 رفرش برای ذخیره تاریخ‌های جدید در `userProfile.availableDays`
+        await refreshProfile();
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "خطا در ثبت شیفت‌های کاری.");
@@ -236,6 +254,9 @@ export default function LeaderSchedule() {
     if (!price) return "---";
     return new Intl.NumberFormat("fa-IR").format(price) + " تومان";
   };
+
+  // چک کردن اینکه آیا کل روز رزرو است یا خیر
+  const isFullDayReserved = userProfile?.availableDays?.find((d: any) => d.date === currentDate)?.isFullDayBooked;
 
   return (
     <div className="bg-white rounded-2xl md:rounded-3xl shadow-xs border border-gray-100 w-full h-full overflow-y-auto custom-scrollbar p-6 md:p-8 font-sans" dir="rtl">
@@ -311,30 +332,50 @@ export default function LeaderSchedule() {
             </div>
           </div>
 
+          {/* 👈 هشدار قفل بودن روز (اگر رزروی ثبت شده باشد) */}
+          {currentDate && isDayLocked && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3 animate-in fade-in">
+              <div className="p-2 bg-red-100 text-red-600 rounded-full shrink-0">
+                <Lock size={18} />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-red-800">این روز دارای رزرو فعال است</h4>
+                <p className="text-xs text-red-600 mt-1 leading-relaxed">
+                  بخشی یا تمام این تاریخ توسط بیماران رزرو شده است. جهت جلوگیری از اختلال در برنامه‌ی بیماران، امکان ویرایش یا حذف شیفت‌های این روز وجود ندارد.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* ================= فرم تنظیمات داینامیک شیفت لیدر ================= */}
           <form onSubmit={handleAvailabilitySubmit} className={`space-y-6 transition-opacity duration-300 ${!currentDate ? "opacity-45 pointer-events-none" : "opacity-100"}`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-gray-700 flex items-center gap-1"><Award size={16} className="text-amber-500"/> ۲. نوع زمان‌بندی و ساعت‌های حضور خود را پیکربندی کنید:</h3>
               
               {isFullDay && (
-                <span className="bg-green-50 text-green-700 border border-green-200 text-xs font-bold px-3 py-1 rounded-full animate-in fade-in">
-                  نوع پوشش این تاریخ: روزانه (تمام‌وقت)
+                <span className="bg-green-50 text-green-700 border border-green-200 text-xs font-bold px-3 py-1 rounded-full animate-in fade-in flex items-center gap-1">
+                  نوع پوشش: روزانه (تمام‌وقت) {isFullDayReserved && <Lock size={12} className="text-red-500 mr-1"/>}
                 </span>
               )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
-              {/* پیکربندی شیفت روز */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4 shadow-2xs">
+              {/* ----------------- شیفت روز ----------------- */}
+              <div className={`bg-white border ${isDayLocked ? "border-red-100 bg-red-50/20" : "border-gray-200"} rounded-2xl p-5 space-y-4 shadow-2xs relative`}>
                 <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                   <h4 className="font-bold text-sm text-amber-700 flex items-center gap-1.5">
-                    <Sun size={16} /> شیفت روز (Day Shift)
+                    <Sun size={16} /> شیفت روز
+                    {/* برچسب رزرو کل شیفت */}
+                    {userProfile?.availableDays?.find((d: any) => d.date === currentDate)?.dayShift?.isBooked && (
+                      <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-md flex items-center gap-1"><Lock size={10}/> رزرو شده</span>
+                    )}
                   </h4>
                   <select 
                     value={dayShiftMode} 
                     onChange={(e) => setDayShiftMode(e.target.value as ShiftMode)}
-                    className="bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold px-2.5 py-1 text-gray-700 outline-hidden cursor-pointer"
+                    disabled={isDayLocked}
+                    className="bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold px-2.5 py-1 text-gray-700 outline-hidden disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="FULL_SHIFT">کل شیفت (ثابت)</option>
                     <option value="HOURLY">ساعتی (انتخاب بازه)</option>
@@ -347,33 +388,37 @@ export default function LeaderSchedule() {
                     <div className="flex gap-3 text-xs">
                       <div className="flex-1">
                         <span className="text-gray-400 block mb-1">شروع شیفت</span>
-                        <input type="time" value={dayStartTime} onChange={(e) => setDayStartTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 font-bold" />
+                        <input type="time" disabled={isDayLocked} value={dayStartTime} onChange={(e) => setDayStartTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 font-bold disabled:opacity-60 disabled:cursor-not-allowed" />
                       </div>
                       <div className="flex-1">
                         <span className="text-gray-400 block mb-1">پایان شیفت</span>
-                        <input type="time" value={dayEndTime} onChange={(e) => setDayEndTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 font-bold" />
+                        <input type="time" disabled={isDayLocked} value={dayEndTime} onChange={(e) => setDayEndTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 font-bold disabled:opacity-60 disabled:cursor-not-allowed" />
                       </div>
                     </div>
 
                     {dayShiftMode === "HOURLY" && (
                       <div className="space-y-2 pt-2 animate-in slide-in-from-top-2 duration-150">
-                        <span className="text-xs font-bold text-gray-500 block">بخش تعیین ساعت‌های آزاد روز:</span>
+                        <span className="text-xs font-bold text-gray-500 block">ساعت‌های آزاد روز:</span>
                         {dayHours.map((h, index) => (
                           <div key={index} className="flex items-center gap-2">
-                            <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200 flex-1">
-                              <Clock size={12} className="text-gray-400" />
-                              <input type="text" placeholder="مثال: 08:00-09:00" value={h.time} onChange={(e) => handleDayHourChange(index, e.target.value)} className="bg-transparent border-none outline-hidden text-xs font-bold w-full" dir="ltr" />
+                            <div className={`flex items-center gap-1.5 ${h.isBooked ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'} px-2 py-1 rounded-lg border flex-1`}>
+                              <Clock size={12} className={h.isBooked ? 'text-red-400' : 'text-gray-400'} />
+                              <input type="text" disabled={isDayLocked} placeholder="مثال: 08:00-09:00" value={h.time} onChange={(e) => handleDayHourChange(index, e.target.value)} className={`bg-transparent border-none outline-hidden text-xs font-bold w-full ${h.isBooked ? 'text-red-700' : ''} disabled:cursor-not-allowed`} dir="ltr" />
+                              {/* برچسب رزرو ساعت */}
+                              {h.isBooked && <span className="text-[10px] text-red-500 font-bold flex items-center gap-1 shrink-0 bg-red-100 px-1.5 rounded"><Lock size={10}/> رزرو</span>}
                             </div>
-                            {dayHours.length > 1 && (
+                            {!isDayLocked && dayHours.length > 1 && (
                               <button type="button" onClick={() => removeDayHourRow(index)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                                 <Trash2 size={14} />
                               </button>
                             )}
                           </div>
                         ))}
-                        <button type="button" onClick={addDayHourRow} className="text-[11px] text-blue-600 font-bold flex items-center gap-0.5 pt-1">
-                          <Plus size={12}/> افزودن بازه ساعتی جدید
-                        </button>
+                        {!isDayLocked && (
+                          <button type="button" onClick={addDayHourRow} className="text-[11px] text-blue-600 font-bold flex items-center gap-0.5 pt-1">
+                            <Plus size={12}/> افزودن بازه جدید
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -384,16 +429,21 @@ export default function LeaderSchedule() {
                 )}
               </div>
 
-              {/* پیکربندی شیفت شب */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4 shadow-2xs">
+              {/* ----------------- شیفت شب ----------------- */}
+              <div className={`bg-white border ${isDayLocked ? "border-red-100 bg-red-50/20" : "border-gray-200"} rounded-2xl p-5 space-y-4 shadow-2xs relative`}>
                 <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                   <h4 className="font-bold text-sm text-blue-900 flex items-center gap-1.5">
-                    <Moon size={16} /> شیفت شب (Night Shift)
+                    <Moon size={16} /> شیفت شب
+                    {/* برچسب رزرو کل شیفت */}
+                    {userProfile?.availableDays?.find((d: any) => d.date === currentDate)?.nightShift?.isBooked && (
+                      <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-md flex items-center gap-1"><Lock size={10}/> رزرو شده</span>
+                    )}
                   </h4>
                   <select 
                     value={nightShiftMode} 
                     onChange={(e) => setNightShiftMode(e.target.value as ShiftMode)}
-                    className="bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold px-2.5 py-1 text-gray-700 outline-hidden cursor-pointer"
+                    disabled={isDayLocked}
+                    className="bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold px-2.5 py-1 text-gray-700 outline-hidden disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <option value="FULL_SHIFT">کل شیفت (ثابت)</option>
                     <option value="HOURLY">ساعتی (انتخاب بازه)</option>
@@ -406,33 +456,37 @@ export default function LeaderSchedule() {
                     <div className="flex gap-3 text-xs">
                       <div className="flex-1">
                         <span className="text-gray-400 block mb-1">شروع شیفت</span>
-                        <input type="time" value={nightStartTime} onChange={(e) => setNightStartTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 font-bold" />
+                        <input type="time" disabled={isDayLocked} value={nightStartTime} onChange={(e) => setNightStartTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 font-bold disabled:opacity-60 disabled:cursor-not-allowed" />
                       </div>
                       <div className="flex-1">
                         <span className="text-gray-400 block mb-1">پایان شیفت</span>
-                        <input type="time" value={nightEndTime} onChange={(e) => setNightEndTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 font-bold" />
+                        <input type="time" disabled={isDayLocked} value={nightEndTime} onChange={(e) => setNightEndTime(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 font-bold disabled:opacity-60 disabled:cursor-not-allowed" />
                       </div>
                     </div>
 
                     {nightShiftMode === "HOURLY" && (
                       <div className="space-y-2 pt-2 animate-in slide-in-from-top-2 duration-150">
-                        <span className="text-xs font-bold text-gray-500 block">بخش تعیین ساعت‌های آزاد شب:</span>
+                        <span className="text-xs font-bold text-gray-500 block">ساعت‌های آزاد شب:</span>
                         {nightHours.map((h, index) => (
                           <div key={index} className="flex items-center gap-2">
-                            <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200 flex-1">
-                              <Clock size={12} className="text-gray-400" />
-                              <input type="text" placeholder="مثال: 19:00-20:00" value={h.time} onChange={(e) => handleNightHourChange(index, e.target.value)} className="bg-transparent border-none outline-hidden text-xs font-bold w-full" dir="ltr" />
+                            <div className={`flex items-center gap-1.5 ${h.isBooked ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'} px-2 py-1 rounded-lg border flex-1`}>
+                              <Clock size={12} className={h.isBooked ? 'text-red-400' : 'text-gray-400'} />
+                              <input type="text" disabled={isDayLocked} placeholder="مثال: 19:00-20:00" value={h.time} onChange={(e) => handleNightHourChange(index, e.target.value)} className={`bg-transparent border-none outline-hidden text-xs font-bold w-full ${h.isBooked ? 'text-red-700' : ''} disabled:cursor-not-allowed`} dir="ltr" />
+                              {/* برچسب رزرو ساعت */}
+                              {h.isBooked && <span className="text-[10px] text-red-500 font-bold flex items-center gap-1 shrink-0 bg-red-100 px-1.5 rounded"><Lock size={10}/> رزرو</span>}
                             </div>
-                            {nightHours.length > 1 && (
+                            {!isDayLocked && nightHours.length > 1 && (
                               <button type="button" onClick={() => removeNightHourRow(index)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                                 <Trash2 size={14} />
                               </button>
                             )}
                           </div>
                         ))}
-                        <button type="button" onClick={addNightHourRow} className="text-[11px] text-blue-600 font-bold flex items-center gap-0.5 pt-1">
-                          <Plus size={12}/> افزودن بازه ساعتی جدید
-                        </button>
+                        {!isDayLocked && (
+                          <button type="button" onClick={addNightHourRow} className="text-[11px] text-blue-600 font-bold flex items-center gap-0.5 pt-1">
+                            <Plus size={12}/> افزودن بازه جدید
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -447,9 +501,13 @@ export default function LeaderSchedule() {
 
             {/* دکمه ارسال نهایی */}
             <div className="pt-4 border-t border-gray-100 flex justify-end">
-              <button type="submit" disabled={isSubmittingTime} className="bg-gadget-dark hover:bg-gadget-dark/90 text-white text-sm font-bold py-3 px-8 rounded-xl flex items-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-70">
-                {isSubmittingTime ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                {isSubmittingTime ? "در حال ثبت برنامه..." : "ثبت نهایی برنامه زمانی ترکیبی"}
+              <button 
+                type="submit" 
+                disabled={isSubmittingTime || isDayLocked} // 👈 قفل شدن دکمه در صورت رزرو
+                className={`text-sm font-bold py-3 px-8 rounded-xl flex items-center gap-2 shadow-md transition-all ${isDayLocked ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-gadget-dark hover:bg-gadget-dark/90 text-white cursor-pointer disabled:opacity-70"}`}
+              >
+                {isSubmittingTime ? <Loader2 className="animate-spin" size={16} /> : (isDayLocked ? <Lock size={16}/> : <Save size={16} />)}
+                {isSubmittingTime ? "در حال ثبت برنامه..." : (isDayLocked ? "غیرقابل ویرایش" : "ثبت نهایی برنامه زمانی")}
               </button>
             </div>
           </form>
