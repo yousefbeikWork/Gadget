@@ -37,6 +37,8 @@ interface Booking {
   totalPrice: number;
   status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
   createdAt: string;
+  startTime: string;
+  endTime: string;
 }
 
 export default function LeaderPatients() {
@@ -240,22 +242,34 @@ export default function LeaderPatients() {
 
                   {/* اگر رزرو ساعتی بود، ساعت‌ها را نشان بده */}
                   {booking.bookingType === "HOURLY" &&
-                    booking.timeSlots.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-50">
-                        <span className="text-xs text-gray-500 font-bold block w-full mb-1">
-                          ساعت‌های رزرو شده:
+                  booking.timeSlots?.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-50 mt-3">
+                      <span className="text-xs text-gray-500 font-bold block w-full mb-1">
+                        ساعت‌های رزرو شده:
+                      </span>
+                      {booking.timeSlots.map((slot, i) => (
+                        <span
+                          key={i}
+                          className="bg-white border border-gray-200 text-gray-600 text-xs font-bold px-2.5 py-1 rounded-md shadow-2xs"
+                          dir="ltr"
+                        >
+                          {slot}
                         </span>
-                        {booking.timeSlots.map((slot, i) => (
-                          <span
-                            key={i}
-                            className="bg-white border border-gray-200 text-gray-600 text-xs font-bold px-2.5 py-1 rounded-md"
-                            dir="ltr"
-                          >
-                            {slot}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-50 mt-3">
+                      <span className="text-xs text-gray-500 font-bold block w-full mb-1">
+                        بازه زمانی شیفت:
+                      </span>
+                      <span
+                        className="bg-white border border-gray-200 text-gray-600 text-xs font-bold px-2.5 py-1 rounded-md shadow-2xs"
+                        dir="rtl"
+                      >
+                        {booking.startTime} الی {booking.endTime}
+                      </span>
+                    </div>
+                  )}
 
                   {/* مبلغ */}
                   <div className="flex justify-between items-center pt-3 border-t border-gray-100 mt-3">

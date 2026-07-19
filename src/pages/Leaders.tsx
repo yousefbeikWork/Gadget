@@ -27,15 +27,12 @@ import {
 import api from "../services/api";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
-
-// 👈 ایمپورت‌های مربوط به تقویم شمسی
 import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 
-// === اینترفیس‌های لیدر ===
 interface Leader {
   _id: string;
   firstName: string;
@@ -63,27 +60,22 @@ interface PaginationInfo {
   currentPage: number;
   totalPages: number;
 }
-
-// === اینترفیس‌های مربوط به در دسترس بودن لیدر ===
 interface HourlySlot {
   time: string;
   isBooked: boolean;
 }
-
 interface ShiftDetails {
   startTime: string;
   endTime: string;
-  isBooked: boolean; // 👈 وضعیت پر بودن شیفت
+  isBooked: boolean;
   hours: HourlySlot[];
 }
-
 interface AvailableDay {
   date: string;
   isFullDayBooked: boolean;
   dayShift?: ShiftDetails;
   nightShift?: ShiftDetails;
 }
-
 interface LeaderAvailability {
   leaderId: string;
   pricing: {
@@ -95,7 +87,6 @@ interface LeaderAvailability {
   };
   availableDays: AvailableDay[];
 }
-
 export default function Leaders() {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
@@ -112,13 +103,11 @@ export default function Leaders() {
     totalPages: 0,
   });
 
-  // --- استیت‌های مربوط به مدال رزرو لیدر ---
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [bookingLeader, setBookingLeader] = useState<Leader | null>(null);
   const [availabilityData, setAvailabilityData] = useState<LeaderAvailability | null>(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
-  // استیت‌های فرم رزرو
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [bookingType, setBookingType] = useState<"FULL_DAY" | "DAY_SHIFT" | "NIGHT_SHIFT" | "HOURLY" | "">("");
   const [shiftType, setShiftType] = useState<"DAY" | "NIGHT" | "">("");
@@ -170,8 +159,6 @@ export default function Leaders() {
     return new Intl.NumberFormat("fa-IR").format(price) + " تومان";
   };
 
-  // ==================== لاجیک سیستم رزرو ====================
-
   const openBookingModal = async (leader: Leader) => {
     if (!isLoggedIn) {
       toast.error("برای رزرو و هماهنگی با لیدر، ابتدا وارد حساب کاربری خود شوید.");
@@ -216,7 +203,6 @@ export default function Leaders() {
     } else {
       setSelectedDate("");
     }
-    // ریست شدن با هر بار تغییر تاریخ
     setBookingType("");
     setShiftType("");
     setSelectedTimeSlots([]);
@@ -286,7 +272,7 @@ export default function Leaders() {
   return (
     <div className="bg-gray-50 rounded-2xl md:rounded-3xl w-full h-full overflow-y-auto custom-scrollbar p-4 md:p-8 font-sans" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* هدر و جستجو */}
+        {/* هدر و باکس جستجو */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-gadget-dark/10 text-gadget-dark rounded-2xl">
@@ -309,7 +295,6 @@ export default function Leaders() {
           </div>
         </div>
 
-        {/* لیست لیدرها */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-gadget-light">
             <Loader2 className="animate-spin mb-4" size={40} />
@@ -402,7 +387,9 @@ export default function Leaders() {
 
                         {leader.hasCar && leader.car ? (
                           <div className="space-y-3">
-                            <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1.5"><Car size={15} className="text-amber-500" /> اطلاعات و مشخصات فنی خودرو</h4>
+                            <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                              <Car size={15} className="text-amber-500" /> اطلاعات و مشخصات فنی خودرو
+                            </h4>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                               <div className="bg-white border border-gray-100 rounded-xl p-3 shadow-2xs">
                                 <span className="block text-[10px] text-gray-400 mb-0.5">برند خودرو</span>
@@ -513,7 +500,6 @@ export default function Leaders() {
                     </div>
                   )}
 
-                  {/* 👈 ۲. انتخاب نوع رزرو با بررسی هوشمند ظرفیت‌ها */}
                   {selectedDayData && !selectedDayData.isFullDayBooked && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                       <label className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
@@ -521,7 +507,6 @@ export default function Leaders() {
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         
-                        {/* رزرو کل روز */}
                         {selectedDayData.dayShift && selectedDayData.nightShift && (
                           <button
                             disabled={selectedDayData.dayShift.isBooked || selectedDayData.nightShift.isBooked}
@@ -546,7 +531,6 @@ export default function Leaders() {
                           </button>
                         )}
 
-                        {/* رزرو شیفت روز */}
                         {selectedDayData.dayShift && (
                           <button
                             disabled={selectedDayData.dayShift.isBooked}
@@ -562,16 +546,18 @@ export default function Leaders() {
                             }`}
                           >
                             <span className="font-bold text-sm text-gray-800">شیفت روز</span>
+                            <span className="text-[11px] font-bold text-blue-600 bg-blue-100/50 px-2 py-0.5 rounded-md" dir="rtl">
+                              {selectedDayData.dayShift.startTime} الی {selectedDayData.dayShift.endTime}
+                            </span>
                             <span className="text-[11px] text-gray-500">
                               {selectedDayData.dayShift.isBooked
                                 ? <span className="text-red-500 font-bold">تکمیل ظرفیت</span>
-                                : selectedDayData.dayShift.hours.length > 0 ? "انتخاب ساعت" : "پوشش کل شیفت"
+                                : selectedDayData.dayShift.hours.length > 0 ? "انتخاب ساعتی / یکپارچه" : "پوشش کل شیفت"
                               }
                             </span>
                           </button>
                         )}
 
-                        {/* رزرو شیفت شب */}
                         {selectedDayData.nightShift && (
                           <button
                             disabled={selectedDayData.nightShift.isBooked}
@@ -587,50 +573,107 @@ export default function Leaders() {
                             }`}
                           >
                             <span className="font-bold text-sm text-gray-800">شیفت شب</span>
+                            <span className="text-[11px] font-bold text-indigo-600 bg-indigo-100/50 px-2 py-0.5 rounded-md" dir="rtl">
+                              {selectedDayData.nightShift.startTime} الی {selectedDayData.nightShift.endTime}
+                            </span>
                             <span className="text-[11px] text-gray-500">
                               {selectedDayData.nightShift.isBooked
                                 ? <span className="text-red-500 font-bold">تکمیل ظرفیت</span>
-                                : selectedDayData.nightShift.hours.length > 0 ? "انتخاب ساعت" : "پوشش کل شیفت"
+                                : selectedDayData.nightShift.hours.length > 0 ? "انتخاب ساعتی / یکپارچه" : "پوشش کل شیفت"
                               }
                             </span>
                           </button>
                         )}
                       </div>
 
-                      {/* نمایش ساعت‌های قابل انتخاب */}
-                      {bookingType === "HOURLY" && shiftType && (
+                      {(shiftType === "DAY" || shiftType === "NIGHT") && (
                         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mt-2 space-y-3 animate-in fade-in">
-                          <span className="text-xs font-bold text-gray-600 flex items-center gap-1.5">
-                            <Layers size={14} className="text-gray-400" />
-                            انتخاب بازه‌های ساعتی مورد نیاز:
-                          </span>
-                          <div className="flex flex-wrap gap-2">
-                            {(shiftType === "DAY" ? selectedDayData.dayShift?.hours : selectedDayData.nightShift?.hours)?.map((slot) => {
-                              if (slot.isBooked) return (
-                                <span key={slot.time} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-200 text-gray-400 line-through decoration-gray-400 cursor-not-allowed border border-gray-300" dir="ltr">
-                                  {slot.time}
-                                </span>
-                              );
+                          {(() => {
+                            const currentShiftData = shiftType === "DAY" ? selectedDayData.dayShift : selectedDayData.nightShift;
+                            if (!currentShiftData) return null;
 
-                              const isSelected = selectedTimeSlots.includes(slot.time);
+                            const hasHours = currentShiftData.hours && currentShiftData.hours.length > 0;
+                            const hasBookedSlots = hasHours && currentShiftData.hours.some(h => h.isBooked);
+
+                            if (hasHours) {
                               return (
-                                <button
-                                  key={slot.time}
-                                  onClick={() => handleTimeSlotToggle(slot.time)}
-                                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border shadow-2xs ${isSelected ? "bg-gadget-dark text-white border-gadget-dark" : "bg-white text-gray-700 border-gray-300 hover:border-gadget-light hover:text-gadget-dark"}`}
-                                  dir="ltr"
-                                >
-                                  {slot.time}
-                                </button>
+                                <>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-bold text-gray-600 flex items-center gap-1.5">
+                                      <Layers size={14} className="text-gray-400" />
+                                      نحوه رزرو این شیفت را انتخاب کنید:
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="flex bg-gray-200/50 p-1 rounded-lg w-full mb-3">
+                                    <button
+                                      onClick={() => setBookingType("HOURLY")}
+                                      className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${bookingType === "HOURLY" ? "bg-white text-gadget-dark shadow-sm border border-gray-100" : "text-gray-500 hover:text-gray-700 cursor-pointer"}`}
+                                    >
+                                      ساعتی (انتخاب زمان)
+                                    </button>
+                                    <button
+                                      disabled={hasBookedSlots}
+                                      onClick={() => {
+                                        setBookingType(shiftType === "DAY" ? "DAY_SHIFT" : "NIGHT_SHIFT");
+                                        setSelectedTimeSlots([]);
+                                      }}
+                                      className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${hasBookedSlots ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${bookingType !== "HOURLY" ? "bg-white text-gadget-dark shadow-sm border border-gray-100" : "text-gray-500 hover:text-gray-700"}`}
+                                      title={hasBookedSlots ? "بخشی از این شیفت رزرو شده است" : ""}
+                                    >
+                                      یکپارچه (کل شیفت)
+                                    </button>
+                                  </div>
+                                  
+                                  {hasBookedSlots && bookingType === "HOURLY" && (
+                                      <p className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1.5 rounded mb-3 border border-amber-100">
+                                         توجه: به دلیل رزرو شدن بخشی از این شیفت توسط دیگران، فقط امکان رزرو ساعتی برای زمان‌های باقی‌مانده وجود دارد.
+                                      </p>
+                                  )}
+
+                                  {bookingType === "HOURLY" ? (
+                                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200/60">
+                                      {currentShiftData.hours.map((slot) => {
+                                        if (slot.isBooked) return (
+                                          <span key={slot.time} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-200 text-gray-400 line-through decoration-gray-400 cursor-not-allowed border border-gray-300 shadow-2xs" dir="ltr">
+                                            {slot.time}
+                                          </span>
+                                        );
+
+                                        const isSelected = selectedTimeSlots.includes(slot.time);
+                                        return (
+                                          <button
+                                            key={slot.time}
+                                            onClick={() => handleTimeSlotToggle(slot.time)}
+                                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border shadow-2xs ${isSelected ? "bg-gadget-dark text-white border-gadget-dark" : "bg-white text-gray-700 border-gray-300 hover:border-gadget-light hover:text-gadget-dark"}`}
+                                            dir="ltr"
+                                          >
+                                            {slot.time}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <div className="mt-3 pt-3 border-t  text-center text-xs font-bold text-emerald-600 bg-emerald-50 py-3 rounded-lg border border-emerald-100">
+                                      شما در حال رزرو کل این شیفت ({currentShiftData.startTime} الی {currentShiftData.endTime}) هستید.
+                                    </div>
+                                  )}
+                                </>
                               );
-                            })}
-                          </div>
+                            } else {
+                               return (
+                                   <div className="text-center text-xs font-bold text-emerald-600 bg-emerald-50 py-3 rounded-lg border border-emerald-100 flex items-center justify-center gap-2">
+                                      <CheckCircle2 size={16}/>
+                                      شما در حال رزرو یکپارچه‌ی شیفت {shiftType === "DAY" ? "روز" : "شب"} ({currentShiftData.startTime} الی {currentShiftData.endTime}) هستید.
+                                   </div>
+                               );
+                            }
+                          })()}
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* خلاصه و محاسبه قیمت نهایی */}
                   {bookingType && selectedDayData && (
                     <div className="bg-gray-800 text-white p-5 rounded-2xl flex items-center justify-between shadow-lg animate-in slide-in-from-bottom-2 mt-6 shrink-0">
                       <div className="flex items-center gap-3">

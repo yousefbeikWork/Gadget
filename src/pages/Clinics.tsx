@@ -37,6 +37,7 @@ interface Clinic {
   address: string;
   status: "فعال" | "غیرفعال";
   doctors: ClinicDoctor[];
+  medicalCenterId: string;
 }
 
 interface Slot {
@@ -64,6 +65,7 @@ export default function Clinics() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [bookingNotes, setBookingNotes] = useState("");
+  const [medicalCenterId, setMedicalCenterId] = useState("");
 
   useEffect(() => {
     const fetchClinics = async () => {
@@ -85,6 +87,7 @@ export default function Clinics() {
             address: item.address,
             status: item.isActive === false ? "غیرفعال" : "فعال",
             doctors: item.doctors || [],
+            medicalCenterId: item.id,
           }));
           setClinics(mappedData);
         } else {
@@ -119,6 +122,7 @@ export default function Clinics() {
     }
 
     setBookingClinic(clinic);
+    setMedicalCenterId(clinic.id);
     setBookingStep("select-doctor");
     setBookingDoctor(null);
     setSelectedDate("");
@@ -171,6 +175,7 @@ export default function Clinics() {
       startTime: selectedSlot.startTime,
       endTime: selectedSlot.endTime,
       notes: bookingNotes,
+      medicalCenterId: medicalCenterId ? medicalCenterId : null,
     };
 
     const bookingPromise = api.post("/book/bookslots", payload);
