@@ -198,12 +198,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         }`}
       >
         {/* ================== هدر موبایل به همراه لوگو ================== */}
-        <div className="flex items-center justify-between mt-2 pl-2 md:hidden border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between mt-1 pl-2 md:hidden border-b border-gray-100 shrink-0">
           <div className="flex items-center">
             <img
-              src="/logo.png"
+              src="/logo1.png"
               alt="لوگو"
-              className="w-25 h-15"
+              className="w-15 h-15 mt-2.5"
             />
             <span className="font-bold text-gray-800 text-sm">منوی کاربری</span>
           </div>
@@ -217,9 +217,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* ================== بخش لوگوی ثابت در دسکتاپ (ساختار عمودی و بزرگتر) ================== */}
         <div className="hidden md:flex flex-col items-center text-center pb-1 shrink-0">
-          <div className="w-60 h-40 flex items-center justify-center hover:scale-105 transition-transform duration-300">
+          <div className="w-60 h-60 flex items-center justify-center hover:scale-105 transition-transform duration-300">
             <img
-              src="/logo.png"
+              src="/logo1.png"
               alt="لوگوی سامانه"
               className="w-full h-full"
             />
