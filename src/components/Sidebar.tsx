@@ -21,6 +21,7 @@ import {
   Users,
   FlaskConical,
   Wrench,
+  Shield,
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 import DoctorAvatar from "./DoctorAvatar";
@@ -40,10 +41,16 @@ const menuItems = [
     ],
   },
   {
+    key: "Adminpanel",
+    path: "admin-panel",
+    icon: Shield,
+    allowedRoles: ["Admin"],
+  },
+  {
     key: "schedule",
     path: "/schedule",
     icon: Calendar,
-    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter","Leader"],
+    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter", "Leader"],
   },
   {
     key: "myAppointments",
@@ -61,13 +68,13 @@ const menuItems = [
     key: "patients",
     path: "/patients",
     icon: Users,
-    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter","Leader"],
+    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter", "Leader"],
   },
   {
     key: "doctors",
     path: "/doctors",
     icon: Stethoscope,
-    allowedRoles: ["Patient", "Leader", "guest"],
+    allowedRoles: ["Patient", "Leader", "guest", "Admin"],
   },
   {
     key: "hospitals",
@@ -79,13 +86,13 @@ const menuItems = [
     key: "clinics",
     path: "/clinics",
     icon: Hospital,
-    allowedRoles: ["Patient", "Leader", "guest", "Doctor"],
+    allowedRoles: ["Patient", "Leader", "guest", "Doctor", "Admin"],
   },
   {
     key: "laboratories",
     path: "/laboratories",
     icon: FlaskConical,
-    allowedRoles: ["Patient", "guest"],
+    allowedRoles: ["Patient", "guest", "Admin"],
   },
   {
     key: "myLaboratories",
@@ -115,7 +122,7 @@ const menuItems = [
     key: "leader",
     path: "/leaders",
     icon: Compass,
-    allowedRoles: ["MedicalCenter", "guest", "Patient"],
+    allowedRoles: ["MedicalCenter", "guest", "Patient", "Admin"],
   },
   {
     key: "visa",
@@ -200,11 +207,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* ================== هدر موبایل به همراه لوگو ================== */}
         <div className="flex items-center justify-between mt-1 pl-2 md:hidden border-b border-gray-100 shrink-0">
           <div className="flex items-center">
-            <img
-              src="/logo1.png"
-              alt="لوگو"
-              className="w-15 h-15 mt-2.5"
-            />
+            <img src="/logo1.png" alt="لوگو" className="w-15 h-15 mt-2.5" />
             <span className="font-bold text-gray-800 text-sm">منوی کاربری</span>
           </div>
           <button

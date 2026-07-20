@@ -20,6 +20,7 @@ import {
   TestTube2,
   Banknote,
   ClipboardList,
+  LogIn,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../services/api";
@@ -77,7 +78,7 @@ interface LabSlot {
 
 export default function Laboratories() {
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, userRole } = useAuth();
   const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -495,12 +496,28 @@ export default function Laboratories() {
                     )}
                   </div>
 
-                  <button
-                    onClick={() => handleSelectLab(lab)}
-                    className="w-full bg-gadget-dark hover:bg-gadget-dark/90 text-white text-center py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer mt-auto"
-                  >
-                    مشاهده نوبت‌ها و رزرو
-                  </button>
+                  {/* اگر کاربر ادمین یا سوپر ادمین بود، کلاً دکمه‌های رزرو و ورود را مخفی کن */}
+                  {userRole !== "Admin" && userRole !== "SUPER_ADMIN" && (
+                    <div className="mt-auto pt-4">
+                      {isLoggedIn ? (
+                        <button
+                          onClick={() => handleSelectLab(lab)}
+                          className="w-full bg-gadget-dark hover:bg-gadget-dark/90 text-white text-center py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          مشاهده نوبت‌ها و رزرو
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => navigate("/login")}
+                          className="w-full bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light text-center py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <LogIn size={18} />{" "}
+                          {/* در صورت تمایل آیکون LogIn را ایمپورت کنید */}
+                          برای رزرو وارد شوید
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

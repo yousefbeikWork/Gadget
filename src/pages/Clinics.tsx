@@ -12,6 +12,7 @@ import {
   Calendar,
   AlignRight,
   X,
+  LogIn,
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -321,15 +322,28 @@ export default function Clinics() {
                   </div>
                 </div>
 
-                {/* دکمه پایین کارت با دکور تمام عرض */}
-                <div className="pt-4 border-t border-gray-50">
-                  <button
-                    onClick={() => openBookingProcess(clinic)}
-                    className="w-full bg-gadget-dark hover:bg-gadget-dark/90 text-white text-center py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <CalendarDays size={16} /> مشاهده پزشکان و رزرو
-                  </button>
-                </div>
+                {/* اگر کاربر ادمین یا سوپر ادمین بود، کلاً دکمه‌های رزرو و ورود کلینیک را مخفی کن */}
+                {userRole !== "Admin" && userRole !== "SUPER_ADMIN" && (
+                  <div className="pt-4 border-t border-gray-50">
+                    {isLoggedIn ? (
+                      <button
+                        onClick={() => openBookingProcess(clinic)}
+                        className="w-full bg-gadget-dark hover:bg-gadget-dark/90 text-white text-center py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <CalendarDays size={16} /> مشاهده پزشکان و رزرو
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => navigate("/login")}
+                        className="w-full bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light text-center py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <LogIn size={16} />{" "}
+                        {/* مطمئن شوید آیکون LogIn ایمپورت شده است */}
+                        برای رزرو وارد شوید
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -40,7 +40,7 @@ interface Slot {
 }
 
 export default function Doctors() {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, userRole } = useAuth();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -290,25 +290,28 @@ export default function Doctors() {
                   </div>
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-gray-100">
-                  {isLoggedIn ? (
-                    <button
-                      onClick={() => openBookingModal(doctor)}
-                      className="w-full flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
-                    >
-                      <CalendarPlus size={18} />
-                      دریافت نوبت
-                    </button>
-                  ) : (
-                    <Link
-                      to="/login"
-                      className="w-full flex items-center justify-center gap-2 bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light py-2.5 rounded-xl text-sm font-bold transition-all"
-                    >
-                      <LogIn size={18} />
-                      برای رزرو وارد شوید
-                    </Link>
-                  )}
-                </div>
+                {/* اگر کاربر ادمین یا سوپر ادمین بود، کلاً باکس دکمه‌ی نوبت‌دهی را نشان نده */}
+                {userRole !== "Admin" && userRole !== "SUPER_ADMIN" && (
+                  <div className="mt-auto pt-4 border-t border-gray-100">
+                    {isLoggedIn ? (
+                      <button
+                        onClick={() => openBookingModal(doctor)}
+                        className="w-full flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+                      >
+                        <CalendarPlus size={18} />
+                        دریافت نوبت
+                      </button>
+                    ) : (
+                      <Link
+                        to="/login"
+                        className="w-full flex items-center justify-center gap-2 bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light py-2.5 rounded-xl text-sm font-bold transition-all"
+                      >
+                        <LogIn size={18} />
+                        برای رزرو وارد شوید
+                      </Link>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

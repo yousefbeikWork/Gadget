@@ -13,11 +13,26 @@ import {
   BookOpen,
   Stethoscope,
 } from "lucide-react";
-
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 export default function Home() {
   const { t, i18n } = useTranslation();
   const numberFormatter = new Intl.NumberFormat(i18n.language);
 
+  const { isLoggedIn, userRole, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && isLoggedIn) {
+      // 👈 هدایت خودکار ادمین در صورت ورود به روت ریشه
+      if (userRole === "Admin" || userRole === "SUPER_ADMIN") {
+        navigate("/admin-panel", { replace: true });
+      }
+    }
+  }, [isLoggedIn, userRole, isLoading, navigate]);
+
+  if (isLoading) return null;
   // دیتای آماری بالا
   const stats = [
     {

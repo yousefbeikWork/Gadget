@@ -24,6 +24,7 @@ import HealthRecords from "./pages/HealthRecords";
 import Profile from "./pages/Profile/";
 import Laboratories from "./pages/Laboratories";
 import Leaders from "./pages/Leaders";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div
@@ -54,7 +55,7 @@ function App() {
 
             {/* روت‌های عمومی (همه) */}
             <Route
-              element={<ProtectedRoute allowedRoles={["guest", "Patient"]} />}
+              element={<ProtectedRoute allowedRoles={["guest", "Patient","Admin"]} />}
             >
               <Route path="/laboratories" element={<Laboratories />} />
               <Route
@@ -105,7 +106,7 @@ function App() {
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={["Patient", "Doctor", "Leader", "guest"]}
+                  allowedRoles={["Patient", "Doctor", "Leader", "guest","Admin"]}
                 />
               }
             >
@@ -121,7 +122,12 @@ function App() {
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={["Doctor", "MedicalCenter", "laboratorCenter","Leader"]}
+                  allowedRoles={[
+                    "Doctor",
+                    "MedicalCenter",
+                    "laboratorCenter",
+                    "Leader",
+                  ]}
                 />
               }
             >
@@ -148,14 +154,11 @@ function App() {
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={["MedicalCenter", "guest", "Patient"]}
+                  allowedRoles={["MedicalCenter", "guest", "Patient","Admin"]}
                 />
               }
             >
-              <Route
-                path="/leaders"
-                element={<Leaders />}
-              />
+              <Route path="/leaders" element={<Leaders />} />
               <Route path="/clinic-doctors" element={<ClinicDoctors />} />
             </Route>
 
@@ -193,6 +196,9 @@ function App() {
                 path="/my-appointments"
                 element={<PatientAppointments />}
               />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
+              <Route path="/admin-panel" element={<AdminDashboard />} />
             </Route>
           </Route>
 
