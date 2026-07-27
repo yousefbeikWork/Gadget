@@ -24,7 +24,7 @@ import {
   Shield,
   Info,
   PhoneCall,
-  HelpCircle,
+  // HelpCircle,
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 import DoctorAvatar from "./DoctorAvatar";
