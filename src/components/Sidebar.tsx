@@ -22,6 +22,9 @@ import {
   FlaskConical,
   Wrench,
   Shield,
+  Info,
+  PhoneCall,
+  HelpCircle,
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 import DoctorAvatar from "./DoctorAvatar";
@@ -147,6 +150,32 @@ const menuItems = [
     key: "search",
     path: "/search",
     icon: Search,
+    allowedRoles: [
+      "Patient",
+      "Doctor",
+      "MedicalCenter",
+      "laboratorCenter",
+      "Leader",
+      "guest",
+    ],
+  },
+    {
+    key: "aboutUs",
+    path: "/about",
+    icon: Info,
+    allowedRoles: [
+      "Patient",
+      "Doctor",
+      "MedicalCenter",
+      "laboratorCenter",
+      "Leader",
+      "guest",
+    ],
+  },
+  {
+    key: "contactUs",
+    path: "/contact",
+    icon: PhoneCall,
     allowedRoles: [
       "Patient",
       "Doctor",

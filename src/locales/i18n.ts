@@ -22,6 +22,8 @@ const resources = {
       schedule: "مدیریت نوبت‌دهی",
       myAppointments: "نوبت های من",
       Adminpanel: "پنل ادمین",
+      aboutUs: "درباره ما",
+      contactUs: "تماس با ما",
 
       // کلمات صفحه اصلی (Home)
       welcome: "سلام حسین، به گجت خوش اومدی! 👋",
@@ -56,6 +58,8 @@ const resources = {
       leader: "Leader",
       visa: "Visa",
       Adminpanel: "Admin panel",
+      aboutUs: "About Us",
+      contactUs: "Contact Us",
 
       // کلمات صفحه اصلی (Home)
       welcome: "Hello Hossein, Welcome to Gadget! 👋",
