@@ -68,7 +68,7 @@ const menuItems = [
     key: "patients",
     path: "/patients",
     icon: Users,
-    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter", "Leader"],
+    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter", "Leader","Admin"],
   },
   {
     key: "doctors",

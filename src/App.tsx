@@ -127,6 +127,7 @@ function App() {
                     "MedicalCenter",
                     "laboratorCenter",
                     "Leader",
+                    "Admin"
                   ]}
                 />
               }

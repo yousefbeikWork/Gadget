@@ -4,6 +4,8 @@ import DoctorPatients from "./DoctorPatients";
 import LaboratoryPatients from "./LaboratoryPatients";
 import ClinicPatients from "./ClinicPatients";
 import LeaderPatients from "./LeaderPatients";
+// 👈 کامپوننت ادمین را ایمپورت کنید
+import AdminPatients from "./AdminPatients"; 
 
 export default function Patients() {
   const { userRole, userProfile, isLoading } = useAuth();
@@ -17,6 +19,10 @@ export default function Patients() {
   }
 
   // نمایش بر اساس تفکیک نقش‌ها
+  if (userRole === "Admin" || userRole === "SUPER_ADMIN") {
+    return <AdminPatients />;
+  }
+
   if (userRole === "Doctor") {
     return <DoctorPatients />;
   }
