@@ -12,9 +12,11 @@ import {
   CheckCircle2,
   BookOpen,
   Stethoscope,
+  Info,
+  PhoneCall,
 } from "lucide-react";
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 export default function Home() {
   const { t, i18n } = useTranslation();
@@ -222,23 +224,44 @@ export default function Home() {
         {/* 4. دو ستونه: چرا ما؟ + تخصص‌ها */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-16">
           {/* چرا پلتفرم ما */}
-          <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-            <h2 className="text-xl font-bold text-gadget-dark mb-6">
-              چرا پلتفرم ما؟
-            </h2>
-            <ul className="space-y-4">
-              {features.map((feature, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <CheckCircle2
-                    size={18}
-                    className="text-gadget-light shrink-0 mt-0.5"
-                  />
-                  <span className="text-sm text-gray-700 leading-relaxed">
-                    {feature}
-                  </span>
-                </li>
-              ))}
-            </ul>
+          <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gadget-dark mb-6">
+                چرا پلتفرم ما؟
+              </h2>
+              <ul className="space-y-4">
+                {features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <CheckCircle2
+                      size={18}
+                      className="text-gadget-light shrink-0 mt-0.5"
+                    />
+                    <span className="text-sm text-gray-700 leading-relaxed">
+                      {feature}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 👈 👈 دکمه‌های «درباره ما» و «تماس با ما» در زیر بخش چرا پلتفرم ما */}
+            <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center gap-3">
+              <Link
+                to="/about"
+                className="w-full sm:flex-1 bg-gadget-dark hover:bg-gadget-dark/90 text-white text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                <Info size={16} />
+                <span>درباره نوریان</span>
+              </Link>
+
+              <Link
+                to="/contact"
+                className="w-full sm:flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <PhoneCall size={16} className="text-gadget-dark" />
+                <span>تماس با ما</span>
+              </Link>
+            </div>
           </div>
 
           {/* درمان‌ها و تخصص‌ها */}

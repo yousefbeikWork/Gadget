@@ -12,7 +12,6 @@ import ClinicRegisterDocs from "./pages/ClinicRegisterDocs";
 
 // ایمپورت صفحات اختصاصی سیستم
 import Home from "./pages/Home";
-// import Profile from "./pages/Profile";
 import ServicesDashboard from "./pages/ServicesDashboard";
 import Doctors from "./pages/Doctors";
 import Clinics from "./pages/Clinics";
@@ -25,6 +24,10 @@ import Profile from "./pages/Profile/";
 import Laboratories from "./pages/Laboratories";
 import Leaders from "./pages/Leaders";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+
+// 👈 ایمپورت صفحات جدید درباره ما و تماس با ما
+import AboutUs from "./pages/AboutUs";
+import ContactUs from "./pages/ContactUs";
 
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div
@@ -41,7 +44,7 @@ function App() {
       <BrowserRouter>
         <Toaster position="top-center" />
         <Routes>
-          {/* مسیرهای عمومی */}
+          {/* مسیرهای عمومی و احراز هویت */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/register-clinic" element={<ClinicRegister />} />
@@ -50,12 +53,17 @@ function App() {
             element={<ClinicRegisterDocs />}
           />
 
+          {/* مسیرهای اصلی داخل لی‌آوت اصلی سیستم */}
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<Home />} />
+            
+            {/* 👈 روت‌های عمومی جدید (قابل دسترس برای همه کاربران و مهمانان) */}
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactUs />} />
 
             {/* روت‌های عمومی (همه) */}
             <Route
-              element={<ProtectedRoute allowedRoles={["guest", "Patient","Admin"]} />}
+              element={<ProtectedRoute allowedRoles={["guest", "Patient", "Admin"]} />}
             >
               <Route path="/laboratories" element={<Laboratories />} />
               <Route
@@ -64,6 +72,7 @@ function App() {
               />
               <Route path="/visas" element={<PlaceholderPage title="ویزا" />} />
             </Route>
+
             <Route
               element={
                 <ProtectedRoute
@@ -71,12 +80,12 @@ function App() {
                 />
               }
             >
-              {" "}
               <Route
                 path="/travels"
                 element={<PlaceholderPage title="سفر" />}
               />
             </Route>
+
             <Route
               element={
                 <ProtectedRoute
@@ -87,6 +96,7 @@ function App() {
                     "Leader",
                     "laboratorCenter",
                     "guest",
+                    "Admin",
                   ]}
                 />
               }
@@ -106,7 +116,7 @@ function App() {
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={["Patient", "Doctor", "Leader", "guest","Admin"]}
+                  allowedRoles={["Patient", "Doctor", "Leader", "guest", "Admin"]}
                 />
               }
             >
@@ -151,11 +161,11 @@ function App() {
               />
             </Route>
 
-            {/* روت‌های اختصاصی */}
+            {/* روت‌های اختصاصی لیدر و کلینیک */}
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={["MedicalCenter", "guest", "Patient","Admin"]}
+                  allowedRoles={["MedicalCenter", "guest", "Patient", "Admin"]}
                 />
               }
             >
@@ -182,6 +192,7 @@ function App() {
                     "MedicalCenter",
                     "Leader",
                     "laboratorCenter",
+                    "Admin",
                   ]}
                 />
               }
@@ -198,11 +209,14 @@ function App() {
                 element={<PatientAppointments />}
               />
             </Route>
+
+            {/* پنل مدیریت کلان */}
             <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
               <Route path="/admin-panel" element={<AdminDashboard />} />
             </Route>
           </Route>
 
+          {/* مسیر ریدایرکت برای آدرس‌های نامعتبر */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
