@@ -24,12 +24,12 @@ import {
   Shield,
   Info,
   PhoneCall,
-  // HelpCircle,
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 import DoctorAvatar from "./DoctorAvatar";
 
 const menuItems = [
+  // ... (آرایه menuItems دقیقاً مثل قبل باقی می‌ماند، نیازی به تغییر کلیدها نیست)
   {
     key: "home",
     path: "/dashboard",
@@ -71,7 +71,13 @@ const menuItems = [
     key: "patients",
     path: "/patients",
     icon: Users,
-    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter", "Leader","Admin"],
+    allowedRoles: [
+      "Doctor",
+      "MedicalCenter",
+      "laboratorCenter",
+      "Leader",
+      "Admin",
+    ],
   },
   {
     key: "doctors",
@@ -159,7 +165,7 @@ const menuItems = [
       "guest",
     ],
   },
-    {
+  {
     key: "aboutUs",
     path: "/about",
     icon: Info,
@@ -205,17 +211,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const getRoleName = (role: string | null) => {
     switch (role) {
       case "Doctor":
-        return "پزشک متخصص";
+        return t("roles.Doctor");
       case "Patient":
-        return "بیمار";
+        return t("roles.Patient");
       case "MedicalCenter":
-        return "مرکز درمانی";
+        return t("roles.MedicalCenter");
       case "laboratorCenter":
-        return "مرکز آزمایشگاهی";
+        return t("roles.laboratorCenter");
       case "Leader":
-        return "لیدر (راهنما)";
+        return t("roles.Leader");
       default:
-        return "کاربر سامانه";
+        return t("roles.SystemUser");
     }
   };
 
@@ -233,11 +239,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        {/* ================== هدر موبایل به همراه لوگو ================== */}
         <div className="flex items-center justify-between mt-1 pl-2 md:hidden border-b border-gray-100 shrink-0">
           <div className="flex items-center">
-            <img src="/logo1.png" alt="لوگو" className="w-15 h-15 mt-2.5" />
-            <span className="font-bold text-gray-800 text-sm">منوی کاربری</span>
+            <img src="/logo1.png" alt="Logo" className="w-15 h-15 mt-2.5" />
+            <span className="font-bold text-gray-800 text-sm">
+              {t("userMenu")}
+            </span>
           </div>
           <button
             onClick={onClose}
@@ -247,26 +254,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
 
-        {/* ================== بخش لوگوی ثابت در دسکتاپ (ساختار عمودی و بزرگتر) ================== */}
         <div className="hidden md:flex flex-col items-center text-center pb-1 shrink-0">
           <div className="w-60 h-60 flex items-center justify-center hover:scale-105 transition-transform duration-300">
-            <img
-              src="/logo1.png"
-              alt="لوگوی سامانه"
-              className="w-full h-full"
-            />
+            <img src="/logo1.png" alt="System Logo" className="w-full h-full" />
           </div>
-          {/* <div className="flex flex-col">
-            <span className="font-bold text-gray-800 text-base tracking-tight">
-              سامانه هوشمند سلامت
-            </span>
-            <span className="text-gadget-light text-xs font-bold mt-2 opacity-90">
-              مدیریت درمان و ترابری
-            </span>
-          </div> */}
         </div>
 
-        {/* لیست منوها */}
         <div className="flex-1 py-6 md:py-6 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <ul className="space-y-1.5 md:space-y-4">
             {filteredMenuItems.map((item, index) => {
@@ -289,9 +282,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <h3
                           className={`text-sm transition-colors ${isActive ? "font-bold text-gadget-dark" : "font-medium text-gray-600 group-hover:text-gadget-dark"}`}
                         >
-                          {item.key === "myLaboratories"
-                            ? "آزمایشگاه‌های همکار"
-                            : t(item.key)}
+                          {t(item.key)}
                         </h3>
                       </div>
                     </>
@@ -302,7 +293,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </ul>
         </div>
 
-        {/* بخش کاربری پایین سایدبار */}
         <div className="mt-auto shrink-0 border-t border-gray-100 bg-gray-50/50 md:rounded-2xl">
           <div className="p-5 flex flex-col gap-3">
             {isLoggedIn ? (
@@ -311,7 +301,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   to="/profile"
                   onClick={onClose}
                   className="flex items-center gap-3 mb-2 p-2 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer group"
-                  title="مشاهده و ویرایش پروفایل"
+                  title={t("viewProfile")}
                 >
                   <DoctorAvatar
                     imageProfile={userProfile?.imageProfile}
@@ -323,7 +313,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     }
                     className="w-10 h-10 text-sm group-hover:scale-105 transition-transform shrink-0"
                   />
-
                   <div className="overflow-hidden">
                     <h4 className="text-sm font-bold text-gray-800 truncate group-hover:text-gadget-light transition-colors">
                       {userRole === "MedicalCenter" ||
@@ -331,11 +320,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         ? userProfile?.centerName
                         : userProfile
                           ? `${userProfile.firstName || ""} ${userProfile.lastName || ""}`
-                          : "در حال بارگذاری..."}
+                          : t("loading")}
                     </h4>
                     <p className="text-xs text-gray-500 font-medium truncate mt-0.5">
                       {userRole === "Doctor" && userProfile?.Expertise
-                        ? `متخصص ${userProfile.Expertise}`
+                        ? `${t("specialistPrefix")} ${userProfile.Expertise}`
                         : getRoleName(userRole)}
                     </p>
                   </div>
@@ -348,7 +337,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   className="flex items-center justify-center gap-2 w-full text-red-500 hover:bg-red-50 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                 >
                   <LogOut size={16} />
-                  <span>خروج از سیستم</span>
+                  <span>{t("logout")}</span>
                 </button>
               </div>
             ) : (
@@ -359,7 +348,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   className="flex items-center justify-center gap-2 w-full bg-white hover:bg-gray-100 text-gadget-dark py-2.5 rounded-xl text-sm font-bold transition-colors border border-gray-200"
                 >
                   <LogIn size={18} />
-                  <span>ورود به سیستم</span>
+                  <span>{t("login")}</span>
                 </Link>
                 <Link
                   to="/register"
@@ -367,12 +356,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   className="flex items-center justify-center gap-2 w-full bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm"
                 >
                   <UserPlus size={18} />
-                  <span>ثبت‌نام جدید</span>
+                  <span>{t("register")}</span>
                 </Link>
               </>
             )}
           </div>
-
           <div className="px-6 pb-6 pt-2 flex justify-center w-full">
             <LanguageSwitcher />
           </div>

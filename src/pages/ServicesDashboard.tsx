@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Home,
   Stethoscope,
@@ -28,178 +29,140 @@ interface ServiceItem {
 }
 
 export default function ServicesDashboard() {
-  const { userRole, isLoggedIn } = useAuth(); // گرفتن وضعیت لاگین و نقش کاربر
+  const { userRole, isLoggedIn } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
-  // تعیین نقش فعلی (مهمان یا نقش لاگین شده)
   const currentRole = isLoggedIn ? userRole : "guest";
 
   const allServices: ServiceItem[] = [
     {
       id: "home",
-      title: "خانه",
+      title: t("home"),
       icon: Home,
       path: "/",
-      // 👈 دسترسی آزمایشگاه اضافه شد
-      allowedRoles: [
-        "Patient",
-        "Doctor",
-        "MedicalCenter",
-        "laboratorCenter",
-        "Leader",
-        "guest",
-      ],
+      allowedRoles: ["Patient", "Doctor", "MedicalCenter", "laboratorCenter", "Leader", "guest"],
       color: "bg-blue-50 text-blue-600 border-blue-100",
-      description: "داشبورد اصلی و خلاصه وضعیت",
+      description: t("desc_home"),
     },
     {
       id: "patients",
-      title: "بیماران",
+      title: t("patients"),
       icon: Users,
       path: "/patients",
-      allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter","Leader"],
+      allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter", "Leader"],
       color: "bg-emerald-50 text-emerald-600 border-emerald-100",
-      description: "مدیریت و مشاهده لیست بیماران",
+      description: t("desc_patients"),
     },
     {
       id: "doctors",
-      title: "پزشک",
+      title: t("doctors"),
       icon: Stethoscope,
       path: "/doctors",
       allowedRoles: ["Patient", "Leader", "guest"],
       color: "bg-indigo-50 text-indigo-600 border-indigo-100",
-      description: "لیست پزشکان و رزرو نوبت",
+      description: t("desc_doctors"),
     },
     {
       id: "hospital",
-      title: "بیمارستان",
+      title: t("hospitals"),
       icon: Building2,
       path: "/hospitals",
       allowedRoles: ["Patient", "Doctor", "Leader", "guest"],
       color: "bg-rose-50 text-rose-600 border-rose-100",
-      description: "مراکز درمانی و بیمارستان‌ها",
+      description: t("desc_hospitals"),
     },
     {
       id: "clinic",
-      title: "کلینیک",
+      title: t("clinics"),
       icon: Building,
       path: "/clinics",
       allowedRoles: ["Patient", "Doctor", "Leader", "guest"],
       color: "bg-teal-50 text-teal-600 border-teal-100",
-      description: "درمانگاه‌ها و کلینیک‌های تخصصی",
+      description: t("desc_clinics"),
     },
     {
       id: "lab",
-      title: "آزمایشگاه",
+      title: t("laboratories"),
       icon: FlaskConical,
       path: "/laboratories",
-      // 👈 دسترسی آزمایشگاه (برای دیدن همکاران) اضافه شد
       allowedRoles: ["Patient", "guest"],
       color: "bg-purple-50 text-purple-600 border-purple-100",
-      description: "مراکز پاتولوژی و آزمایشگاهی",
+      description: t("desc_laboratories"),
     },
-    // {
-    //   id: "myLaboratories",
-    //   title: "آزمایشگاه همکار",
-    //   icon: FlaskConical,
-    //   path: "/Collaborating-lab",
-    //   allowedRoles: ["laboratorCenter"],
-    //   color: "bg-purple-50 text-purple-600 border-purple-100",
-    //   description: "مراکز پاتولوژی و آزمایشگاهی",
-    // },
     {
       id: "calibration",
-      title: "کالیبراسیون",
+      title: t("calibration"),
       icon: Wrench,
       path: "/calibration",
       allowedRoles: ["MedicalCenter", "laboratorCenter"],
       color: "bg-slate-50 text-slate-600 border-slate-200",
-      description: "تنظیم و کالیبراسیون تجهیزات",
+      description: t("desc_calibration"),
     },
     {
       id: "flight",
-      title: "هواپیما",
+      title: t("airplanes"),
       icon: Plane,
       path: "/flights",
       allowedRoles: ["Patient", "guest"],
       color: "bg-sky-50 text-sky-600 border-sky-100",
-      description: "رزرو بلیت هواپیما و پرواز",
+      description: t("desc_flights"),
     },
     {
       id: "travel",
-      title: "سفر",
+      title: t("travel"),
       icon: Map,
       path: "/travels",
-      allowedRoles: ["MedicalCenter", "Leader", "guest","Patient"],
+      allowedRoles: ["MedicalCenter", "Leader", "guest", "Patient"],
       color: "bg-amber-50 text-amber-600 border-amber-100",
-      description: "خدمات گردشگری و اقامت",
+      description: t("desc_travels"),
     },
     {
       id: "leader",
-      title: "لیدر",
+      title: t("leader"),
       icon: Flag,
       path: "/leaders",
       allowedRoles: ["Patient", "MedicalCenter", "guest"],
       color: "bg-orange-50 text-orange-600 border-orange-100",
-      description: "راهنمای تور و مترجم",
+      description: t("desc_leaders"),
     },
     {
       id: "visa",
-      title: "ویزا",
+      title: t("visa"),
       icon: FileCheck,
       path: "/visas",
       allowedRoles: ["Patient", "guest"],
       color: "bg-cyan-50 text-cyan-600 border-cyan-100",
-      description: "خدمات اخذ ویزای درمانی",
+      description: t("desc_visas"),
     },
     {
       id: "guide",
-      title: "راهنما",
+      title: t("guides"),
       icon: HelpCircle,
       path: "/guide",
-      // 👈 دسترسی آزمایشگاه اضافه شد
-      allowedRoles: [
-        "Patient",
-        "Doctor",
-        "MedicalCenter",
-        "laboratorCenter",
-        "guest",
-        "Leader"
-      ],
+      allowedRoles: ["Patient", "Doctor", "MedicalCenter", "laboratorCenter", "guest", "Leader"],
       color: "bg-gray-50 text-gray-600 border-gray-200",
-      description: "پشتیبانی و راهنمای سیستم",
+      description: t("desc_guides"),
     },
     {
       id: "search",
-      title: "جستوجو",
+      title: t("search"),
       icon: Search,
       path: "/search",
-      // 👈 دسترسی آزمایشگاه اضافه شد
-      allowedRoles: [
-        "Patient",
-        "Doctor",
-        "MedicalCenter",
-        "laboratorCenter",
-        "guest",
-        "Leader"
-      ],
+      allowedRoles: ["Patient", "Doctor", "MedicalCenter", "laboratorCenter", "guest", "Leader"],
       color: "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100",
-      description: "جستجوی جامع در سامانه",
+      description: t("desc_search"),
     },
   ];
 
   const visibleServices =
     currentRole === "guest"
       ? allServices
-      : allServices.filter((service) =>
-          service.allowedRoles.includes(currentRole || ""),
-        );
+      : allServices.filter((service) => service.allowedRoles.includes(currentRole || ""));
 
   const handleServiceNavigation = (path: string, allowedRoles: string[]) => {
     if (!isLoggedIn && !allowedRoles.includes("guest")) {
-      toast.error(
-        "برای استفاده از این بخش، لطفا ابتدا وارد حساب کاربری خود شوید یا ثبت‌نام کنید.",
-      );
+      toast.error(t("loginToastMsg"));
       navigate("/login");
       return;
     }
@@ -209,18 +172,14 @@ export default function ServicesDashboard() {
   return (
     <div
       className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 w-full h-full overflow-y-auto custom-scrollbar p-6 md:p-8 font-sans"
-      dir="rtl"
+      dir={i18n.language === "fa" ? "rtl" : "ltr"}
     >
       <div className="max-w-7xl mx-auto">
         <div className="mb-8 border-b border-gray-50 pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              خدمات سامانه TAP.NET
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-800">{t("servicesTitle")}</h1>
             <p className="text-gray-500 text-sm mt-1">
-              {!isLoggedIn
-                ? "به عنوان کاربر مهمان خوش آمدید. برای استفاده از تمامی امکانات عملیاتی، وارد سیستم شوید."
-                : "دسترسی سریع به امکانات پنل کاربری شما"}
+              {!isLoggedIn ? t("guestWelcome") : t("userWelcome")}
             </p>
           </div>
           {!isLoggedIn && (
@@ -228,7 +187,7 @@ export default function ServicesDashboard() {
               onClick={() => navigate("/login")}
               className="bg-gadget-dark hover:bg-gadget-dark/90 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm transition-all self-start sm:self-auto cursor-pointer"
             >
-              ورود سریع / ثبت‌نام
+              {t("quickLoginReg")}
             </button>
           )}
         </div>
@@ -236,15 +195,12 @@ export default function ServicesDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
           {visibleServices.map((service) => {
             const Icon = service.icon;
-            const isLockedForGuest =
-              !isLoggedIn && !service.allowedRoles.includes("guest");
+            const isLockedForGuest = !isLoggedIn && !service.allowedRoles.includes("guest");
 
             return (
               <button
                 key={service.id}
-                onClick={() =>
-                  handleServiceNavigation(service.path, service.allowedRoles)
-                }
+                onClick={() => handleServiceNavigation(service.path, service.allowedRoles)}
                 className="group relative bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center text-center overflow-hidden w-full outline-hidden border-none cursor-pointer"
               >
                 <div
@@ -253,7 +209,7 @@ export default function ServicesDashboard() {
 
                 {isLockedForGuest && (
                   <div className="absolute top-3 left-3 bg-gray-100 text-gray-400 p-1 rounded-md text-[10px] font-bold border border-gray-200">
-                    نیازمند ورود
+                    {t("loginRequired")}
                   </div>
                 )}
 

@@ -18,6 +18,13 @@ import {
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+
+// تعریف اینترفیس برای آرایه خدمات
+interface TranslatedService {
+  title: string;
+  desc: string;
+}
+
 export default function Home() {
   const { t, i18n } = useTranslation();
   const numberFormatter = new Intl.NumberFormat(i18n.language);
@@ -27,7 +34,6 @@ export default function Home() {
 
   useEffect(() => {
     if (!isLoading && isLoggedIn) {
-      // 👈 هدایت خودکار ادمین در صورت ورود به روت ریشه
       if (userRole === "Admin" || userRole === "SUPER_ADMIN") {
         navigate("/admin-panel", { replace: true });
       }
@@ -35,6 +41,7 @@ export default function Home() {
   }, [isLoggedIn, userRole, isLoading, navigate]);
 
   if (isLoading) return null;
+
   // دیتای آماری بالا
   const stats = [
     {
@@ -67,94 +74,38 @@ export default function Home() {
     },
   ];
 
-  // لیست خدمات ما
-  const services = [
-    {
-      icon: Activity,
-      title: "پایش هوشمند علائم حیاتی",
-      desc: "ثبت و تحلیل مستمر شاخص‌های سلامت مانند ضربان قلب، فشار خون، اکسیژن خون و دمای بدن با ارائه هشدارهای هوشمند.",
-    },
-    {
-      icon: FileText,
-      title: "پرونده سلامت الکترونیکی",
-      desc: "ایجاد و نگهداری پرونده پزشکی دیجیتال بین‌المللی، قابل دسترس در هر زمان و قابل اشتراک‌گذاری در سراسر جهان.",
-    },
-    {
-      icon: HeartPulse,
-      title: "ارزیابی بیماری‌های قلبی",
-      desc: "بهره‌گیری از ابزارهای هوشمند و تحلیل داده‌ها برای شناسایی زودهنگام ریسک بیماری‌های قلبی.",
-    },
-    {
-      icon: Globe2,
-      title: "ارتباط با پزشکان معتبر",
-      desc: "دریافت مشاوره، ویزیت آنلاین و ارتباط مستقیم با متخصصان و مراکز درمانی در داخل و خارج از کشور.",
-    },
-    {
-      icon: Plane,
-      title: "گردشگری سلامت",
-      desc: "برنامه‌ریزی سفر درمانی شامل انتخاب پزشک، هماهنگی اقامت، خدمات مترجم و راهنمای اختصاصی.",
-    },
-    {
-      icon: Building,
-      title: "مدیریت مراکز درمانی",
-      desc: "سامانه جامع مدیریت بیمار، پرونده پزشکی، نوبت‌دهی و مدیریت فرآیندهای درمانی برای کلینیک‌ها.",
-    },
-    {
-      icon: CalendarCheck,
-      title: "رزرو نوبت و خدمات",
-      desc: "رزرو سریع و آنلاین ویزیت حضوری یا آنلاین، آزمایش‌ها، تصویربرداری‌ها و سایر خدمات سلامت.",
-    },
-  ];
+  // استخراج داده‌های ترجمه شده از i18n
+  const translatedServices = t("services_list", { returnObjects: true }) as TranslatedService[];
+  const features = t("features_list", { returnObjects: true }) as string[];
+  const specialties = t("specialties_list", { returnObjects: true }) as string[];
 
-  // لیست چرا پلتفرم ما
-  const features = [
-    "ایجاد اولین پرونده سلامت الکترونیکی و بین‌المللی",
-    "پایش لحظه‌ای سلامت و هشدارهای هوشمند",
-    "دسترسی به شبکه‌ای از پزشکان و مراکز درمانی معتبر",
-    "مدیریت کامل فرآیند درمان از تشخیص تا پیگیری",
-    "کاهش هزینه‌ها و زمان دریافت خدمات پزشکی",
-    "پشتیبانی از بیماران داخلی و بین‌المللی",
-    "امکان انتخاب راهنما و لیدر تخصصی سفر درمانی",
-    "امنیت و محرمانگی اطلاعات مطابق استانداردهای روز",
-    "یکپارچه‌سازی خدمات سلامت، درمان و گردشگری",
-  ];
+  // ترکیب آیکون‌ها با لیست خدمات ترجمه‌شده
+  const servicesIcons = [Activity, FileText, HeartPulse, Globe2, Plane, Building, CalendarCheck];
+  const services = translatedServices.map((service, index) => ({
+    ...service,
+    icon: servicesIcons[index],
+  }));
 
-  // لیست تخصص‌ها
-  const specialties = [
-    "قلب و عروق",
-    "جراحی‌های تخصصی",
-    "ارتوپدی و مفاصل",
-    "ناباروری",
-    "زیبایی و پلاستیک",
-    "دندانپزشکی",
-    "چشم پزشکی",
-    "مغز و اعصاب",
-    "آنکولوژی و سرطان",
-    "چکاپ‌های جامع",
-  ];
+  // تشخیص زبان برای استایل‌های اختصاصی
+  const isLtr = i18n.dir() === "ltr";
 
   return (
-    <div className="flex-1 bg-gray-50 md:rounded-2xl shadow-lg overflow-y-auto overflow-x-hidden">
+    <div className="flex-1 bg-gray-50 md:rounded-2xl shadow-lg overflow-y-auto overflow-x-hidden" dir={i18n.dir()}>
+      
       {/* 1. هدر اصلی (شعار سایت) */}
-      {/* تغییر اصلی: جایگزینی bg-gadget-dark با یک گرادیانت جذاب */}
-      <div className="bg-linear-to-r from-gadget-dark to-gadget-light p-10 md:p-14 text-center relative overflow-hidden ">
-        {/* یک افکت نوری جذاب برای پس‌زمینه هدر */}
+      <div className="bg-linear-to-r from-gadget-dark to-gadget-light p-10 md:p-14 text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-[url('/cubes.png')] opacity-40 mix-blend-overlay"></div>
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-white opacity-10 blur-3xl rounded-full"></div>
+        <div className={`absolute -top-24 w-64 h-64 bg-white opacity-10 blur-3xl rounded-full ${isLtr ? '-left-24' : '-right-24'}`}></div>
 
         <div className="relative z-10 max-w-4xl mx-auto">
-          {/* تغییر استایل تگ بالایی برای هماهنگی با گرادیانت */}
           <span className="inline-block py-1 px-4 rounded-full bg-white/20 backdrop-blur-sm text-white text-sm font-bold tracking-wider mb-4 border border-white/10">
-            پلتفرم جامع سلامت
+            {t("hero_tag")}
           </span>
           <h1 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight drop-shadow-md">
-            سلامت هوشمند، بدون مرز
+            {t("hero_title")}
           </h1>
-          <p className="text-gray-100 text-sm md:text-base leading-relaxed md:leading-loose max-w-3xl mx-auto drop-shadow-sm">
-            اولین پلتفرم یکپارچه سلامت و گردشگری درمانی که با بهره‌گیری از
-            فناوری‌های نوین، امکان پایش لحظه‌ای سلامت، مدیریت پرونده پزشکی
-            بین‌المللی، ارتباط با پزشکان و مراکز درمانی معتبر و برنامه‌ریزی کامل
-            سفر درمانی را در یک بستر امن فراهم می‌کند.
+          <p className="text-gray-100 text-sm md:text-base leading-relaxed md:leading-loose max-w-3xl mx-auto drop-shadow-sm mb-8">
+            {t("hero_desc")}
           </p>
         </div>
       </div>
@@ -173,7 +124,7 @@ export default function Home() {
                   <div className={`p-3 rounded-lg ${stat.bg} ${stat.color}`}>
                     <Icon size={24} strokeWidth={2} />
                   </div>
-                  <span className="flex items-center text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full ltr:flex-row-reverse">
+                  <span className={`flex items-center text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full ${isLtr ? 'flex-row' : 'flex-row-reverse'}`}>
                     <TrendingUp size={12} className="mx-1" />{" "}
                     {numberFormatter.format(12)}٪
                   </span>
@@ -193,7 +144,7 @@ export default function Home() {
         <div className="mb-16">
           <div className="flex items-center gap-3 mb-8">
             <Stethoscope className="text-gadget-dark" size={28} />
-            <h2 className="text-2xl font-bold text-gadget-dark">خدمات ما</h2>
+            <h2 className="text-2xl font-bold text-gadget-dark">{t("our_services")}</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((service, index) => {
@@ -227,7 +178,7 @@ export default function Home() {
           <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
             <div>
               <h2 className="text-xl font-bold text-gadget-dark mb-6">
-                چرا پلتفرم ما؟
+                {t("why_our_platform")}
               </h2>
               <ul className="space-y-4">
                 {features.map((feature, index) => (
@@ -244,14 +195,13 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* 👈 👈 دکمه‌های «درباره ما» و «تماس با ما» در زیر بخش چرا پلتفرم ما */}
             <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center gap-3">
               <Link
                 to="/about"
                 className="w-full sm:flex-1 bg-gadget-dark hover:bg-gadget-dark/90 text-white text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
               >
                 <Info size={16} />
-                <span>درباره نوریان</span>
+                <span>{t("btn_about")}</span>
               </Link>
 
               <Link
@@ -259,7 +209,7 @@ export default function Home() {
                 className="w-full sm:flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 text-xs font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <PhoneCall size={16} className="text-gadget-dark" />
-                <span>تماس با ما</span>
+                <span>{t("btn_contact")}</span>
               </Link>
             </div>
           </div>
@@ -267,7 +217,7 @@ export default function Home() {
           {/* درمان‌ها و تخصص‌ها */}
           <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
             <h2 className="text-xl font-bold text-gadget-dark mb-6">
-              درمان‌ها و تخصص‌ها
+              {t("treatments_specialties")}
             </h2>
             <div className="flex flex-wrap gap-2">
               {specialties.map((specialty, index) => (
@@ -286,12 +236,10 @@ export default function Home() {
                 <BookOpen size={24} className="text-gadget-dark shrink-0" />
                 <div>
                   <h3 className="text-sm font-bold text-gadget-dark mb-2">
-                    آخرین مقالات سلامت
+                    {t("latest_health_articles")}
                   </h3>
                   <p className="text-xs text-gray-600 leading-relaxed">
-                    جدیدترین مطالب و مقالات علمی در حوزه سلامت دیجیتال، پیشگیری
-                    از بیماری‌ها، گردشگری درمانی، فناوری‌های پزشکی و سبک زندگی
-                    سالم را در این بخش دنبال کنید.
+                    {t("latest_articles_desc")}
                   </p>
                 </div>
               </div>
