@@ -361,7 +361,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </>
             )}
           </div>
-          <div className="px-6 pb-6 pt-2 flex justify-center w-full">
+          <div className="px-6 pb-0 pt-1 flex justify-center w-full">
             <LanguageSwitcher />
           </div>
         </div>

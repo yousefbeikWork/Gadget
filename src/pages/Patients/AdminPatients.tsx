@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { 
   Users, Search, Phone, CreditCard, 
   Loader2, Wifi, WifiOff, ChevronRight, ChevronLeft,
-  ScanLine, X, Save
+  ScanLine, X, Save, Filter
 } from 'lucide-react';
 import api from '../../services/api';
-import toast from 'react-hot-toast'; // 👈 اضافه کردن toast برای نمایش پیام‌ها
+import toast from 'react-hot-toast';
 
 interface AdminPatientItem {
   _id: string;
@@ -30,10 +30,13 @@ export default function AdminPatients() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // استیت‌های مربوط به جستجو و صفحه‌بندی
+  // ================= استیت‌های مربوط به جستجو و صفحه‌بندی =================
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // 👈 استیت جدید برای فیلتر RFID
+  const [rfidFilter, setRfidFilter] = useState<'ALL' | 'WITH_RFID' | 'WITHOUT_RFID'>('ALL');
 
   // ================= استیت‌های مودال RFID =================
   const [isRfidModalOpen, setIsRfidModalOpen] = useState(false);
@@ -45,19 +48,26 @@ export default function AdminPatients() {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setCurrentPage(1); 
+      setCurrentPage(1); // با هر جستجوی جدید، برگرد به صفحه اول
     }, 500);
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  // فراخوانی API دریافت بیماران
+  // ================= فراخوانی API دریافت بیماران =================
   const fetchPatients = async () => {
     try {
       setLoading(true);
+
+      // تعیین مقدار پارامتر hasRfid بر اساس فیلتر انتخاب شده
+      let hasRfidParam: boolean | undefined = undefined;
+      if (rfidFilter === 'WITH_RFID') hasRfidParam = true;
+      if (rfidFilter === 'WITHOUT_RFID') hasRfidParam = false;
+
       const response = await api.get('/Admin/getPatients', {
         params: {
           page: currentPage,
-          limit: 12,
+          limit: 12, // برای ظاهر بهتر گرید، 12 پیشنهاد می‌شود (میتوانید 6 بگذارید)
+          hasRfid: hasRfidParam, // 👈 ارسال پارامتر به بک‌اند
           search: debouncedSearch || undefined
         }
       });
@@ -73,14 +83,21 @@ export default function AdminPatients() {
     }
   };
 
+  // 👈 اضافه شدن rfidFilter به Dependency Array تا با تغییر آن API دوباره صدا زده شود
   useEffect(() => {
     fetchPatients();
-  }, [currentPage, debouncedSearch]);
+  }, [currentPage, debouncedSearch, rfidFilter]);
 
   const handlePageChange = (newPage: number) => {
     if (pagination && newPage >= 1 && newPage <= pagination.totalPages) {
       setCurrentPage(newPage);
     }
+  };
+
+  // 👈 تابع تغییر فیلتر که همزمان صفحه را هم به 1 برمی‌گرداند
+  const handleFilterChange = (filter: 'ALL' | 'WITH_RFID' | 'WITHOUT_RFID') => {
+    setRfidFilter(filter);
+    setCurrentPage(1);
   };
 
   // ================= تابع هندل کردن ثبت RFID =================
@@ -101,19 +118,16 @@ export default function AdminPatients() {
       if (response.status === 200) {
         toast.success(response.data.message || "کارت با موفقیت به بیمار اختصاص یافت.");
         
-        // آپدیت کردن استیت محلی برای نمایش آنی تغییرات بدون نیاز به رفرش
         setPatients(prevPatients => prevPatients.map(p => 
           p._id === selectedPatient._id ? { ...p, rfid: rfidInput.trim() } : p
         ));
         
-        // بستن مودال
         setIsRfidModalOpen(false);
         setRfidInput('');
       }
     } catch (error: any) {
       const status = error.response?.status;
       
-      // مدیریت ارورها بر اساس داکیومنت شما
       if (status === 400) {
         toast.error(error.response?.data?.message || "این کارت قبلاً به بیمار دیگری اختصاص داده شده است.");
       } else if (status === 403) {
@@ -128,10 +142,9 @@ export default function AdminPatients() {
     }
   };
 
-  // باز کردن مودال
   const openRfidModal = (patient: AdminPatientItem) => {
     setSelectedPatient(patient);
-    setRfidInput(patient.rfid || ''); // اگر از قبل داشت، تو اینپوت نشون بده
+    setRfidInput(patient.rfid || '');
     setIsRfidModalOpen(true);
   };
 
@@ -140,7 +153,8 @@ export default function AdminPatients() {
       <div className="max-w-7xl mx-auto flex flex-col h-full">
         
         {/* ================== هدر و جستجو ================== */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-xs">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-8 gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-xs">
+          
           <div className="flex items-center gap-3">
             <div className="p-3 bg-green-50 text-green-800 rounded-2xl">
               <Users size={28} />
@@ -148,21 +162,54 @@ export default function AdminPatients() {
             <div>
               <h1 className="text-xl md:text-2xl font-black text-gray-800">بانک جامع بیماران</h1>
               <p className="text-gray-500 text-sm mt-1 font-medium">
-                {pagination ? `تعداد کل کاربران ثبت‌شده: ${pagination.total.toLocaleString()} نفر` : 'مدیریت و نظارت بر بیماران سامانه'}
+                {pagination ? `تعداد کل کاربران یافت‌شده: ${pagination.total.toLocaleString()} نفر` : 'مدیریت و نظارت بر بیماران سامانه'}
               </p>
             </div>
           </div>
 
-          <div className="relative w-full md:w-80">
-            <Search className="absolute right-3 top-3 text-gray-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="جستجو (نام، کدملی، موبایل)..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-3 text-sm focus:outline-hidden focus:border-gadget-dark focus:bg-white transition-all shadow-2xs"
-            />
+          <div className="flex flex-col md:flex-row items-center gap-3 w-full xl:w-auto">
+            
+            {/* 👈 دکمه‌های فیلتر RFID */}
+            <div className="flex items-center bg-gray-50 p-1.5 rounded-xl border border-gray-200 w-full md:w-auto">
+              <button
+                onClick={() => handleFilterChange('ALL')}
+                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-lg cursor-pointer ${
+                  rfidFilter === 'ALL' ? 'bg-white shadow-xs text-gadget-dark border border-gray-100' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                همه
+              </button>
+              <button
+                onClick={() => handleFilterChange('WITH_RFID')}
+                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 ${
+                  rfidFilter === 'WITH_RFID' ? 'bg-emerald-50 text-emerald-700 shadow-xs border border-emerald-100' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Wifi size={14} /> دارای کارت
+              </button>
+              <button
+                onClick={() => handleFilterChange('WITHOUT_RFID')}
+                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 ${
+                  rfidFilter === 'WITHOUT_RFID' ? 'bg-white shadow-xs text-gray-800 border border-gray-100' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <WifiOff size={14} /> بدون کارت
+              </button>
+            </div>
+
+            {/* باکس جستجو */}
+            <div className="relative w-full md:w-72">
+              <Search className="absolute right-3 top-3 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="جستجو (نام، کدملی، موبایل)..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark focus:bg-white transition-all shadow-2xs"
+              />
+            </div>
           </div>
+
         </div>
 
         {/* ================== مدیریت وضعیت لودینگ و خطا ================== */}
@@ -185,10 +232,18 @@ export default function AdminPatients() {
         {!loading && !error && patients.length === 0 && (
           <div className="bg-white p-10 rounded-2xl border border-dashed border-gray-200 text-center flex-1 flex flex-col items-center justify-center mt-4">
             <div className="w-16 h-16 bg-gray-50 text-gray-400 rounded-2xl flex items-center justify-center mb-4">
-              <Users size={32} />
+              <Filter size={32} />
             </div>
             <h3 className="text-lg font-bold text-gray-700 mb-2">بیماری یافت نشد</h3>
-            <p className="text-gray-500 text-sm">هیچ کاربری با این مشخصات در سیستم ثبت نشده است.</p>
+            <p className="text-gray-500 text-sm">هیچ کاربری با این مشخصات و فیلترها در سیستم ثبت نشده است.</p>
+            {rfidFilter !== 'ALL' && (
+              <button 
+                onClick={() => handleFilterChange('ALL')}
+                className="mt-4 text-xs font-bold text-gadget-light hover:underline cursor-pointer"
+              >
+                نمایش تمامی بیماران
+              </button>
+            )}
           </div>
         )}
 
@@ -198,7 +253,7 @@ export default function AdminPatients() {
             {patients.map((patient) => (
               <div key={patient._id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col relative overflow-hidden group">
                 
-                <div className="absolute top-0 right-0 w-full h-1 bg-linear-to-r from-gray-200 to-gray-100 group-hover:from-blue-400 group-hover:to-blue-600 transition-all"></div>
+                <div className="absolute top-0 right-0 w-full h-1 bg-linear-to-r from-gray-200 to-gray-100 group-hover:from-green-400 group-hover:to-green-600 transition-all"></div>
 
                 <div className="flex items-start justify-between mb-4 mt-2">
                   <div>
@@ -234,7 +289,6 @@ export default function AdminPatients() {
                   </div>
                 </div>
 
-                {/* 👈 دکمه اختصاص کارت در انتهای کارت */}
                 <div className="mt-auto border-t border-gray-50 pt-4">
                   <button
                     onClick={() => openRfidModal(patient)}
@@ -319,7 +373,6 @@ export default function AdminPatients() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/20 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             
-            {/* هدر مودال */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-800 flex items-center gap-2">
                 <ScanLine className="text-gadget-light" size={20} />
@@ -333,7 +386,6 @@ export default function AdminPatients() {
               </button>
             </div>
 
-            {/* محتوای مودال */}
             <form onSubmit={handleSetRfid} className="p-6">
               
               <div className="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
@@ -363,7 +415,6 @@ export default function AdminPatients() {
                 </p>
               </div>
 
-              {/* دکمه‌های اکشن */}
               <div className="flex items-center gap-3 mt-8">
                 <button
                   type="button"
