@@ -34,6 +34,7 @@ const resources = {
         laboratorCenter: "مرکز آزمایشگاهی",
         Leader: "لیدر (راهنما)",
         SystemUser: "کاربر سامانه",
+        Hospital: "بیمارستان",
       },
 
       // متون سایدبار
@@ -506,6 +507,7 @@ const resources = {
         laboratorCenter: "Laboratory Center",
         Leader: "Leader (Guide)",
         SystemUser: "System User",
+        Hospital: "Hospital",
       },
 
       // Sidebar Texts

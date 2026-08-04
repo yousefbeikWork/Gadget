@@ -18,9 +18,10 @@ interface Guardian {
 interface Manager {
   firstName: string;
   lastName: string;
-  role: string;
+  role?: string;
   mobile?: string;
   nationalId?: string;
+  email?: string; // 👈 فیلد ایمیل که در بیمارستان به مدیر اضافه می‌شود
 }
 
 interface TestItem {
@@ -33,7 +34,6 @@ interface TestItem {
   preparationInstructions?: string;
 }
 
-// === اینترفیس‌های اختصاصی لیدر ===
 interface LeaderPricing {
   fullDay?: number;
   dayShift?: number;
@@ -57,7 +57,6 @@ interface LeaderCar {
   };
 }
 
-// 👈 اضافه شدن اینترفیس‌های مربوط به برنامه زمانی لیدر
 interface HourlySlot {
   time: string;
   isBooked: boolean;
@@ -102,7 +101,7 @@ interface UserProfile {
   maritalStatus?: "SINGLE" | "MARRIED" | string;
   guardian?: Guardian;
 
-  // فیلدهای مشترک کلینیک و آزمایشگاه (مراکز)
+  // فیلدهای مشترک کلینیک و آزمایشگاه
   centerName?: string;
   centerType?: string;
   licenseCode?: string;
@@ -115,6 +114,14 @@ interface UserProfile {
   isActive?: boolean;
   manager?: Manager;
 
+  // 👈 فیلدهای اختصاصی بیمارستان
+  hospitalName?: string;
+  hospitalType?: string;
+  establishmentDate?: string;
+  emergencyMobile?: string;
+  hospitalImages?: string[];
+  clinics?: any[]; // کلینیک‌های وابسته
+
   // فیلدهای اختصاصی آزمایشگاه
   otherSpecialties?: string[];
   activeDepartments?: string[];
@@ -123,9 +130,8 @@ interface UserProfile {
   laboratorImages?: string[];
 
   // فیلدهای الحاق شده‌ی اختصاصی نقش لیدر
-  Address?: string; 
+  Address?: string;
   city?: string;
-  // DailyPrice?: number;
   hasCar?: boolean;
   pricing?: LeaderPricing;
   car?: LeaderCar;
@@ -133,7 +139,7 @@ interface UserProfile {
     front?: string | null;
     back?: string | null;
   };
-  availableDays?: AvailableDay[]; // 👈 اضافه شدن آرایه روزهای کاری لیدر
+  availableDays?: AvailableDay[];
   createdAt?: string;
   updatedAt?: string;
 }

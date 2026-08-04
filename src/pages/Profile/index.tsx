@@ -7,10 +7,10 @@ import DoctorProfile from "./DoctorProfile";
 import MedicalProfile from "./MedicalProfile";
 import LaboratoryProfile from "./LaboratoryProfile";
 import LeaderProfile from "./LeaderProfile";
-import SharedBasicInfo from "./components/SharedBasicInfo"; // 👈 کامپوننت مشترک را هم ایمپورت کردیم
+import HospitalProfile from "./HospitalProfile"; // 👈 ایمپورت پروفایل بیمارستان
+import SharedBasicInfo from "./components/SharedBasicInfo"; 
 
 export default function Profile() {
-  // 👈 اضافه کردن refreshProfile به اینجا
   const { userRole, userProfile, isLoading, refreshProfile } = useAuth();
 
   if (isLoading || !userProfile) {
@@ -25,40 +25,17 @@ export default function Profile() {
   const renderProfileContent = () => {
     switch (userRole) {
       case "Patient":
-        return (
-          <PatientProfile
-            userProfile={userProfile}
-            refreshProfile={refreshProfile}
-          />
-        );
+        return <PatientProfile userProfile={userProfile} refreshProfile={refreshProfile} />;
       case "Doctor":
-        return (
-          <DoctorProfile
-            userProfile={userProfile}
-            refreshProfile={refreshProfile}
-          />
-        );
+        return <DoctorProfile userProfile={userProfile} refreshProfile={refreshProfile} />;
       case "MedicalCenter":
-        return (
-          <MedicalProfile
-            userProfile={userProfile}
-            refreshProfile={refreshProfile}
-          />
-        );
+        return <MedicalProfile userProfile={userProfile} refreshProfile={refreshProfile} />;
       case "laboratorCenter":
-        return (
-          <LaboratoryProfile
-            userProfile={userProfile}
-            refreshProfile={refreshProfile}
-          />
-        );
+        return <LaboratoryProfile userProfile={userProfile} refreshProfile={refreshProfile} />;
       case "Leader":
-        return (
-          <LeaderProfile
-            userProfile={userProfile}
-            refreshProfile={refreshProfile}
-          />
-        );
+        return <LeaderProfile userProfile={userProfile} refreshProfile={refreshProfile} />;
+      case "Hospital": // 👈 رندر پروفایل بیمارستان
+        return <HospitalProfile userProfile={userProfile} refreshProfile={refreshProfile} />;
       default:
         return <div className="text-center p-8">نقش کاربری نامشخص است.</div>;
     }
@@ -73,12 +50,11 @@ export default function Profile() {
         {/* ================== هدر صفحه ================== */}
         <div className="flex items-center gap-3 border-b border-gray-50 pb-6">
           <div>
-            {/* // درون بخش بازگشتی ریترن کامپوننت Profile.tsx */}
             <h1 className="text-2xl font-bold text-gray-800">
-              {userRole === "MedicalCenter" || userRole === "laboratorCenter"
+              {userRole === "MedicalCenter" || userRole === "laboratorCenter" || userRole === "Hospital" // 👈 آپدیت شرط هدر
                 ? "پروفایل و مدارک مرکز"
                 : userRole === "Leader"
-                  ? "پنل ارزیابی و اطلاعات لیدر" // 👈 عنوان اختصاصی لیدر در هدر
+                  ? "پنل ارزیابی و اطلاعات لیدر" 
                   : "حساب کاربری من"}
             </h1>
             <p className="text-gray-500 text-sm mt-1">
@@ -87,7 +63,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* 👈 بخش اطلاعات مشترک که برای همه نقش‌ها نمایش داده می‌شود */}
+        {/* بخش اطلاعات مشترک که برای همه نقش‌ها نمایش داده می‌شود */}
         <SharedBasicInfo userProfile={userProfile} userRole={userRole} />
 
         {/* رندر شدن داینامیک محتوای اختصاصی هر نقش */}

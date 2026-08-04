@@ -28,8 +28,10 @@ export default function SharedBasicInfo({ userProfile, userRole }: Props) {
                   : userRole === "laboratorCenter"
                     ? "مرکز آزمایشگاهی"
                     : userRole === "Leader"
-                      ? "لیدر سیستم" // 👈 اضافه شدن ترجمه نقش لیدر
-                      : "مرکز درمانی"}
+                      ? "لیدر سیستم"
+                      : userRole === "Hospital"
+                        ? "بیمارستان" // 👈 اضافه شدن بیمارستان
+                        : "مرکز درمانی"}
             </span>
             <Lock size={14} className="opacity-50" />
           </div>
@@ -47,13 +49,14 @@ export default function SharedBasicInfo({ userProfile, userRole }: Props) {
         </div>
 
         {/* فیلد داینامیک نام مرکز یا کد ملی */}
-        {userRole === "MedicalCenter" || userRole === "laboratorCenter" ? (
+        {userRole === "MedicalCenter" || userRole === "laboratorCenter" || userRole === "Hospital" ? (
           <div className="md:col-span-2">
             <label className="block text-xs font-bold text-gray-500 mb-1">
               نام ثبت شده در سامانه
             </label>
             <div className="w-full bg-gray-100/50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-500 flex items-center justify-between cursor-not-allowed">
-              <span>{userProfile?.centerName || "---"}</span>
+              {/* 👈 پشتیبانی از hospitalName */}
+              <span>{userProfile?.centerName || userProfile?.hospitalName || "---"}</span>
               <Lock size={14} className="opacity-50" />
             </div>
           </div>

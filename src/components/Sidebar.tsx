@@ -41,6 +41,7 @@ const menuItems = [
       "laboratorCenter",
       "Leader",
       "guest",
+      "Hospital"
     ],
   },
   {
@@ -53,7 +54,7 @@ const menuItems = [
     key: "schedule",
     path: "/schedule",
     icon: Calendar,
-    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter", "Leader"],
+    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter", "Leader","Hospital"],
   },
   {
     key: "myAppointments",
@@ -77,25 +78,26 @@ const menuItems = [
       "laboratorCenter",
       "Leader",
       "Admin",
+      "Hospital"
     ],
   },
   {
     key: "doctors",
     path: "/doctors",
     icon: Stethoscope,
-    allowedRoles: ["Patient", "Leader", "guest", "Admin"],
+    allowedRoles: ["Patient", "Leader", "guest", "Admin","Hospital"],
   },
   {
     key: "hospitals",
     path: "/hospitals",
     icon: Building2,
-    allowedRoles: ["Patient", "Leader", "guest", "Doctor"],
+    allowedRoles: ["Patient", "Leader", "guest", "Doctor",],
   },
   {
     key: "clinics",
     path: "/clinics",
     icon: Hospital,
-    allowedRoles: ["Patient", "Leader", "guest", "Doctor", "Admin"],
+    allowedRoles: ["Patient", "Leader", "guest", "Doctor", "Admin","Hospital"],
   },
   {
     key: "laboratories",
@@ -113,7 +115,7 @@ const menuItems = [
     key: "calibration",
     path: "/calibration",
     icon: Wrench,
-    allowedRoles: ["MedicalCenter", "laboratorCenter"],
+    allowedRoles: ["MedicalCenter", "laboratorCenter","Hospital"],
   },
   {
     key: "airplanes",
@@ -150,6 +152,7 @@ const menuItems = [
       "laboratorCenter",
       "Leader",
       "guest",
+      "Hospital"
     ],
   },
   {
@@ -163,6 +166,7 @@ const menuItems = [
       "laboratorCenter",
       "Leader",
       "guest",
+      "Hospital"
     ],
   },
   {
@@ -220,6 +224,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         return t("roles.laboratorCenter");
       case "Leader":
         return t("roles.Leader");
+      case "Hospital":
+        return t("roles.Hospital");
       default:
         return t("roles.SystemUser");
     }
@@ -318,6 +324,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       {userRole === "MedicalCenter" ||
                       userRole === "laboratorCenter"
                         ? userProfile?.centerName
+                        : userRole === "Hospital"
+                          ? userProfile?.hospitalName 
                         : userProfile
                           ? `${userProfile.firstName || ""} ${userProfile.lastName || ""}`
                           : t("loading")}

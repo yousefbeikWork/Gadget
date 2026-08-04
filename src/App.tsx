@@ -97,6 +97,7 @@ function App() {
                     "laboratorCenter",
                     "guest",
                     "Admin",
+                    "Hospital"
                   ]}
                 />
               }
@@ -137,7 +138,8 @@ function App() {
                     "MedicalCenter",
                     "laboratorCenter",
                     "Leader",
-                    "Admin"
+                    "Admin",
+                    "Hospital"
                   ]}
                 />
               }
@@ -151,7 +153,7 @@ function App() {
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={["MedicalCenter", "laboratorCenter"]}
+                  allowedRoles={["MedicalCenter", "laboratorCenter","Hospital"]}
                 />
               }
             >
@@ -193,6 +195,7 @@ function App() {
                     "Leader",
                     "laboratorCenter",
                     "Admin",
+                    "Hospital"
                   ]}
                 />
               }
