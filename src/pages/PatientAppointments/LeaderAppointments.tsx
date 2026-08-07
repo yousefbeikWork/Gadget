@@ -10,6 +10,8 @@ import {
   Car,
   CheckCircle2,
   Layers,
+  ChevronRight, // 👈 اضافه شد
+  ChevronLeft,  // 👈 اضافه شد
 } from "lucide-react";
 import api from "../../services/api";
 
@@ -22,19 +24,37 @@ export default function LeaderAppointments({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // === استیت‌های مربوط به صفحه‌بندی ===
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 10; // تعداد آیتم در هر صفحه
+
+  // وقتی تاریخ فیلتر عوض می‌شود، برگرد به صفحه ۱
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterDate]);
+
   useEffect(() => {
     const fetchBookings = async () => {
       setLoading(true);
       setError("");
       try {
-        const response = await api.get("/Leader/getUserBookings");
+        // 👈 ارسال page، limit و date به سمت سرور
+        let url = `/Leader/getUserBookings?page=${currentPage}&limit=${limit}`;
+        if (filterDate) {
+          url += `&date=${filterDate}`;
+        }
+
+        const response = await api.get(url);
         if (response.data && response.data.success) {
-          let data = response.data.data;
-          // اعمال فیلتر تاریخ (در صورت وجود)
-          if (filterDate) {
-            data = data.filter((item: any) => item.date === filterDate);
+          setBookings(response.data.data);
+          
+          // 👈 تنظیم کردن تعداد کل صفحات از روی آبجکت pagination بک‌اند
+          if (response.data.pagination) {
+            setTotalPages(response.data.pagination.totalPages);
+          } else {
+            setTotalPages(1);
           }
-          setBookings(data);
         }
       } catch (err) {
         setError("خطا در دریافت لیست نوبت‌های لیدر.");
@@ -43,7 +63,7 @@ export default function LeaderAppointments({
       }
     };
     fetchBookings();
-  }, [filterDate]);
+  }, [filterDate, currentPage]); // 👈 اضافه شدن currentPage به وابستگی‌ها
 
   const translateBookingType = (type: string, shift: string) => {
     if (type === "FULL_DAY") return "روزانه (تمام‌وقت)";
@@ -220,6 +240,35 @@ export default function LeaderAppointments({
           </div>
         </div>
       ))}
+
+      {/* ================= کنترل‌های صفحه‌بندی (Pagination) ================= */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white border border-gray-200 p-4 rounded-2xl shadow-xs mt-4">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight size={18} />
+            قبلی
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-gadget-dark">
+              صفحه {currentPage} از {totalPages}
+            </span>
+          </div>
+
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            بعدی
+            <ChevronLeft size={18} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
