@@ -532,13 +532,26 @@ export default function CenterRegister() {
                       <DatePicker
                         calendar={persian}
                         locale={persian_fa}
-                        value={formData.establishmentDate}
+                        value={
+                          formData.establishmentDate
+                            ? new Date(formData.establishmentDate)
+                            : null
+                        }
                         onChange={(date: any) => {
-                          // تبدیل تاریخ شمسی انتخاب شده به میلادی برای ارسال به سرور
-                          const gregorianDate = date?.isValid 
-                            ? date.convert("gregorian", "en").format("YYYY-MM-DD") 
-                            : "";
-                          setFormData((prev) => ({ ...prev, establishmentDate: gregorianDate }));
+                          if (date?.isValid) {
+                            const jsDate = date.toDate();
+                            const gregorianDate = `${jsDate.getFullYear()}-${String(jsDate.getMonth() + 1).padStart(2, "0")}-${String(jsDate.getDate()).padStart(2, "0")}`;
+
+                            setFormData((prev) => ({
+                              ...prev,
+                              establishmentDate: gregorianDate,
+                            }));
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              establishmentDate: "",
+                            }));
+                          }
                         }}
                         containerClassName="w-full"
                         inputClass="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light text-gray-700 cursor-pointer"

@@ -91,13 +91,19 @@ const menuItems = [
     key: "hospitals",
     path: "/hospitals",
     icon: Building2,
-    allowedRoles: ["Patient", "Leader", "guest", "Doctor",],
+    allowedRoles: ["Patient", "Leader", "guest", "Doctor","Admin"],
   },
   {
     key: "clinics",
     path: "/clinics",
     icon: Hospital,
-    allowedRoles: ["Patient", "Leader", "guest", "Doctor", "Admin","Hospital"],
+    allowedRoles: ["Patient", "Leader", "guest", "Doctor", "Admin"],
+  },
+  {
+    key: "HospitalClinics",
+    path: "/hospital-clinics",
+    icon: Hospital,
+    allowedRoles: ["Hospital"],
   },
   {
     key: "laboratories",

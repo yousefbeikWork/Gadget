@@ -5,6 +5,7 @@ import {
   Compass,
   FlaskConical,
   Building2,
+  Hospital as HospitalIcon, // 👈 ایمپورت آیکون بیمارستان
   ShieldAlert,
   Loader2,
   Activity,
@@ -31,13 +32,15 @@ import {
   Legend
 } from "recharts";
 
+// 👈 اضافه شدن Hospital به اینترفیس
 interface SystemStats {
   patients: number;
   doctors: number;
   leaders: number;
   laboratories: number;
   medicalCenters: number;
-  admins: number;
+  Hospital: number; 
+  admins?: number;
 }
 
 export default function AdminDashboard() {
@@ -82,33 +85,33 @@ export default function AdminDashboard() {
     );
   }
 
-  // داده‌های نمودار میله‌ای (تمامی کاربران)
+  // 👈 اضافه شدن بیمارستان‌ها به نمودار میله‌ای
   const barChartData = [
     { name: "بیماران", count: stats.patients, color: "#3b82f6" },
     { name: "پزشکان", count: stats.doctors, color: "#10b981" },
     { name: "لیدرها", count: stats.leaders, color: "#f59e0b" },
     { name: "آزمایشگاه‌ها", count: stats.laboratories, color: "#8b5cf6" },
     { name: "کلینیک‌ها", count: stats.medicalCenters, color: "#ec4899" },
-    // { name: "مدیران", count: stats.admins, color: "#ef4444" },
+    { name: "بیمارستان‌ها", count: stats.Hospital, color: "#14b8a6" },
   ];
 
-  // داده‌های نمودار دایره‌ای (توزیع ارائه‌دهندگان خدمات - بدون بیماران برای وضوح بهتر)
+  // 👈 اضافه شدن بیمارستان‌ها به نمودار دایره‌ای
   const pieChartData = [
     { name: "پزشکان", value: stats.doctors, color: "#10b981" },
     { name: "لیدرها", value: stats.leaders, color: "#f59e0b" },
     { name: "آزمایشگاه‌ها", value: stats.laboratories, color: "#8b5cf6" },
     { name: "کلینیک‌ها", value: stats.medicalCenters, color: "#ec4899" },
+    { name: "بیمارستان‌ها", value: stats.Hospital, color: "#14b8a6" },
   ];
 
-  // آرایه کارت‌های آماری برای رندر راحت‌تر
-  // آرایه کارت‌های آماری برای رندر راحت‌تر
+  // 👈 اضافه شدن کارت آماری بیمارستان‌ها
   const statCards = [
     { title: "کل بیماران", value: stats.patients || 0, icon: Users, color: "text-blue-600", bg: "bg-blue-100", border: "border-blue-200" },
     { title: "پزشکان فعال", value: stats.doctors || 0, icon: Stethoscope, color: "text-emerald-600", bg: "bg-emerald-100", border: "border-emerald-200" },
     { title: "لیدرهای سیستم", value: stats.leaders || 0, icon: Compass, color: "text-amber-600", bg: "bg-amber-100", border: "border-amber-200" },
     { title: "آزمایشگاه‌ها", value: stats.laboratories || 0, icon: FlaskConical, color: "text-violet-600", bg: "bg-violet-100", border: "border-violet-200" },
     { title: "کلینیک‌ها", value: stats.medicalCenters || 0, icon: Building2, color: "text-pink-600", bg: "bg-pink-100", border: "border-pink-200" },
-    // { title: "مدیران (ادمین)", value: stats.admins || 0, icon: ShieldAlert, color: "text-red-600", bg: "bg-red-100", border: "border-red-200" },
+    { title: "بیمارستان‌ها", value: stats.Hospital || 0, icon: HospitalIcon, color: "text-teal-600", bg: "bg-teal-100", border: "border-teal-200" },
   ];
 
   return (
@@ -206,10 +209,11 @@ export default function AdminDashboard() {
                   <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }}/>
                 </PieChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none -mt-7.5">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none -mt-7">
                 <div className="text-center">
                   <span className="block text-2xl font-black text-gray-800">
-                    {stats.doctors + stats.leaders + stats.laboratories + stats.medicalCenters}
+                    {/* 👈 محاسبه جمع با در نظر گرفتن آمار بیمارستان */}
+                    {stats.doctors + stats.leaders + stats.laboratories + stats.medicalCenters + (stats.Hospital || 0)}
                   </span>
                   <span className="block text-[10px] text-gray-500 font-bold">مرکز/شخص</span>
                 </div>

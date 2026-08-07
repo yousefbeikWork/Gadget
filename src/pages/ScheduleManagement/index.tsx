@@ -16,7 +16,7 @@ export default function ScheduleManagement() {
   }
 
   // اگر نقش کاربر کلینیک یا پزشک بود
-  if (userRole === "MedicalCenter" || userRole === "Doctor") {
+  if (userRole === "MedicalCenter" || userRole === "Doctor" || userRole === "Hospital") {
     return <DoctorSchedule />;
   }
 

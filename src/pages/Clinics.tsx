@@ -151,7 +151,7 @@ export default function Clinics() {
     try {
       setLoadingSlots(true);
       const response = await api.get(
-        `/book/available-slots?doctorId=${bookingDoctor.id}&date=${date}`,
+        `/book/available-slots?doctorId=${bookingDoctor.id}&date=${date}&clinicId=${medicalCenterId}`,
       );
       if (response.data && response.data.success) {
         setAvailableSlots(response.data.data);

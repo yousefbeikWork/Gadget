@@ -28,6 +28,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 // 👈 ایمپورت صفحات جدید درباره ما و تماس با ما
 import AboutUs from "./pages/AboutUs";
 import ContactUs from "./pages/ContactUs";
+import HospitalClinics from "./pages/HospitalClinics";
+import Hospitals from "./pages/Hospitals";
+import ManageHospitalClinic from "./pages/ManageHospitalClinic"; // 👈 مسیر فایلی که می‌سازیم
 
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div
@@ -56,14 +59,16 @@ function App() {
           {/* مسیرهای اصلی داخل لی‌آوت اصلی سیستم */}
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<Home />} />
-            
+
             {/* 👈 روت‌های عمومی جدید (قابل دسترس برای همه کاربران و مهمانان) */}
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
 
             {/* روت‌های عمومی (همه) */}
             <Route
-              element={<ProtectedRoute allowedRoles={["guest", "Patient", "Admin"]} />}
+              element={
+                <ProtectedRoute allowedRoles={["guest", "Patient", "Admin"]} />
+              }
             >
               <Route path="/laboratories" element={<Laboratories />} />
               <Route
@@ -97,7 +102,7 @@ function App() {
                     "laboratorCenter",
                     "guest",
                     "Admin",
-                    "Hospital"
+                    "Hospital",
                   ]}
                 />
               }
@@ -117,15 +122,18 @@ function App() {
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={["Patient", "Doctor", "Leader", "guest", "Admin"]}
+                  allowedRoles={[
+                    "Patient",
+                    "Doctor",
+                    "Leader",
+                    "guest",
+                    "Admin",
+                  ]}
                 />
               }
             >
               <Route path="/doctors" element={<Doctors />} />
-              <Route
-                path="/hospitals"
-                element={<PlaceholderPage title="بیمارستان" />}
-              />
+              <Route path="/hospitals" element={<Hospitals />} />
               <Route path="/clinics" element={<Clinics />} />
             </Route>
 
@@ -139,7 +147,7 @@ function App() {
                     "laboratorCenter",
                     "Leader",
                     "Admin",
-                    "Hospital"
+                    "Hospital",
                   ]}
                 />
               }
@@ -153,7 +161,11 @@ function App() {
             <Route
               element={
                 <ProtectedRoute
-                  allowedRoles={["MedicalCenter", "laboratorCenter","Hospital"]}
+                  allowedRoles={[
+                    "MedicalCenter",
+                    "laboratorCenter",
+                    "Hospital",
+                  ]}
                 />
               }
             >
@@ -195,7 +207,7 @@ function App() {
                     "Leader",
                     "laboratorCenter",
                     "Admin",
-                    "Hospital"
+                    "Hospital",
                   ]}
                 />
               }
@@ -216,6 +228,13 @@ function App() {
             {/* پنل مدیریت کلان */}
             <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
               <Route path="/admin-panel" element={<AdminDashboard />} />
+            </Route>
+            <Route element={<ProtectedRoute allowedRoles={["Hospital"]} />}>
+              <Route path="/hospital-clinics" element={<HospitalClinics />} />
+              <Route
+                path="/hospital/clinics/:clinicId"
+                element={<ManageHospitalClinic />}
+              />
             </Route>
           </Route>
 
