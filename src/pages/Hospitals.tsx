@@ -71,19 +71,23 @@ export default function Hospitals() {
   const [error, setError] = useState<string | null>(null);
 
   // === استیت‌های مودال رزرو ۳ مرحله‌ای ===
-  const [bookingHospital, setBookingHospital] = useState<HospitalItem | null>(null);
+  const [bookingHospital, setBookingHospital] = useState<HospitalItem | null>(
+    null,
+  );
   const [bookingStep, setBookingStep] = useState<BookingStep>("select-clinic");
-  
+
   const [hospitalClinics, setHospitalClinics] = useState<Clinic[]>([]);
   const [loadingClinics, setLoadingClinics] = useState(false);
-  
+
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
-  
+
   // 👈 استیت‌های جدید برای لیست پزشکان داینامیک
   const [clinicDoctors, setClinicDoctors] = useState<ClinicDoctor[]>([]);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
-  const [selectedDoctor, setSelectedDoctor] = useState<ClinicDoctor | null>(null);
-  
+  const [selectedDoctor, setSelectedDoctor] = useState<ClinicDoctor | null>(
+    null,
+  );
+
   const [selectedDate, setSelectedDate] = useState("");
   const [availableSlots, setAvailableSlots] = useState<Slot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -102,7 +106,11 @@ export default function Hospitals() {
         throw new Error("داده‌ای یافت نشد");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "خطا در دریافت لیست بیمارستان‌ها.");
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "خطا در دریافت لیست بیمارستان‌ها.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -115,15 +123,19 @@ export default function Hospitals() {
   const filteredHospitals = hospitals.filter(
     (hospital) =>
       hospital.hospitalName?.includes(searchTerm) ||
-      hospital.address?.includes(searchTerm)
+      hospital.address?.includes(searchTerm),
   );
 
   const getHospitalType = (type: string) => {
     switch (type) {
-      case "PRIVATE": return "خصوصی";
-      case "PUBLIC": return "دولتی";
-      case "CHARITY": return "خیریه";
-      default: return "نامشخص";
+      case "PRIVATE":
+        return "خصوصی";
+      case "PUBLIC":
+        return "دولتی";
+      case "CHARITY":
+        return "خیریه";
+      default:
+        return "نامشخص";
     }
   };
 
@@ -187,13 +199,13 @@ export default function Hospitals() {
     setBookingStep("select-doctor");
     setClinicDoctors([]);
     setLoadingDoctors(true);
-    
+
     try {
       // ارسال آیدی کلینیک در بدنه (body)
       const response = await api.post("/doctor/listDctorsClinic", {
-        clinicId: clinic.id
+        clinicId: clinic.id,
       });
-      
+
       if (response.data?.success && response.data?.doctors) {
         setClinicDoctors(response.data.doctors);
       }
@@ -221,7 +233,7 @@ export default function Hospitals() {
       setLoadingSlots(true);
       // استفاده از _id پزشک و id کلینیک
       const response = await api.get(
-        `/book/available-slots?doctorId=${selectedDoctor._id}&date=${date}&clinicId=${selectedClinic.id}`
+        `/book/available-slots?doctorId=${selectedDoctor._id}&date=${date}&clinicId=${selectedClinic.id}`,
       );
       if (response.data && response.data.success) {
         setAvailableSlots(response.data.data);
@@ -238,7 +250,8 @@ export default function Hospitals() {
   };
 
   const handleConfirmBooking = () => {
-    if (!selectedSlot || !selectedDate || !selectedDoctor || !selectedClinic) return;
+    if (!selectedSlot || !selectedDate || !selectedDoctor || !selectedClinic)
+      return;
 
     const payload = {
       doctorId: selectedDoctor._id, // استفاده از _id
@@ -258,22 +271,31 @@ export default function Hospitals() {
         return `نوبت شما در کلینیک ${selectedClinic.name} با موفقیت رزرو شد!`;
       },
       error: (err) =>
-        err.response?.data?.message || "خطا در رزرو نوبت. لطفاً دوباره تلاش کنید.",
+        err.response?.data?.message ||
+        "خطا در رزرو نوبت. لطفاً دوباره تلاش کنید.",
     });
   };
 
   return (
-    <div className="bg-white rounded-2xl md:rounded-3xl w-full h-full overflow-y-auto custom-scrollbar p-4 md:p-8" dir="rtl">
+    <div
+      className="bg-white rounded-2xl md:rounded-3xl w-full h-full overflow-y-auto custom-scrollbar p-4 md:p-8"
+      dir="rtl"
+    >
       <div className="max-w-7xl mx-auto space-y-8">
-        
         {/* ================= هدر و جستجو ================= */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4">
           <div className="flex items-center gap-3">
             <div className="text-gadget-dark bg-blue-50 p-3 rounded-2xl">
-              <HospitalIcon size={32} strokeWidth={1.5} className="text-blue-700" />
+              <HospitalIcon
+                size={32}
+                strokeWidth={1.5}
+                className="text-blue-700"
+              />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">بیمارستان‌های تحت پوشش</h1>
+              <h1 className="text-2xl font-bold text-gray-800">
+                بیمارستان‌های تحت پوشش
+              </h1>
               <p className="text-gray-500 text-sm mt-1">
                 {userRole === "Patient"
                   ? "بیمارستان مورد نظر خود را برای دریافت نوبت انتخاب کنید"
@@ -298,29 +320,42 @@ export default function Hospitals() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 text-gadget-light">
             <Loader2 className="animate-spin mb-4" size={40} />
-            <p className="text-sm font-medium">در حال دریافت اطلاعات بیمارستان‌ها...</p>
+            <p className="text-sm font-medium">
+              در حال دریافت اطلاعات بیمارستان‌ها...
+            </p>
           </div>
         ) : error ? (
           <div className="bg-red-50 text-red-600 p-6 rounded-xl text-center text-sm font-bold border border-red-100 max-w-md mx-auto">
             {error}
-            <button onClick={fetchHospitals} className="block mt-4 mx-auto bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg transition-colors cursor-pointer">
+            <button
+              onClick={fetchHospitals}
+              className="block mt-4 mx-auto bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg transition-colors cursor-pointer"
+            >
               تلاش مجدد
             </button>
           </div>
         ) : filteredHospitals.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredHospitals.map((hospital) => (
-              <div key={hospital._id} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between relative overflow-hidden group">
+              <div
+                key={hospital._id}
+                className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between relative overflow-hidden group"
+              >
                 <div className="absolute top-0 right-0 w-full h-1 bg-linear-to-r from-blue-200 to-blue-100 group-hover:from-blue-500 group-hover:to-blue-700 transition-all"></div>
 
                 <div>
                   <div className="flex justify-between items-start mb-4 mt-2">
                     <div className="flex flex-col gap-1.5">
-                      <h3 className="font-bold text-gray-900 text-lg line-clamp-1" title={hospital.hospitalName}>
+                      <h3
+                        className="font-bold text-gray-900 text-lg line-clamp-1"
+                        title={hospital.hospitalName}
+                      >
                         {hospital.hospitalName}
                       </h3>
                       <div className="flex items-center gap-2">
-                        <span className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold ${hospital.isActive ? "bg-green-50 text-green-600 border border-green-100" : "bg-red-50 text-red-600 border border-red-100"}`}>
+                        <span
+                          className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold ${hospital.isActive ? "bg-green-50 text-green-600 border border-green-100" : "bg-red-50 text-red-600 border border-red-100"}`}
+                        >
                           {hospital.isActive ? "فعال" : "غیرفعال"}
                         </span>
                         <span className="inline-block px-2.5 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">
@@ -329,27 +364,47 @@ export default function Hospitals() {
                       </div>
                     </div>
                     <div className="w-12 h-12 rounded-xl shrink-0 bg-gadget-dark text-white flex items-center justify-center text-xl font-bold shadow-sm">
-                      {hospital.hospitalName ? hospital.hospitalName.replace("بیمارستان", "").trim().charAt(0) : <Building2 size={20} />}
+                      {hospital.hospitalName ? (
+                        hospital.hospitalName
+                          .replace("بیمارستان", "")
+                          .trim()
+                          .charAt(0)
+                      ) : (
+                        <Building2 size={20} />
+                      )}
                     </div>
                   </div>
 
                   <hr className="border-gray-100 mb-4" />
 
-                  <div className="space-y-3 mb-6 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                  <div
+                    dir="ltr"
+                    className="space-y-3 mb-6 bg-gray-50/50 p-3 rounded-xl border border-gray-100"
+                  >
                     <div className="flex items-center justify-between text-sm text-gray-600">
-                      <span className="font-bold text-gray-800 text-left" dir="ltr">
-                        {hospital.phones && hospital.phones.length > 0 ? hospital.phones[0] : hospital.mobile}
+                      <span
+                        className="font-bold text-gray-800 text-left"
+                        dir="ltr"
+                      >
+                        {hospital.phones && hospital.phones.length > 0
+                          ? hospital.phones[0]
+                          : hospital.mobile}
                       </span>
                       <div className="flex items-center gap-2 text-gray-500">
-                        <span className="text-xs font-medium">پذیرش:</span><Phone size={14} strokeWidth={2} />
+                        <span className="text-xs font-medium">پذیرش:</span>
+                        <Phone size={14} strokeWidth={2} />
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-sm text-red-600 border-t border-gray-100 pt-3">
-                      <span className="font-bold text-red-700 text-left" dir="ltr">
+                      <span
+                        className="font-bold text-red-700 text-left"
+                        dir="ltr"
+                      >
                         {hospital.emergencyMobile || "---"}
                       </span>
                       <div className="flex items-center gap-2 text-red-500">
-                        <span className="text-xs font-medium">اورژانس:</span><Ambulance size={14} strokeWidth={2} />
+                        <span className="text-xs font-medium">اورژانس:</span>
+                        <Ambulance size={14} strokeWidth={2} />
                       </div>
                     </div>
                   </div>
@@ -357,17 +412,23 @@ export default function Hospitals() {
 
                 <div className="mt-auto space-y-4">
                   <div className="flex items-center justify-between bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/50">
-                     <div className="flex items-center gap-2 text-blue-700 text-xs font-bold">
-                       <Activity size={16} /> کلینیک‌های وابسته
-                     </div>
-                     <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-lg">
-                       {hospital.clinics ? hospital.clinics.length : 0} مرکز
-                     </span>
+                    <div className="flex items-center gap-2 text-blue-700 text-xs font-bold">
+                      <Activity size={16} /> کلینیک‌های وابسته
+                    </div>
+                    <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-lg">
+                      {hospital.clinics ? hospital.clinics.length : 0} مرکز
+                    </span>
                   </div>
 
                   <div className="flex items-start gap-2 text-sm text-gray-500 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                    <MapPin size={16} className="shrink-0 mt-0.5 text-gray-400" />
-                    <span className="leading-relaxed line-clamp-2 text-xs" title={hospital.address}>
+                    <MapPin
+                      size={16}
+                      className="shrink-0 mt-0.5 text-gray-400"
+                    />
+                    <span
+                      className="leading-relaxed line-clamp-2 text-xs"
+                      title={hospital.address}
+                    >
                       {hospital.address || "آدرس ثبت نشده است"}
                     </span>
                   </div>
@@ -397,9 +458,17 @@ export default function Hospitals() {
           </div>
         ) : (
           <div className="bg-white border border-dashed border-gray-200 p-12 text-center rounded-2xl text-gray-500">
-            <HospitalIcon size={48} strokeWidth={1} className="mx-auto mb-3 text-gray-300" />
-            <p className="font-bold text-lg text-gray-700">بیمارستانی یافت نشد.</p>
-            <p className="text-sm mt-1">هیچ مرکز بیمارستانی با این مشخصات در سیستم ثبت نشده است.</p>
+            <HospitalIcon
+              size={48}
+              strokeWidth={1}
+              className="mx-auto mb-3 text-gray-300"
+            />
+            <p className="font-bold text-lg text-gray-700">
+              بیمارستانی یافت نشد.
+            </p>
+            <p className="text-sm mt-1">
+              هیچ مرکز بیمارستانی با این مشخصات در سیستم ثبت نشده است.
+            </p>
           </div>
         )}
       </div>
@@ -407,46 +476,63 @@ export default function Hospitals() {
       {/* ================= مودال رزرو ۳ مرحله‌ای ================= */}
       {bookingHospital && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-gray-700/50 backdrop-blur-sm transition-opacity" onClick={closeBookingProcess}></div>
-          
+          <div
+            className="absolute inset-0 bg-gray-700/50 backdrop-blur-sm transition-opacity"
+            onClick={closeBookingProcess}
+          ></div>
+
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl z-10 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border border-gray-100">
-            
             {/* هدر مودال */}
             <div className="flex items-center justify-between bg-gray-50 border-b border-gray-100 px-6 py-4 shrink-0">
               <div className="flex items-center gap-3">
                 {bookingStep !== "select-clinic" && (
-                  <button onClick={handleBackStep} className="p-1.5 hover:bg-gray-200/70 rounded-xl transition-colors cursor-pointer text-gray-600">
+                  <button
+                    onClick={handleBackStep}
+                    className="p-1.5 hover:bg-gray-200/70 rounded-xl transition-colors cursor-pointer text-gray-600"
+                  >
                     <ChevronRight size={20} />
                   </button>
                 )}
                 <div>
-                  <h3 className="font-bold text-gray-800 text-base line-clamp-1 max-w-50" title={bookingHospital.hospitalName}>
+                  <h3
+                    className="font-bold text-gray-800 text-base line-clamp-1 max-w-50"
+                    title={bookingHospital.hospitalName}
+                  >
                     {bookingHospital.hospitalName}
                   </h3>
                   <p className="text-[11px] text-gray-500 mt-0.5 font-medium">
-                    {bookingStep === "select-clinic" && "مرحله ۱: انتخاب کلینیک"}
-                    {bookingStep === "select-doctor" && `مرحله ۲: انتخاب پزشک (${selectedClinic?.name})`}
-                    {bookingStep === "select-slot" && `مرحله ۳: تقویم نوبت‌دهی دکتر ${selectedDoctor?.lastName}`}
+                    {bookingStep === "select-clinic" &&
+                      "مرحله ۱: انتخاب کلینیک"}
+                    {bookingStep === "select-doctor" &&
+                      `مرحله ۲: انتخاب پزشک (${selectedClinic?.name})`}
+                    {bookingStep === "select-slot" &&
+                      `مرحله ۳: تقویم نوبت‌دهی دکتر ${selectedDoctor?.lastName}`}
                   </p>
                 </div>
               </div>
-              <button onClick={closeBookingProcess} className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-colors cursor-pointer">
+              <button
+                onClick={closeBookingProcess}
+                className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-colors cursor-pointer"
+              >
                 <X size={18} />
               </button>
             </div>
 
             {/* بدنه مودال */}
             <div className="p-6 overflow-y-auto custom-scrollbar flex-1 min-h-100">
-              
               {/* مرحله اول: لیست کلینیک‌ها */}
               {bookingStep === "select-clinic" && (
                 <div className="space-y-4 animate-in fade-in">
-                  <label className="block text-sm font-bold text-gray-700 mb-2">لیست دپارتمان‌ها و کلینیک‌های فعال:</label>
-                  
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    لیست دپارتمان‌ها و کلینیک‌های فعال:
+                  </label>
+
                   {loadingClinics ? (
                     <div className="flex flex-col items-center justify-center py-10 text-gadget-light">
                       <Loader2 className="animate-spin mb-2" size={26} />
-                      <p className="text-xs font-medium">در حال دریافت کلینیک‌ها...</p>
+                      <p className="text-xs font-medium">
+                        در حال دریافت کلینیک‌ها...
+                      </p>
                     </div>
                   ) : hospitalClinics.length > 0 ? (
                     <div className="space-y-2.5">
@@ -464,16 +550,23 @@ export default function Hospitals() {
                               <p className="text-sm font-bold text-gray-700 group-hover:text-gray-900 transition-colors">
                                 {clinic.name}
                               </p>
-                              <p className="text-[10px] text-gray-400 mt-0.5">{clinic.specialty}</p>
+                              <p className="text-[10px] text-gray-400 mt-0.5">
+                                {clinic.specialty}
+                              </p>
                             </div>
                           </div>
-                          <ChevronRight size={16} className="text-gray-400 rotate-180 group-hover:text-gadget-light transition-colors" />
+                          <ChevronRight
+                            size={16}
+                            className="text-gray-400 rotate-180 group-hover:text-gadget-light transition-colors"
+                          />
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div className="text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 text-gray-400">
-                      <p className="text-sm font-medium">هیچ کلینیکی برای این بیمارستان ثبت نشده است.</p>
+                      <p className="text-sm font-medium">
+                        هیچ کلینیکی برای این بیمارستان ثبت نشده است.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -482,13 +575,17 @@ export default function Hospitals() {
               {/* مرحله دوم: انتخاب پزشک */}
               {bookingStep === "select-doctor" && (
                 <div className="space-y-4 animate-in slide-in-from-right-4">
-                  <label className="block text-sm font-bold text-gray-700">پزشکان فعال {selectedClinic?.name}:</label>
-                  
+                  <label className="block text-sm font-bold text-gray-700">
+                    پزشکان فعال {selectedClinic?.name}:
+                  </label>
+
                   {loadingDoctors ? (
-                     <div className="flex flex-col items-center justify-center py-10 text-gadget-light">
-                       <Loader2 className="animate-spin mb-2" size={26} />
-                       <p className="text-xs font-medium">در حال دریافت لیست پزشکان...</p>
-                     </div>
+                    <div className="flex flex-col items-center justify-center py-10 text-gadget-light">
+                      <Loader2 className="animate-spin mb-2" size={26} />
+                      <p className="text-xs font-medium">
+                        در حال دریافت لیست پزشکان...
+                      </p>
+                    </div>
                   ) : clinicDoctors.length > 0 ? (
                     <div className="space-y-2.5">
                       {clinicDoctors.map((doc) => (
@@ -505,16 +602,23 @@ export default function Hospitals() {
                               <p className="text-sm font-bold text-gray-700 group-hover:text-gray-900 transition-colors">
                                 دکتر {doc.firstName} {doc.lastName}
                               </p>
-                              <p className="text-[10px] text-gadget-light font-medium mt-0.5">{doc.Expertise || "تخصص ثبت نشده"}</p>
+                              <p className="text-[10px] text-gadget-light font-medium mt-0.5">
+                                {doc.Expertise || "تخصص ثبت نشده"}
+                              </p>
                             </div>
                           </div>
-                          <ChevronRight size={16} className="text-gray-400 rotate-180 group-hover:text-gadget-light transition-colors" />
+                          <ChevronRight
+                            size={16}
+                            className="text-gray-400 rotate-180 group-hover:text-gadget-light transition-colors"
+                          />
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div className="text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 text-gray-400">
-                      <p className="text-sm font-medium">پزشکی در این کلینیک ثبت نشده است.</p>
+                      <p className="text-sm font-medium">
+                        پزشکی در این کلینیک ثبت نشده است.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -524,9 +628,14 @@ export default function Hospitals() {
               {bookingStep === "select-slot" && (
                 <div className="space-y-5 animate-in slide-in-from-right-4">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">تاریخ حضور در کلینیک:</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      تاریخ حضور در کلینیک:
+                    </label>
                     <div className="relative">
-                      <Calendar className="absolute right-3 top-3 text-gadget-light z-10" size={18} />
+                      <Calendar
+                        className="absolute right-3 top-3 text-gadget-light z-10"
+                        size={18}
+                      />
                       <DatePicker
                         calendar={persian}
                         locale={persian_fa}
@@ -536,8 +645,13 @@ export default function Hospitals() {
                           if (date && date.isValid) {
                             const jsDate = date.toDate();
                             const year = jsDate.getFullYear();
-                            const month = String(jsDate.getMonth() + 1).padStart(2, "0");
-                            const day = String(jsDate.getDate()).padStart(2, "0");
+                            const month = String(
+                              jsDate.getMonth() + 1,
+                            ).padStart(2, "0");
+                            const day = String(jsDate.getDate()).padStart(
+                              2,
+                              "0",
+                            );
                             fetchSlotsForDate(`${year}-${month}-${day}`);
                           } else {
                             fetchSlotsForDate("");
@@ -560,10 +674,13 @@ export default function Hospitals() {
                     availableSlots.length > 0 ? (
                       <div className="space-y-5 animate-in fade-in duration-200">
                         <div>
-                          <label className="block text-sm font-bold text-gray-700 mb-3">ساعت‌های ویزیت خالی:</label>
+                          <label className="block text-sm font-bold text-gray-700 mb-3">
+                            ساعت‌های ویزیت خالی:
+                          </label>
                           <div className="grid grid-cols-2 gap-2.5">
                             {availableSlots.map((slot, index) => {
-                              const isSelected = selectedSlot?.startTime === slot.startTime;
+                              const isSelected =
+                                selectedSlot?.startTime === slot.startTime;
                               return (
                                 <button
                                   key={index}
@@ -575,7 +692,9 @@ export default function Hospitals() {
                                   }`}
                                 >
                                   <span dir="ltr">{slot.startTime}</span>
-                                  <span className="text-[10px] font-normal mx-1 opacity-60">تا</span>
+                                  <span className="text-[10px] font-normal mx-1 opacity-60">
+                                    تا
+                                  </span>
                                   <span dir="ltr">{slot.endTime}</span>
                                 </button>
                               );
@@ -585,12 +704,19 @@ export default function Hospitals() {
 
                         {selectedSlot && (
                           <div className="animate-in fade-in duration-200">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">علت نوبت یا یادداشت (اختیاری):</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">
+                              علت نوبت یا یادداشت (اختیاری):
+                            </label>
                             <div className="relative">
-                              <AlignRight className="absolute right-3 top-3 text-gray-400" size={16} />
+                              <AlignRight
+                                className="absolute right-3 top-3 text-gray-400"
+                                size={16}
+                              />
                               <textarea
                                 value={bookingNotes}
-                                onChange={(e) => setBookingNotes(e.target.value)}
+                                onChange={(e) =>
+                                  setBookingNotes(e.target.value)
+                                }
                                 placeholder="توضیحات کوتاه برای پزشک..."
                                 rows={2}
                                 className="w-full bg-white border border-gray-200 rounded-xl pr-9 pl-4 py-2.5 text-xs focus:outline-hidden focus:border-gadget-light transition-colors resize-none shadow-2xs text-gray-700"
@@ -601,12 +727,16 @@ export default function Hospitals() {
                       </div>
                     ) : (
                       <div className="text-center py-6 bg-orange-50/60 rounded-2xl border border-orange-100">
-                        <p className="text-xs font-bold text-orange-700">هیچ نوبت خالی در این تاریخ وجود ندارد.</p>
+                        <p className="text-xs font-bold text-orange-700">
+                          هیچ نوبت خالی در این تاریخ وجود ندارد.
+                        </p>
                       </div>
                     )
                   ) : (
                     <div className="text-center py-8 text-gray-400 border border-dashed border-gray-100 rounded-2xl">
-                      <p className="text-xs">لطفاً برای بارگذاری زمان‌ها یک تاریخ را انتخاب کنید.</p>
+                      <p className="text-xs">
+                        لطفاً برای بارگذاری زمان‌ها یک تاریخ را انتخاب کنید.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -625,7 +755,9 @@ export default function Hospitals() {
                       : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
                 >
-                  {selectedSlot ? `تایید و ثبت نهایی رزرو ساعت ${selectedSlot.startTime}` : "انتخاب ساعت ویزیت الزامی است"}
+                  {selectedSlot
+                    ? `تایید و ثبت نهایی رزرو ساعت ${selectedSlot.startTime}`
+                    : "انتخاب ساعت ویزیت الزامی است"}
                 </button>
               </div>
             )}

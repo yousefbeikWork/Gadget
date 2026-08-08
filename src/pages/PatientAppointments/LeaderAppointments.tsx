@@ -10,8 +10,8 @@ import {
   Car,
   CheckCircle2,
   Layers,
-  ChevronRight, // 👈 اضافه شد
-  ChevronLeft,  // 👈 اضافه شد
+  ChevronRight, 
+  ChevronLeft,  
 } from "lucide-react";
 import api from "../../services/api";
 
@@ -39,7 +39,6 @@ export default function LeaderAppointments({
       setLoading(true);
       setError("");
       try {
-        // 👈 ارسال page، limit و date به سمت سرور
         let url = `/Leader/getUserBookings?page=${currentPage}&limit=${limit}`;
         if (filterDate) {
           url += `&date=${filterDate}`;
@@ -49,21 +48,27 @@ export default function LeaderAppointments({
         if (response.data && response.data.success) {
           setBookings(response.data.data);
           
-          // 👈 تنظیم کردن تعداد کل صفحات از روی آبجکت pagination بک‌اند
           if (response.data.pagination) {
             setTotalPages(response.data.pagination.totalPages);
           } else {
             setTotalPages(1);
           }
         }
-      } catch (err) {
-        setError("خطا در دریافت لیست نوبت‌های لیدر.");
+      } catch (err: any) {
+        // 👈 هندل کردن ارور 404
+        if (err.response && err.response.status === 404) {
+          setBookings([]); // خالی کردن لیست تا Empty State نشان داده شود
+          setTotalPages(1);
+          setError(""); // پاک کردن ارور
+        } else {
+          setError("خطا در دریافت لیست نوبت‌های لیدر.");
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchBookings();
-  }, [filterDate, currentPage]); // 👈 اضافه شدن currentPage به وابستگی‌ها
+  }, [filterDate, currentPage]);
 
   const translateBookingType = (type: string, shift: string) => {
     if (type === "FULL_DAY") return "روزانه (تمام‌وقت)";
@@ -109,6 +114,7 @@ export default function LeaderAppointments({
         <Loader2 className="animate-spin text-gadget-light" size={40} />
       </div>
     );
+  
   if (error)
     return (
       <div className="bg-red-50 text-red-600 p-4 rounded-xl text-center text-sm font-medium border border-red-100">
@@ -116,6 +122,7 @@ export default function LeaderAppointments({
       </div>
     );
 
+  // 👈 با هندل کردن 404، حالا این بخش به درستی اجرا می‌شود
   if (bookings.length === 0) {
     return (
       <div className="bg-gray-50 p-10 rounded-2xl border border-dashed border-gray-200 text-center animate-in fade-in">
@@ -124,7 +131,7 @@ export default function LeaderAppointments({
         </div>
         <h3 className="text-lg font-bold text-gray-700 mb-1">رزروی یافت نشد</h3>
         <p className="text-gray-500 text-sm">
-          شما در این تاریخ هیچ رزروی برای لیدر ندارید.
+          شما تاکنون رزروی ثبت نکرده‌اید یا در این تاریخ رزروی ندارید.
         </p>
       </div>
     );

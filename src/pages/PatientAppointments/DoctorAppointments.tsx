@@ -7,6 +7,7 @@ import {
   MapPin, 
   CalendarX2, 
   Building2,
+  Hospital as HospitalIcon, // 👈 اضافه شدن آیکون بیمارستان
   ChevronRight,
   ChevronLeft
 } from "lucide-react";
@@ -14,7 +15,7 @@ import api from "../../services/api";
 import { EmptyState } from "./EmptyState";
 import DoctorAvatar from "../../components/DoctorAvatar";
 
-// === آپدیت اینترفیس‌ها بر اساس خروجی جدید ===
+// === آپدیت اینترفیس‌ها ===
 interface ClinicInfo {
   id: string;
   name: string;
@@ -39,7 +40,7 @@ interface Appointment {
   endTime: string;
   status: "PENDING" | "CONFIRMED" | "CANCELLED";
   notes: string;
-  bookingSource: "DIRECT" | "CLINIC";
+  bookingSource: "DIRECT" | "CLINIC" | "HOSPITAL"; // 👈 اضافه شدن بیمارستان
   clinic: ClinicInfo | null;
   doctor: DoctorInfo;
 }
@@ -62,7 +63,6 @@ export default function DoctorAppointments({ filterDate }: { filterDate: string 
     const fetchAppointments = async () => {
       setLoading(true);
       try {
-        // 👈 استفاده از currentPage داینامیک
         let url = `/book/patientAppointmentBooking?page=${currentPage}&limit=${limit}`;
         if (filterDate) url += `&date=${filterDate}`;
         
@@ -70,7 +70,6 @@ export default function DoctorAppointments({ filterDate }: { filterDate: string 
         
         if (res.data?.success) {
           setAppointments(res.data.data);
-          // 👈 تنظیم کردن تعداد کل صفحات از روی آبجکت pagination بک‌اند
           if (res.data.pagination) {
             setTotalPages(res.data.pagination.totalPages);
           }
@@ -82,7 +81,7 @@ export default function DoctorAppointments({ filterDate }: { filterDate: string 
       }
     };
     fetchAppointments();
-  }, [filterDate, currentPage]); // 👈 اضافه کردن currentPage به Dependency Array
+  }, [filterDate, currentPage]);
 
   if (loading) {
     return (
@@ -104,9 +103,14 @@ export default function DoctorAppointments({ filterDate }: { filterDate: string 
         <div className="space-y-4">
           {/* رندر کردن لیست نوبت‌ها */}
           {appointments.map((app) => {
+            // 👈 لاجیک تشخیص نوع مرکز
+            const isHospital = app.bookingSource === "HOSPITAL" && app.clinic;
             const isClinic = app.bookingSource === "CLINIC" && app.clinic;
-            const displayPhone = isClinic ? app.clinic?.phones.join(" - ") : app.doctor.clinicPhone;
-            const displayAddress = isClinic ? app.clinic?.address : app.doctor.clinicAddress;
+            const isMedicalCenter = isHospital || isClinic; // اگر هر کدام از این دو بود
+
+            // تعیین آدرس و شماره تماس بر اساس نوع رزرو
+            const displayPhone = isMedicalCenter ? app.clinic?.phones?.join(" - ") : app.doctor.clinicPhone;
+            const displayAddress = isMedicalCenter ? app.clinic?.address : app.doctor.clinicAddress;
 
             return (
               <div key={app.appointmentId} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col md:flex-row justify-between gap-6">
@@ -118,11 +122,16 @@ export default function DoctorAppointments({ filterDate }: { filterDate: string 
                     <h3 className="font-bold text-gray-800">دکتر {app.doctor.firstName} {app.doctor.lastName}</h3>
                     <p className="text-xs text-gray-500 mt-0.5">{app.doctor.expertise}</p>
                     
-                    {/* برچسب نمایش نوع مرکز درمانی */}
-                    {isClinic ? (
+                    {/* 👈 برچسب نمایش نوع مرکز درمانی بر اساس ۳ حالت */}
+                    {isHospital ? (
+                      <div className="flex items-center gap-1 mt-2 bg-teal-50 text-teal-600 px-2.5 py-1 rounded-md text-[10px] font-bold w-fit border border-teal-100">
+                        <HospitalIcon size={12} />
+                        رزرو در بیمارستان {app.clinic?.name}
+                      </div>
+                    ) : isClinic ? (
                       <div className="flex items-center gap-1 mt-2 bg-blue-50 text-blue-600 px-2.5 py-1 rounded-md text-[10px] font-bold w-fit border border-blue-100">
                         <Building2 size={12} />
-                        رزرو در {app.clinic?.name}
+                        رزرو در کلینیک {app.clinic?.name}
                       </div>
                     ) : (
                       <div className="flex items-center gap-1 mt-2 bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md text-[10px] font-bold w-fit border border-gray-200">

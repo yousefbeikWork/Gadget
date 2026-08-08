@@ -287,14 +287,14 @@ export default function Clinics() {
                   <hr className="border-gray-100 mb-4" />
 
                   {/* بخش میانی: مشخصات با چینش دقیق راست‌چین */}
-                  <div className="space-y-3 mb-6">
+                  <div dir="ltr" className="space-y-3 mb-6">
                     <div className="flex items-center justify-between text-sm text-gray-600">
                       <span className="font-medium text-left truncate max-w-[70%]">
                         {clinic.specialty || "---"}
                       </span>
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <span>تخصص:</span>
+                      <div dir="rtl" className="flex items-center gap-2 text-gray-500">
                         <Activity size={16} strokeWidth={1.5} />
+                        <span>تخصص:</span>
                       </div>
                     </div>
 
@@ -302,15 +302,16 @@ export default function Clinics() {
                       <span className="font-medium" dir="ltr">
                         {clinic.phone || "---"}
                       </span>
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <span>تلفن تماس:</span>
+                      <div dir="rtl" className="flex items-center gap-2 text-gray-500">
                         <Phone size={16} strokeWidth={1.5} />
+                        <span>تلفن تماس:</span>
                       </div>
                     </div>
 
-                    <div className="flex items-start justify-between text-sm text-gray-600">
+                    <div className="flex items-start justify-end text-sm text-gray-600">
                       <span
-                        className="font-medium text-left leading-relaxed max-w-[80%] line-clamp-2"
+                      
+                        className="font-medium text-right leading-relaxed max-w-[80%] line-clamp-2 mr-1"
                         title={clinic.address}
                       >
                         {clinic.address || "---"}

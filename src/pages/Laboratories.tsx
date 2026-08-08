@@ -438,14 +438,14 @@ export default function Laboratories() {
 
                   <hr className="border-gray-100 mb-4" />
 
-                  <div className="space-y-3 flex-1 mb-6">
+                  <div dir="ltr" className="space-y-3 flex-1 mb-6">
                     <div className="flex items-center justify-between text-sm text-gray-600">
                       <span className="font-medium" dir="ltr">
                         {lab.licenseCode || "---"}
                       </span>
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <span>کد پروانه:</span>
+                      <div dir="rtl" className="flex items-center gap-2 text-gray-500">
                         <FileBadge size={16} strokeWidth={1.5} />
+                        <span>کد پروانه:</span>
                       </div>
                     </div>
 
@@ -460,8 +460,8 @@ export default function Laboratories() {
                       </div>
                     </div>
 
-                    <div className="flex items-start justify-between text-sm text-gray-600">
-                      <span className="font-medium leading-relaxed max-w-[85%] line-clamp-2">
+                    <div className="flex items-start justify-end text-sm text-gray-600">
+                      <span dir="rtl" className="font-medium leading-relaxed max-w-[85%] line-clamp-2 mr-1">
                         {lab.address || "---"}
                       </span>
                       <div className="flex items-center gap-2 text-gray-500 shrink-0 mt-0.5">
