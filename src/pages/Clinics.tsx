@@ -24,10 +24,13 @@ import persian_fa from "react-date-object/locales/persian_fa";
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 
+// 👈 آپدیت اینترفیس پزشک برای اضافه شدن فیلدهای جدید
 interface ClinicDoctor {
   id: string;
   firstName: string;
   lastName: string;
+  Expertise?: string;
+  imageProfile?: string | null;
 }
 
 interface Clinic {
@@ -45,6 +48,54 @@ interface Slot {
   startTime: string;
   endTime: string;
 }
+
+// 👈 کامپوننت داخلی برای لود کردن و نمایش عکس پروفایل باینری (Blob)
+const DoctorAvatarImage = ({ fileName }: { fileName: string }) => {
+  const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let objectUrl = "";
+
+    const fetchImage = async () => {
+      try {
+        const response = await api.post(
+          "/recive/api/reciveListFile",
+          { minioObjectName: fileName },
+          {
+            responseType: "blob",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+        objectUrl = window.URL.createObjectURL(new Blob([response.data]));
+        setImgSrc(objectUrl);
+      } catch (err) {
+        console.error("خطا در دریافت عکس پروفایل:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchImage();
+
+    // پاکسازی کش مموری بعد از خروج از کامپوننت
+    return () => {
+      if (objectUrl) window.URL.revokeObjectURL(objectUrl);
+    };
+  }, [fileName]);
+
+  if (loading) {
+    return <Loader2 size={16} className="animate-spin text-gray-400" />;
+  }
+
+  if (imgSrc) {
+    return (
+      <img src={imgSrc} alt="avatar" className="w-full h-full object-cover" />
+    );
+  }
+
+  return <User size={18} />;
+};
 
 export default function Clinics() {
   const navigate = useNavigate();
@@ -79,6 +130,7 @@ export default function Clinics() {
         const result = response.data;
 
         if (result.success && result.data) {
+          // 👈 مپ کردن اطلاعات جدید پزشکان هنگام دریافت کلینیک‌ها
           const mappedData: Clinic[] = result.data.map((item: any) => ({
             id: item.id || item._id,
             name: item.centerName,
@@ -87,8 +139,15 @@ export default function Clinics() {
               item.phones && item.phones.length > 0 ? item.phones[0] : "نامشخص",
             address: item.address,
             status: item.isActive === false ? "غیرفعال" : "فعال",
-            doctors: item.doctors || [],
-            medicalCenterId: item.id,
+            doctors:
+              item.doctors?.map((d: any) => ({
+                id: d.id || d._id,
+                firstName: d.firstName,
+                lastName: d.lastName,
+                Expertise: d.Expertise,
+                imageProfile: d.imageProfile,
+              })) || [],
+            medicalCenterId: item.id || item._id,
           }));
           setClinics(mappedData);
         } else {
@@ -110,7 +169,6 @@ export default function Clinics() {
       clinic.specialty?.includes(searchTerm),
   );
 
-  // --- توابع رزرو نوبت (برای بیمار) ---
   const openBookingProcess = (clinic: Clinic) => {
     if (!isLoggedIn) {
       toast.error("برای رزرو نوبت ابتدا باید وارد حساب کاربری خود شوید.");
@@ -199,7 +257,7 @@ export default function Clinics() {
       dir="rtl"
     >
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* ================= هدر و جستجو (دقیقاً هماهنگ با بقیه صفحات) ================= */}
+        {/* ================= هدر و جستجو ================= */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4">
           <div className="flex items-center gap-3">
             <div className="text-gadget-dark">
@@ -252,7 +310,6 @@ export default function Clinics() {
                 className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
               >
                 <div>
-                  {/* بخش بالای کارت: نام و آواتار کپسولی */}
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex flex-col gap-1.5">
                       <h3
@@ -274,7 +331,6 @@ export default function Clinics() {
                       </div>
                     </div>
 
-                    {/* آواتار هوشمند با حرف اول نام کلینیک */}
                     <div className="w-12 h-12 rounded-xl shrink-0 bg-gadget-dark text-white flex items-center justify-center text-xl font-bold shadow-sm">
                       {clinic.name ? (
                         clinic.name.charAt(0)
@@ -286,13 +342,15 @@ export default function Clinics() {
 
                   <hr className="border-gray-100 mb-4" />
 
-                  {/* بخش میانی: مشخصات با چینش دقیق راست‌چین */}
                   <div dir="ltr" className="space-y-3 mb-6">
                     <div className="flex items-center justify-between text-sm text-gray-600">
                       <span className="font-medium text-left truncate max-w-[70%]">
                         {clinic.specialty || "---"}
                       </span>
-                      <div dir="rtl" className="flex items-center gap-2 text-gray-500">
+                      <div
+                        dir="rtl"
+                        className="flex items-center gap-2 text-gray-500"
+                      >
                         <Activity size={16} strokeWidth={1.5} />
                         <span>تخصص:</span>
                       </div>
@@ -302,7 +360,10 @@ export default function Clinics() {
                       <span className="font-medium" dir="ltr">
                         {clinic.phone || "---"}
                       </span>
-                      <div dir="rtl" className="flex items-center gap-2 text-gray-500">
+                      <div
+                        dir="rtl"
+                        className="flex items-center gap-2 text-gray-500"
+                      >
                         <Phone size={16} strokeWidth={1.5} />
                         <span>تلفن تماس:</span>
                       </div>
@@ -310,7 +371,6 @@ export default function Clinics() {
 
                     <div className="flex items-start justify-end text-sm text-gray-600">
                       <span
-                      
                         className="font-medium text-right leading-relaxed max-w-[80%] line-clamp-2 mr-1"
                         title={clinic.address}
                       >
@@ -323,7 +383,6 @@ export default function Clinics() {
                   </div>
                 </div>
 
-                {/* اگر کاربر ادمین یا سوپر ادمین بود، کلاً دکمه‌های رزرو و ورود کلینیک را مخفی کن */}
                 {userRole !== "Admin" && userRole !== "SUPER_ADMIN" && (
                   <div className="pt-4 border-t border-gray-50">
                     {isLoggedIn ? (
@@ -338,9 +397,7 @@ export default function Clinics() {
                         onClick={() => navigate("/login")}
                         className="w-full bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light text-center py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <LogIn size={16} />{" "}
-                        {/* مطمئن شوید آیکون LogIn ایمپورت شده است */}
-                        برای رزرو وارد شوید
+                        <LogIn size={16} /> برای رزرو وارد شوید
                       </button>
                     )}
                   </div>
@@ -363,7 +420,7 @@ export default function Clinics() {
         )}
       </div>
 
-      {/* ================= مودال رزرو کلینیک شکیل با متریال دیزاین جدید ================= */}
+      {/* ================= مودال رزرو کلینیک ================= */}
       {bookingClinic && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div
@@ -416,17 +473,29 @@ export default function Clinics() {
                           onClick={() => selectDoctorToBook(doc)}
                           className="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 hover:border-gadget-light hover:bg-gadget-light/5 cursor-pointer transition-all group shadow-2xs"
                         >
+                          {/* 👈 بخش مشخصات پزشک (آپدیت شده با آواتار و تخصص) */}
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gray-50 group-hover:bg-white text-gray-400 group-hover:text-gadget-light rounded-xl border border-gray-100 flex items-center justify-center transition-colors shadow-2xs">
-                              <User size={18} />
+                            <div className="w-11 h-11 bg-gray-50 group-hover:bg-white text-gray-400 group-hover:text-gadget-light rounded-2xl border border-gray-100 flex items-center justify-center transition-colors shadow-2xs overflow-hidden shrink-0">
+                              {doc.imageProfile ? (
+                                <DoctorAvatarImage
+                                  fileName={doc.imageProfile}
+                                />
+                              ) : (
+                                <User size={20} />
+                              )}
                             </div>
-                            <p className="text-sm font-bold text-gray-700 group-hover:text-gray-900 transition-colors">
-                              دکتر {doc.firstName} {doc.lastName}
-                            </p>
+                            <div>
+                              <p className="text-sm font-bold text-gray-700 group-hover:text-gray-900 transition-colors">
+                                دکتر {doc.firstName} {doc.lastName}
+                              </p>
+                              <p className="text-[10px] text-gadget-light font-medium mt-0.5">
+                                {doc.Expertise || "تخصص ثبت نشده"}
+                              </p>
+                            </div>
                           </div>
                           <ChevronRight
                             size={16}
-                            className="text-gray-400 rotate-180 group-hover:text-gadget-light transition-colors"
+                            className="text-gray-400 rotate-180 group-hover:text-gadget-light transition-colors shrink-0"
                           />
                         </div>
                       ))}
@@ -434,7 +503,7 @@ export default function Clinics() {
                   ) : (
                     <div className="text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 text-gray-400">
                       <p className="text-sm font-medium">
-                        پزک فعال مستقلی در این کلینیک یافت نشد.
+                        پزشک فعال مستقلی در این کلینیک یافت نشد.
                       </p>
                     </div>
                   )}
