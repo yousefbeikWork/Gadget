@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // آدرس پایه بک‌اند شما
-const API_URL = "http://localhost:5000";
+const API_URL = "http://192.168.4.157:5000";
 // const API_URL = "https://nouryahealth.ir";
 
 // ساخت یک نمونه (Instance) از عکسویس
