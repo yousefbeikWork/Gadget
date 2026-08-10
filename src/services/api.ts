@@ -1,8 +1,8 @@
 import axios from "axios";
 
 // آدرس پایه بک‌اند شما
-const API_URL = "http://localhost:5000";
-// const API_URL = "https://nouryahealth.ir";
+// const API_URL = "http://localhost:5000";
+const API_URL = "https://nouryahealth.ir";
 
 // ساخت یک نمونه (Instance) از عکسویس
 const api = axios.create({

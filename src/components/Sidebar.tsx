@@ -24,6 +24,7 @@ import {
   Shield,
   Info,
   PhoneCall,
+  Warehouse,
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 import DoctorAvatar from "./DoctorAvatar";
@@ -41,7 +42,7 @@ const menuItems = [
       "laboratorCenter",
       "Leader",
       "guest",
-      "Hospital"
+      "Hospital",
     ],
   },
   {
@@ -54,7 +55,13 @@ const menuItems = [
     key: "schedule",
     path: "/schedule",
     icon: Calendar,
-    allowedRoles: ["Doctor", "MedicalCenter", "laboratorCenter", "Leader","Hospital"],
+    allowedRoles: [
+      "Doctor",
+      "MedicalCenter",
+      "laboratorCenter",
+      "Leader",
+      "Hospital",
+    ],
   },
   {
     key: "myAppointments",
@@ -78,20 +85,20 @@ const menuItems = [
       "laboratorCenter",
       "Leader",
       "Admin",
-      "Hospital"
+      "Hospital",
     ],
   },
   {
     key: "doctors",
     path: "/doctors",
     icon: Stethoscope,
-    allowedRoles: ["Patient", "Leader", "guest", "Admin","Hospital"],
+    allowedRoles: ["Patient", "Leader", "guest", "Admin", "Hospital"],
   },
   {
     key: "hospitals",
     path: "/hospitals",
     icon: Building2,
-    allowedRoles: ["Patient", "Leader", "guest", "Doctor","Admin"],
+    allowedRoles: ["Patient", "Leader", "guest", "Doctor", "Admin"],
   },
   {
     key: "clinics",
@@ -121,7 +128,13 @@ const menuItems = [
     key: "calibration",
     path: "/calibration",
     icon: Wrench,
-    allowedRoles: ["MedicalCenter", "laboratorCenter","Hospital"],
+    allowedRoles: ["MedicalCenter", "laboratorCenter", "Hospital"],
+  },
+  {
+    key: "inventoryManagement",
+    path: "/inventory-management",
+    icon: Warehouse,
+    allowedRoles: ["Hospital"],
   },
   {
     key: "airplanes",
@@ -158,7 +171,7 @@ const menuItems = [
       "laboratorCenter",
       "Leader",
       "guest",
-      "Hospital"
+      "Hospital",
     ],
   },
   {
@@ -172,7 +185,7 @@ const menuItems = [
       "laboratorCenter",
       "Leader",
       "guest",
-      "Hospital"
+      "Hospital",
     ],
   },
   {
@@ -272,32 +285,122 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
         </div>
 
-        <div className="flex-1 py-6 md:py-6 overflow-y-auto overflow-x-hidden custom-scrollbar">
-          <ul className="space-y-1.5 md:space-y-4">
+        <div className="flex-1 py-6 overflow-y-auto overflow-x-hidden custom-scrollbar">
+          <ul className="space-y-2 md:space-y-3 px-3">
             {filteredMenuItems.map((item, index) => {
               const Icon = item.icon;
+
               return (
                 <NavLink
                   key={index}
                   to={item.path}
                   onClick={onClose}
-                  className="flex items-center gap-4 px-6 py-2 md:py-0 cursor-pointer group transition-all duration-300 md:hover:scale-105 rtl:origin-right ltr:origin-left"
+                  className="group relative block cursor-pointer"
                 >
                   {({ isActive }) => (
-                    <>
+                    <div
+                      className={`
+                relative flex items-center gap-3
+                px-3 py-2.5
+                rounded-2xl
+                transition-all duration-300 ease-out
+                overflow-hidden
+
+                ${
+                  isActive
+                    ? "bg-gadget-dark text-white shadow-lg shadow-gadget-dark/20"
+                    : "text-gray-500 hover:bg-gray-100/80 hover:text-gadget-dark"
+                }
+
+                hover:translate-x-1
+                rtl:hover:-translate-x-1
+              `}
+                    >
+                      {/* Active glow */}
+                      {isActive && (
+                        <div className="absolute inset-0 bg-linear-to-r from-white/10 via-transparent to-transparent pointer-events-none" />
+                      )}
+
+                      {/* Active indicator */}
                       <div
-                        className={`p-1.5 rounded-lg transition-colors ${isActive ? "text-white bg-gadget-dark shadow-md" : "text-gray-400 group-hover:text-gadget-dark"}`}
+                        className={`
+                  absolute top-1/2 -translate-y-1/2
+                  w-1 h-7
+                  rounded-full
+                  transition-all duration-300
+                  rtl:right-0 ltr:left-0
+                  ${
+                    isActive
+                      ? "bg-white opacity-100"
+                      : "bg-transparent opacity-0"
+                  }
+                `}
+                      />
+
+                      {/* Icon */}
+                      <div
+                        className={`
+                  relative z-10
+                  flex items-center justify-center
+                  w-10 h-10
+                  rounded-xl
+                  transition-all duration-300
+
+                  ${
+                    isActive
+                      ? "bg-white/15 text-white shadow-inner"
+                      : "bg-gray-100 text-gray-400 group-hover:bg-gadget-dark/10 group-hover:text-gadget-dark group-hover:scale-110"
+                  }
+                `}
                       >
-                        <Icon strokeWidth={1.5} size={22} />
+                        <Icon
+                          size={21}
+                          strokeWidth={isActive ? 2 : 1.7}
+                          className="transition-transform duration-300 group-hover:rotate-[-4deg]"
+                        />
                       </div>
-                      <div>
+
+                      {/* Text */}
+                      <div className="relative z-10 flex-1 min-w-0">
                         <h3
-                          className={`text-sm transition-colors ${isActive ? "font-bold text-gadget-dark" : "font-medium text-gray-600 group-hover:text-gadget-dark"}`}
+                          className={`
+                    text-sm
+                    truncate
+                    transition-all duration-300
+                    ${
+                      isActive
+                        ? "font-bold text-white"
+                        : "font-medium text-gray-600 group-hover:text-gadget-dark"
+                    }
+                  `}
                         >
                           {t(item.key)}
                         </h3>
+
+                        {/* Small active text */}
+                        {isActive && (
+                          <span className="block mt-0.5 text-[10px] text-white/60 font-normal">
+                            Active
+                          </span>
+                        )}
                       </div>
-                    </>
+
+                      {/* Arrow */}
+                      <div
+                        className={`
+                  relative z-10
+                  text-xs
+                  transition-all duration-300
+                  ${
+                    isActive
+                      ? "opacity-100 text-white translate-x-0"
+                      : "opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 text-gadget-dark"
+                  }
+                `}
+                      >
+                        <span className="rtl:rotate-180 inline-block">›</span>
+                      </div>
+                    </div>
                   )}
                 </NavLink>
               );
@@ -331,10 +434,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                       userRole === "laboratorCenter"
                         ? userProfile?.centerName
                         : userRole === "Hospital"
-                          ? userProfile?.hospitalName 
-                        : userProfile
-                          ? `${userProfile.firstName || ""} ${userProfile.lastName || ""}`
-                          : t("loading")}
+                          ? userProfile?.hospitalName
+                          : userProfile
+                            ? `${userProfile.firstName || ""} ${userProfile.lastName || ""}`
+                            : t("loading")}
                     </h4>
                     <p className="text-xs text-gray-500 font-medium truncate mt-0.5">
                       {userRole === "Doctor" && userProfile?.Expertise
