@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // 👈 ایمپورت ناوبری
+import { useNavigate } from 'react-router-dom'; 
 import { 
   Users, Search, Phone, CreditCard, 
   CalendarDays, Loader2, CheckCircle2, 
-  Clock4, CalendarX2, PlusCircle, Activity
+  Clock4, CalendarX2, PlusCircle, Activity,
+  Calendar, MapPin
 } from 'lucide-react';
 import api from '../../services/api';
 import AddHealthRecordModal from '../../components/AddHealthRecordModal';
+
+// ایمپورت‌های مربوط به تقویم شمسی
+import { default as DatePickerLib } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
+
+const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 
 interface PatientItem {
   patientId: string;
@@ -26,6 +34,10 @@ export default function Patients() {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // 👈 استیت‌های جدید برای فیلتر
+  const [filterDate, setFilterDate] = useState('');
+  const [locationType, setLocationType] = useState('');
+
   // استیت‌های مودال ثبت پرونده سلامت
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState('');
@@ -34,21 +46,41 @@ export default function Patients() {
   const fetchPatients = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/doctor/getDoctorPatients');
+      setError('');
+      
+      // 👈 ساخت URL داینامیک بر اساس فیلترها
+      let url = '/doctor/getDoctorPatients';
+      const params = new URLSearchParams();
+      if (filterDate) params.append('date', filterDate);
+      if (locationType) params.append('locationType', locationType);
+      
+      const queryString = params.toString();
+      if (queryString) url += `?${queryString}`;
+
+      const response = await api.get(url);
       
       if (response.data && response.data.success) {
-        setPatients(response.data.patients);
+        setPatients(response.data.patients || []);
+      } else {
+        setPatients([]);
       }
-    } catch (err) {
-      setError('خطا در دریافت لیست بیماران. لطفاً ارتباط با سرور را بررسی کنید.');
+    } catch (err: any) {
+      // هندل کردن 404 برای نمایش حالت خالی (Empty State)
+      if (err.response && err.response.status === 404) {
+        setPatients([]);
+        setError('');
+      } else {
+        setError('خطا در دریافت لیست بیماران. لطفاً ارتباط با سرور را بررسی کنید.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // 👈 وابستگی‌ها (Dependencies) آپدیت شد تا با تغییر فیلترها ریکوئست زده شود
   useEffect(() => {
     fetchPatients();
-  }, []);
+  }, [filterDate, locationType]);
 
   const filteredPatients = patients.filter(p => 
     p.firstName?.includes(searchTerm) || 
@@ -99,29 +131,73 @@ export default function Patients() {
     <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 w-full h-full overflow-y-auto custom-scrollbar p-6 md:p-8 font-sans relative" dir="rtl">
       <div className="max-w-7xl mx-auto">
         
-        {/* ================== هدر صفحه ================== */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 border-b border-gray-50 pb-6">
-          <div className="flex items-center gap-3">
+        {/* ================== هدر صفحه و ابزارهای فیلتر ================== */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-8 gap-4 border-b border-gray-50 pb-6">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="p-3 bg-gadget-light/10 text-gadget-light rounded-2xl">
               <Users size={28} />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-800">لیست بیماران من</h1>
               <p className="text-gray-500 text-sm mt-1">
-                {patients.length > 0 ? `تعداد کل بیماران ثبت شده: ${patients.length} نفر` : 'پرونده بیماران مطب شما'}
+                {patients.length > 0 ? `تعداد بیماران یافت شده: ${patients.length} نفر` : 'پرونده بیماران مطب شما'}
               </p>
             </div>
           </div>
 
-          <div className="relative w-full md:w-72">
-            <Search className="absolute right-3 top-2.5 text-gray-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="جستجوی نام یا کد ملی..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors"
-            />
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full xl:w-auto">
+            
+            {/* 👈 فیلتر تاریخ (شمسی) */}
+            <div className="relative w-full sm:w-48 md:w-52">
+              <Calendar className="absolute right-3 top-2.5 text-gray-400 z-10" size={18} />
+              <DatePicker
+                calendar={persian}
+                locale={persian_fa}
+                value={filterDate ? new Date(filterDate) : ""}
+                onChange={(date: any) => {
+                  if (date && date.isValid) {
+                    const jsDate = date.toDate();
+                    const year = jsDate.getFullYear();
+                    const month = String(jsDate.getMonth() + 1).padStart(2, "0");
+                    const day = String(jsDate.getDate()).padStart(2, "0");
+                    setFilterDate(`${year}-${month}-${day}`);
+                  } else {
+                    setFilterDate("");
+                  }
+                }}
+                format="YYYY/MM/DD"
+                containerClassName="w-full"
+                inputClass="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors cursor-pointer text-gray-700 shadow-2xs"
+                placeholder="فیلتر تاریخ..."
+              />
+            </div>
+
+            {/* 👈 فیلتر نوع مکان */}
+            <div className="relative w-full sm:w-48 md:w-52">
+              <MapPin className="absolute right-3 top-2.5 text-gray-400 z-10" size={18} />
+              <select
+                value={locationType}
+                onChange={(e) => setLocationType(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm font-bold text-gray-700 focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors cursor-pointer shadow-2xs appearance-none"
+              >
+                <option value="">همه مکان‌ها</option>
+                <option value="personal">مطب شخصی</option>
+                <option value="clinic">کلینیک</option>
+              </select>
+            </div>
+
+            {/* جستجوی متنی */}
+            <div className="relative w-full sm:w-48 md:w-64">
+              <Search className="absolute right-3 top-2.5 text-gray-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="جستجوی نام یا کد ملی..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors shadow-2xs"
+              />
+            </div>
+            
           </div>
         </div>
 
@@ -140,18 +216,18 @@ export default function Patients() {
         )}
 
         {!loading && !error && filteredPatients.length === 0 && (
-          <div className="bg-gray-50 p-10 rounded-2xl border border-dashed border-gray-200 text-center">
+          <div className="bg-gray-50 p-10 rounded-2xl border border-dashed border-gray-200 text-center animate-in fade-in">
             <div className="w-16 h-16 bg-white text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
               <Users size={32} />
             </div>
             <h3 className="text-lg font-bold text-gray-700 mb-1">بیماری یافت نشد</h3>
-            <p className="text-gray-500 text-sm">شما هنوز بیماری در سیستم ندارید یا جستجوی شما نتیجه‌ای نداشت.</p>
+            <p className="text-gray-500 text-sm">بیماری با این مشخصات یا فیلترها در سیستم وجود ندارد.</p>
           </div>
         )}
 
         {/* ================== لیست کارت بیماران ================== */}
         {!loading && filteredPatients.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-in fade-in duration-200">
             {filteredPatients.map((patient) => (
               <div key={patient.patientId} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col group relative overflow-hidden h-full">
                 
@@ -194,7 +270,6 @@ export default function Patients() {
                   </div>
                 </div>
 
-                {/* 👈 دکمه‌های عملیات پرونده (تغییرات جدید) */}
                 <div className="mt-auto pt-4 border-t border-gray-100 flex gap-2">
                   <button
                     onClick={() => openHealthRecordModal(patient)}

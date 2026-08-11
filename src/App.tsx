@@ -236,6 +236,10 @@ function App() {
                 element={<ManageHospitalClinic />}
               />
             </Route>
+            <Route
+              path="/inventory-management"
+              element={<PlaceholderPage title="انبار گردانی" />}
+            />
           </Route>
 
           {/* مسیر ریدایرکت برای آدرس‌های نامعتبر */}

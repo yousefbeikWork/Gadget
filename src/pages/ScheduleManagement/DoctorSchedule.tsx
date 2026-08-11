@@ -419,7 +419,7 @@ export default function DoctorSchedule() {
                         </button>
                       ) : (
                         <button onClick={handleDeleteDaySchedule} className="text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer" title="حذف کل برنامه این روز">
-                          <Trash2 size={14} /> لغو این روز
+                          <Trash2 size={14} /> 
                         </button>
                       )
                     )}

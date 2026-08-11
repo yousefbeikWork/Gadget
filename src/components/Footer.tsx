@@ -9,7 +9,7 @@ import {
 import EnamadBadge from "./EnamadBadge";
 
 export default function Footer() {
-  const { t, i18n } = useTranslation();
+  const {  i18n } = useTranslation();
 //   const isLtr = i18n.dir() === "ltr";
 
   return (

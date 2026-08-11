@@ -13,6 +13,7 @@ import {
   AlignRight,
   X,
   LogIn,
+  Hospital as HospitalIcon, // 👈 اضافه شدن آیکون بیمارستان
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -24,7 +25,6 @@ import persian_fa from "react-date-object/locales/persian_fa";
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 
-// 👈 آپدیت اینترفیس پزشک برای اضافه شدن فیلدهای جدید
 interface ClinicDoctor {
   id: string;
   firstName: string;
@@ -42,6 +42,7 @@ interface Clinic {
   status: "فعال" | "غیرفعال";
   doctors: ClinicDoctor[];
   medicalCenterId: string;
+  parentHospital?: string; // 👈 اضافه شدن فیلد بیمارستان والد
 }
 
 interface Slot {
@@ -49,7 +50,6 @@ interface Slot {
   endTime: string;
 }
 
-// 👈 کامپوننت داخلی برای لود کردن و نمایش عکس پروفایل باینری (Blob)
 const DoctorAvatarImage = ({ fileName }: { fileName: string }) => {
   const [imgSrc, setImgSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,7 +78,6 @@ const DoctorAvatarImage = ({ fileName }: { fileName: string }) => {
 
     fetchImage();
 
-    // پاکسازی کش مموری بعد از خروج از کامپوننت
     return () => {
       if (objectUrl) window.URL.revokeObjectURL(objectUrl);
     };
@@ -130,7 +129,6 @@ export default function Clinics() {
         const result = response.data;
 
         if (result.success && result.data) {
-          // 👈 مپ کردن اطلاعات جدید پزشکان هنگام دریافت کلینیک‌ها
           const mappedData: Clinic[] = result.data.map((item: any) => ({
             id: item.id || item._id,
             name: item.centerName,
@@ -139,6 +137,7 @@ export default function Clinics() {
               item.phones && item.phones.length > 0 ? item.phones[0] : "نامشخص",
             address: item.address,
             status: item.isActive === false ? "غیرفعال" : "فعال",
+            parentHospital: item.parentHospital, // 👈 مپ کردن دیتای بیمارستان والد
             doctors:
               item.doctors?.map((d: any) => ({
                 id: d.id || d._id,
@@ -311,23 +310,33 @@ export default function Clinics() {
               >
                 <div>
                   <div className="flex justify-between items-start mb-4">
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-2">
                       <h3
                         className="font-bold text-gray-900 text-lg line-clamp-1"
                         title={clinic.name}
                       >
                         {clinic.name}
                       </h3>
-                      <div>
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                      
+                      {/* 👈 بخش نمایش تگ‌ها آپدیت شد */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* <span
+                          className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold ${
                             clinic.status === "فعال"
-                              ? "bg-green-50 text-green-600"
-                              : "bg-red-50 text-red-600"
+                              ? "bg-green-50 text-green-600 border border-green-100"
+                              : "bg-red-50 text-red-600 border border-red-100"
                           }`}
                         >
                           {clinic.status}
-                        </span>
+                        </span> */}
+                        
+                        {/* 👈 تگ مخصوص کلینیک‌های وابسته به بیمارستان */}
+                        {clinic.parentHospital && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                            <HospitalIcon size={12} />
+                            بخش بیمارستانی
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -473,7 +482,6 @@ export default function Clinics() {
                           onClick={() => selectDoctorToBook(doc)}
                           className="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 hover:border-gadget-light hover:bg-gadget-light/5 cursor-pointer transition-all group shadow-2xs"
                         >
-                          {/* 👈 بخش مشخصات پزشک (آپدیت شده با آواتار و تخصص) */}
                           <div className="flex items-center gap-3">
                             <div className="w-11 h-11 bg-gray-50 group-hover:bg-white text-gray-400 group-hover:text-gadget-light rounded-2xl border border-gray-100 flex items-center justify-center transition-colors shadow-2xs overflow-hidden shrink-0">
                               {doc.imageProfile ? (

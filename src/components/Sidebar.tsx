@@ -92,7 +92,7 @@ const menuItems = [
     key: "doctors",
     path: "/doctors",
     icon: Stethoscope,
-    allowedRoles: ["Patient", "Leader", "guest", "Admin", "Hospital"],
+    allowedRoles: ["Patient", "Leader", "guest", "Admin"],
   },
   {
     key: "hospitals",
