@@ -12,6 +12,7 @@ import {
   X,
   Calendar,
   AlignRight,
+  Banknote,
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -19,7 +20,7 @@ import toast from "react-hot-toast";
 import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
-import DoctorAvatar from "../components/DoctorAvatar"; // 👈 ایمپورت کامپوننت مستقل عکس پزشک
+import DoctorAvatar from "../components/DoctorAvatar";
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 
@@ -37,6 +38,8 @@ interface Doctor {
 interface Slot {
   startTime: string;
   endTime: string;
+  locationId?: string | null;
+  price?: number;
 }
 
 export default function Doctors() {
@@ -55,6 +58,9 @@ export default function Doctors() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [bookingNotes, setBookingNotes] = useState("");
+  
+  // 👈 استیت برای جلوگیری از ارسال مکرر و نمایش وضعیت اتصال به درگاه
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchDoctors = async () => {
     try {
@@ -92,11 +98,13 @@ export default function Doctors() {
     setAvailableSlots([]);
     setSelectedSlot(null);
     setBookingNotes("");
+    setIsSubmitting(false);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedDoctor(null);
+    setIsSubmitting(false);
   };
 
   const fetchSlotsForDate = async (date: string) => {
@@ -130,8 +138,9 @@ export default function Doctors() {
     }
   };
 
-  const handleConfirmBooking = () => {
-    if (!selectedSlot || !selectedDate || !selectedDoctor) return;
+  // 👈 مدیریت ارسال درخواست و ریدایرکت به درگاه پرداخت
+  const handleConfirmBooking = async () => {
+    if (!selectedSlot || !selectedDate || !selectedDoctor || isSubmitting) return;
 
     const payload = {
       doctorId: selectedDoctor._id,
@@ -139,23 +148,31 @@ export default function Doctors() {
       startTime: selectedSlot.startTime,
       endTime: selectedSlot.endTime,
       notes: bookingNotes,
+      amount: selectedSlot.price ?? 0,
     };
 
-    const bookingPromise = api.post("/book/bookslots", payload);
+    setIsSubmitting(true);
+    const toastId = toast.loading("در حال ثبت درخواست و اتصال به درگاه پرداخت...");
 
-    toast.promise(bookingPromise, {
-      loading: "در حال ثبت نوبت شما...",
-      success: (_response) => {
-        closeModal();
-        return "نوبت شما با موفقیت رزرو شد!";
-      },
-      error: (err) => {
-        return (
-          err.response?.data?.message ||
-          "خطا در رزرو نوبت. لطفاً دوباره تلاش کنید."
-        );
-      },
-    });
+    try {
+      const response = await api.post("/book/bookslots", payload);
+
+      if (response.data?.success && response.data?.data?.paymentUrl) {
+        toast.success("در حال انتقال به درگاه پرداخت بانکی...", { id: toastId });
+        
+        // هدایت مرورگر بیمار به درگاه سپ شاپرک
+        window.location.href = response.data.data.paymentUrl;
+      } else {
+        toast.error(response.data?.message || "آدرس درگاه پرداخت یافت نشد.", { id: toastId });
+        setIsSubmitting(false);
+      }
+    } catch (err: any) {
+      toast.error(
+        err.response?.data?.message || "خطا در اتصال به درگاه پرداخت. لطفاً دوباره تلاش کنید.",
+        { id: toastId }
+      );
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -241,7 +258,6 @@ export default function Doctors() {
                 className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col h-full group"
               >
                 <div className="flex items-center gap-4 mb-5 border-b border-gray-100 pb-4">
-                  {/* 👈 استفاده از کامپوننت هوشمند آواتار وارد شده */}
                   <DoctorAvatar
                     imageProfile={doctor.imageProfile}
                     firstName={doctor.firstName}
@@ -290,7 +306,6 @@ export default function Doctors() {
                   </div>
                 </div>
 
-                {/* اگر کاربر ادمین یا سوپر ادمین بود، کلاً باکس دکمه‌ی نوبت‌دهی را نشان نده */}
                 {userRole !== "Admin" && userRole !== "SUPER_ADMIN" && (
                   <div className="mt-auto pt-4 border-t border-gray-100">
                     {isLoggedIn ? (
@@ -324,7 +339,6 @@ export default function Doctors() {
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
             <div className="bg-gadget-dark p-5 flex items-center justify-between text-white shrink-0">
               <div className="flex items-center gap-3">
-                {/* 👈 استفاده از آواتار برای هدر مودال رزرو */}
                 <DoctorAvatar
                   imageProfile={selectedDoctor.imageProfile}
                   firstName={selectedDoctor.firstName}
@@ -433,6 +447,20 @@ export default function Doctors() {
 
                     {selectedSlot && (
                       <div className="animate-in fade-in slide-in-from-top-2">
+                        {/* باکس نمایش مبلغ ویزیت */}
+                        {selectedSlot.price !== undefined && (
+                          <div className="mb-5 p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between">
+                            <span className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                              <Banknote size={18} className="text-emerald-600" />
+                              مبلغ قابل پرداخت:
+                            </span>
+                            <span className="text-base font-black text-emerald-700" dir="ltr">
+                              {new Intl.NumberFormat("fa-IR").format(selectedSlot.price)}{" "}
+                              <span className="text-xs font-bold">ریال</span>
+                            </span>
+                          </div>
+                        )}
+
                         <label className="block text-sm font-bold text-gray-700 mb-2">
                           توضیحات یا علت مراجعه (اختیاری):
                         </label>
@@ -476,19 +504,27 @@ export default function Doctors() {
               )}
             </div>
 
+            {/* فوتر مودال و دکمه پرداخت */}
             <div className="p-5 border-t border-gray-100 bg-gray-50 shrink-0">
               <button
-                disabled={!selectedSlot}
+                disabled={!selectedSlot || isSubmitting}
                 onClick={handleConfirmBooking}
                 className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all outline-hidden border-none ${
-                  selectedSlot
+                  selectedSlot && !isSubmitting
                     ? "bg-gadget-dark hover:bg-gadget-dark/90 text-white shadow-lg cursor-pointer transform hover:-translate-y-0.5"
                     : "bg-gray-200 text-gray-400 cursor-not-allowed"
                 }`}
               >
-                {selectedSlot
-                  ? `تایید و رزرو ساعت ${selectedSlot.startTime}`
-                  : "لطفاً یک ساعت را انتخاب کنید"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={18} />
+                    <span>در حال انتقال به درگاه بانک...</span>
+                  </>
+                ) : selectedSlot ? (
+                  `تایید و پرداخت ساعت ${selectedSlot.startTime}`
+                ) : (
+                  "لطفاً یک ساعت را انتخاب کنید"
+                )}
               </button>
             </div>
           </div>

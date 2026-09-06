@@ -31,6 +31,7 @@ import ContactUs from "./pages/ContactUs";
 import HospitalClinics from "./pages/HospitalClinics";
 import Hospitals from "./pages/Hospitals";
 import ManageHospitalClinic from "./pages/ManageHospitalClinic"; // 👈 مسیر فایلی که می‌سازیم
+import PaymentResult from "./pages/PaymentResult";
 
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div
@@ -222,6 +223,14 @@ function App() {
               <Route
                 path="/my-appointments"
                 element={<PatientAppointments />}
+              />
+            </Route>
+            <Route
+              element={<ProtectedRoute allowedRoles={["Patient"]} />}
+            >
+              <Route
+                path="/payment/result"
+                element={<PaymentResult />}
               />
             </Route>
 

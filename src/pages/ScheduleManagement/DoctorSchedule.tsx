@@ -17,6 +17,7 @@ import {
   Phone,
   Building2,
   MapPin,
+  Banknote, // 👈 آیکون جدید برای فیلد قیمت
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -61,6 +62,7 @@ interface Period {
 interface ScheduleItem {
   date: string;
   slotDuration: number;
+  price: number; // 👈 اضافه شدن فیلد قیمت به اینترفیس
   periods: Period[];
 }
 
@@ -71,11 +73,17 @@ interface ClinicDoctor {
   Expertise: string;
 }
 
-// 👈 تابع کمکی برای تبدیل زمان (مثلا "14:30") به دقیقه (مثلا 870) جهت مقایسه ریاضی
+// تابع کمکی برای تبدیل زمان (مثلا "14:30") به دقیقه (مثلا 870) جهت مقایسه ریاضی
 const timeToMinutes = (timeStr: string) => {
   if (!timeStr) return 0;
   const [hours, minutes] = timeStr.split(":").map(Number);
   return hours * 60 + minutes;
+};
+
+// 👈 تابع کمکی برای فرمت کردن قیمت (جدا کردن ۳ رقم ۳ رقم)
+const formatPrice = (value: string) => {
+  const numericValue = value.replace(/\D/g, "");
+  return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
 export default function DoctorSchedule() {
@@ -92,6 +100,7 @@ export default function DoctorSchedule() {
 
   const [currentDate, setCurrentDate] = useState("");
   const [currentDuration, setCurrentDuration] = useState(30);
+  const [currentPrice, setCurrentPrice] = useState<string>(""); // 👈 استیت مربوط به قیمت (رشته برای نگهداری کاماها)
   const [currentPeriods, setCurrentPeriods] = useState<Period[]>([{ startTime: "08:00", endTime: "12:00" }]);
   const [scheduleList, setScheduleList] = useState<ScheduleItem[]>([]);
 
@@ -183,12 +192,19 @@ export default function DoctorSchedule() {
       toast.error("لطفاً ابتدا تاریخ را انتخاب کنید.");
       return;
     }
+    
+    // 👈 اعتبارسنجی قیمت
+    const parsedPrice = parseInt(currentPrice.replace(/,/g, ""), 10);
+    if (!currentPrice || isNaN(parsedPrice) || parsedPrice <= 0) {
+      toast.error("لطفاً مبلغ ویزیت را به درستی (به ریال) وارد کنید.");
+      return;
+    }
+
     if (scheduleList.find((item) => item.date === currentDate)) {
       toast.error("برنامه این تاریخ قبلاً در لیست انتظار اضافه شده است.");
       return;
     }
 
-    // آرایه‌ای برای بررسی تداخلات داخلی فرم
     const parsedPeriods: { start: number; end: number }[] = [];
 
     // ۱. بررسی خالی نبودن، تقدم زمانی و حداقل طول شیفت
@@ -225,11 +241,17 @@ export default function DoctorSchedule() {
     }
 
     // در صورت تایید تمام موارد، به لیست اضافه می‌شود
-    const newItem: ScheduleItem = { date: currentDate, slotDuration: currentDuration, periods: [...currentPeriods] };
+    const newItem: ScheduleItem = { 
+      date: currentDate, 
+      slotDuration: currentDuration, 
+      price: parsedPrice, // 👈 قیمت خالص بدون کاما
+      periods: [...currentPeriods] 
+    };
+    
     setScheduleList([...scheduleList, newItem]);
     toast.success(`برنامه تاریخ ${formatShamsi(currentDate)} تایید و به لیست انتظار اضافه شد.`);
     
-    // ریست کردن فرم برای راحتی کاربر
+    // ریست کردن فرم برای راحتی کاربر (تاریخ ریست می‌شود، اما مبلغ معمولاً برای روزهای بعد ثابت است پس آن را نگه می‌داریم)
     setCurrentDate("");
     setCurrentPeriods([{ startTime: "08:00", endTime: "12:00" }]);
   };
@@ -496,22 +518,40 @@ export default function DoctorSchedule() {
                   اضافه کردن شیفت جدید {currentDate ? `برای ${formatShamsi(currentDate)}` : "..."}
                 </h2>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">مدت زمان هر ویزیت (دقیقه)</label>
-                  <select
-                    value={currentDuration}
-                    onChange={(e) => setCurrentDuration(Number(e.target.value))}
-                    className="w-full sm:w-1/2 bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-hidden focus:border-gadget-light cursor-pointer"
-                  >
-                    <option value={15}>۱۵ دقیقه</option>
-                    <option value={20}>۲۰ دقیقه</option>
-                    <option value={30}>۳۰ دقیقه</option>
-                    <option value={45}>۴۵ دقیقه</option>
-                    <option value={60}>۱ ساعت</option>
-                  </select>
+                {/* 👈 گرید برای نمایش کنار هم مدت زمان و قیمت */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">مدت زمان هر ویزیت (دقیقه)</label>
+                    <select
+                      value={currentDuration}
+                      onChange={(e) => setCurrentDuration(Number(e.target.value))}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light cursor-pointer font-bold text-gray-700"
+                    >
+                      <option value={15}>۱۵ دقیقه</option>
+                      <option value={20}>۲۰ دقیقه</option>
+                      <option value={30}>۳۰ دقیقه</option>
+                      <option value={45}>۴۵ دقیقه</option>
+                      <option value={60}>۱ ساعت</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">مبلغ ویزیت (ریال)</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={currentPrice}
+                        onChange={(e) => setCurrentPrice(formatPrice(e.target.value))}
+                        placeholder="مثلاً: 2,500,000"
+                        className="w-full bg-white border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light transition-colors font-bold text-gray-800"
+                        dir="ltr"
+                      />
+                      <Banknote className="absolute right-3 top-2.5 text-gray-400" size={18} />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 pt-2">
                   <label className="block text-sm font-bold text-gray-700">بازه های زمانی حضورتان را وارد کنید</label>
                   {currentPeriods.map((period, index) => (
                     <div key={index} className="flex items-center gap-3">
@@ -562,9 +602,14 @@ export default function DoctorSchedule() {
                     <div key={idx} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center justify-between shadow-sm">
                       <div>
                         <p className="text-sm font-bold text-gray-800">{formatShamsi(item.date)}</p>
-                        <p className="text-[10px] text-gray-500 mt-1">
-                          {item.periods.length} شیفت (ویزیت‌های {item.slotDuration} دقیقه‌ای)
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] text-gray-500 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                            {item.periods.length} شیفت ({item.slotDuration} دقیقه‌ای)
+                          </span>
+                          <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 flex items-center gap-1">
+                            <Banknote size={10} /> {new Intl.NumberFormat('fa-IR').format(item.price)} ریال
+                          </span>
+                        </div>
                       </div>
                       <button onClick={() => removeFromBatch(idx)} className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer">
                         <XCircle size={18} />
