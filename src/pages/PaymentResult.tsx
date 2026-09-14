@@ -16,10 +16,11 @@ import {
   Printer,
   User,
   Building2,
+  CreditCard,
+  LayoutDashboard,
 } from "lucide-react";
 import api from "../services/api";
 
-// 👈 اینترفیس‌های دقیق مطابق خروجی بک‌اند
 interface DoctorInfo {
   _id?: string;
   role?: string;
@@ -50,14 +51,23 @@ interface PaymentReceipt {
   resNum?: string | null;
   paidAt?: string | null;
   appointment?: AppointmentDetails;
+  description?: string;
 }
 
 export default function PaymentResult() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  // خواندن پارامترها از URL
   const urlStatus = searchParams.get("status");
   const paymentIdParam = searchParams.get("paymentId");
+  const typeParam = searchParams.get("type"); // 👈 خواندن type از URL
+  const resNumParam = searchParams.get("resNum") || searchParams.get("ResNum");
+
+  // بررسی نوع پرداخت بر اساس پارامتر type یا پیشوند resNum
+  const isRfidPayment =
+    typeParam?.toLowerCase() === "rfid" ||
+    resNumParam?.toUpperCase().startsWith("RFID");
 
   const [receipt, setReceipt] = useState<PaymentReceipt | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -74,9 +84,13 @@ export default function PaymentResult() {
       try {
         setLoading(true);
         setError("");
-        const response = await api.get(
-          `/peyment/getPaymentReceipt/${paymentIdParam}`,
-        );
+
+        // 👈 تعیین اندپوینت بر اساس نوع پرداخت
+        const endpoint = isRfidPayment
+          ? `/peyment/getRfidPaymentReceipt/${paymentIdParam}`
+          : `/peyment/getPaymentReceipt/${paymentIdParam}`;
+
+        const response = await api.get(endpoint);
 
         if (response.data?.success && response.data?.data) {
           setReceipt(response.data.data);
@@ -92,9 +106,8 @@ export default function PaymentResult() {
     };
 
     fetchReceipt();
-  }, [paymentIdParam]);
+  }, [paymentIdParam, isRfidPayment]);
 
-  // اولویت وضعیت با دیتای دریافتی از سرور است
   const isSuccess = receipt?.status
     ? receipt.status === "PAID" ||
       receipt.status === "SUCCESS" ||
@@ -118,7 +131,6 @@ export default function PaymentResult() {
     });
   };
 
-  // استخراج نام پزشک
   const getDoctorName = (doctor?: DoctorInfo | string | null) => {
     if (!doctor) return "نامشخص";
     if (typeof doctor === "object") {
@@ -127,7 +139,6 @@ export default function PaymentResult() {
     return doctor;
   };
 
-  // استخراج نام مرکز/کلینیک
   const getClinicName = (clinic?: ClinicInfo | string | null) => {
     if (!clinic) return "مطب شخصی";
     if (typeof clinic === "object") {
@@ -159,6 +170,7 @@ export default function PaymentResult() {
       dir="rtl"
     >
       <div className="bg-white max-w-xl w-full rounded-3xl border border-gray-100 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        
         {/* ================= هدر کارتی ================= */}
         <div
           className={`p-8 text-center text-white relative overflow-hidden ${
@@ -183,8 +195,12 @@ export default function PaymentResult() {
             </h1>
             <p className="text-sm opacity-90 leading-relaxed max-w-sm">
               {isSuccess
-                ? "نوبت ویزیت شما تایید و در تقویم سیستم ثبت گردید."
-                : "تراکنش انجام نشد و نوبت درخواستی رزرو نگردید."}
+                ? isRfidPayment
+                  ? "هزینه صدور کارت هوشمند RFID پرداخت گردید و سفارش شما ثبت شد."
+                  : "نوبت ویزیت شما تایید و در تقویم سیستم ثبت گردید."
+                : isRfidPayment
+                  ? "تراکنش پرداخت هزینه کارت هوشمند RFID انجام نشد یا لغو گردید."
+                  : "تراکنش انجام نشد و نوبت درخواستی رزرو نگردید."}
             </p>
           </div>
         </div>
@@ -197,8 +213,47 @@ export default function PaymentResult() {
             </div>
           )}
 
-          {/* ۱. کارت اطلاعات نوبت درخواستی/رزرو شده */}
-          {receipt?.appointment && (
+          {/* حالت ۱: نمایش کارت مشخصات خدمت برای RFID */}
+          {isRfidPayment && (
+            <div
+              className={`rounded-2xl p-5 border space-y-3 ${
+                isSuccess
+                  ? "bg-emerald-50/60 border-emerald-100"
+                  : "bg-gray-50/80 border-gray-200"
+              }`}
+            >
+              <div className="flex items-center justify-between border-b border-gray-200/60 pb-2.5">
+                <span className="flex items-center gap-1.5 text-xs font-bold text-gray-700">
+                  <CreditCard
+                    size={16}
+                    className={isSuccess ? "text-emerald-600" : "text-gray-500"}
+                  />
+                  مشخصات خدمت دریافتی
+                </span>
+                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+                  کارت سلامت هوشمند
+                </span>
+              </div>
+
+              <div className="text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">عنوان سفارش:</span>
+                  <span className="font-bold text-gray-800">
+                    صدور و فعال‌سازی کارت هوشمند بیمار (RFID)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">وضعیت سفارش:</span>
+                  <span className="font-bold text-gray-800">
+                    {isSuccess ? "تایید شده - در صف صدور" : "در انتظار پرداخت مجدد"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* حالت ۲: نمایش کارت مشخصات نوبت پزشک */}
+          {!isRfidPayment && receipt?.appointment && (
             <div
               className={`rounded-2xl p-5 border space-y-3.5 ${
                 isSuccess
@@ -233,8 +288,7 @@ export default function PaymentResult() {
                   <Clock size={15} className="text-orange-500 shrink-0" />
                   <span className="text-gray-500">ساعت ویزیت:</span>
                   <span className="font-bold text-gray-800" dir="ltr">
-                    {receipt.appointment.startTime} -{" "}
-                    {receipt.appointment.endTime}
+                    {receipt.appointment.startTime} - {receipt.appointment.endTime}
                   </span>
                 </div>
 
@@ -257,7 +311,7 @@ export default function PaymentResult() {
             </div>
           )}
 
-          {/* ۲. مشخصات تراکنش مالی */}
+          {/* مشخصات تراکنش بانکی */}
           <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 space-y-3.5">
             <div className="flex items-center justify-between border-b border-gray-200/60 pb-3">
               <span className="flex items-center gap-1.5 text-xs font-bold text-gray-600">
@@ -299,8 +353,7 @@ export default function PaymentResult() {
             {receipt?.refNum && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500 text-xs flex items-center gap-1">
-                  <Hash size={12} className="text-gray-400" /> شماره پیگیری بانک
-                  (RefNum):
+                  <Hash size={12} className="text-gray-400" /> شماره پیگیری بانک (RefNum):
                 </span>
                 <span
                   className="font-mono font-bold text-gray-800 text-xs"
@@ -312,7 +365,7 @@ export default function PaymentResult() {
             )}
 
             {/* شماره ارجاع خرید (ResNum) */}
-            {receipt?.resNum && (
+            {(receipt?.resNum || resNumParam) && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500 text-xs">
                   شماره ارجاع خرید (ResNum):
@@ -321,7 +374,7 @@ export default function PaymentResult() {
                   className="font-mono font-medium text-gray-700 text-xs"
                   dir="ltr"
                 >
-                  {receipt.resNum}
+                  {receipt?.resNum || resNumParam}
                 </span>
               </div>
             )}
@@ -380,8 +433,9 @@ export default function PaymentResult() {
                 className="shrink-0 text-emerald-600 mt-0.5"
               />
               <span>
-                نوبت با موفقیت ثبت شد. می‌توانید جزئیات آن را در لیست نوبت‌های
-                خود مشاهده کنید.
+                {isRfidPayment
+                  ? "سفارش شما با موفقیت ثبت شد. کارت هوشمند سلامت شما به‌زودی فعال خواهد شد."
+                  : "نوبت با موفقیت ثبت شد. می‌توانید جزئیات آن را در لیست نوبت‌های خود مشاهده کنید."}
               </span>
             </div>
           )}
@@ -389,20 +443,30 @@ export default function PaymentResult() {
           {/* ================= دکمه‌های ناوبری ================= */}
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             {isSuccess ? (
-              <button
-                onClick={() => navigate("/my-appointments")}
-                className="flex-1 bg-gadget-dark hover:bg-gadget-dark/90 text-white font-bold py-3 rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <CalendarDays size={18} />
-                مشاهده نوبت‌های من
-              </button>
+              isRfidPayment ? (
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="flex-1 bg-gadget-dark hover:bg-gadget-dark/90 text-white font-bold py-3 rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <LayoutDashboard size={18} />
+                  ورود به داشبورد کاربری
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate("/my-appointments")}
+                  className="flex-1 bg-gadget-dark hover:bg-gadget-dark/90 text-white font-bold py-3 rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <CalendarDays size={18} />
+                  مشاهده نوبت‌های من
+                </button>
+              )
             ) : (
               <button
-                onClick={() => navigate("/doctors")}
+                onClick={() => navigate(-1)}
                 className="flex-1 bg-gadget-dark hover:bg-gadget-dark/90 text-white font-bold py-3 rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 <RotateCcw size={18} />
-                تلاش مجدد و انتخاب نوبت
+                تلاش مجدد
               </button>
             )}
 

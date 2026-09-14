@@ -9,6 +9,10 @@ import {
   Calendar,
   Clock,
   Stethoscope,
+  CreditCard,
+  CheckCircle2,
+  AlertCircle,
+  ArrowLeft,
 } from "lucide-react";
 import api from "../../services/api";
 import toast from "react-hot-toast";
@@ -40,6 +44,7 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
   const [loading, setLoading] = useState(false);
   const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
   const [loadingRecords, setLoadingRecords] = useState(false);
+  const [isPayingRfid, setIsPayingRfid] = useState(false); // 👈 استیت لودینگ پرداخت RFID
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -136,8 +141,99 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
     }
   };
 
+  // 👈 تابع هدایت به درگاه پرداخت RFID
+  const handlePayRfid = async () => {
+    setIsPayingRfid(true);
+    const toastId = toast.loading("در حال اتصال به درگاه پرداخت بانکی...");
+
+    try {
+      const response = await api.post("/peyment/rfid/pay", {});
+
+      if (response.data?.success && response.data?.data?.paymentUrl) {
+        toast.success("در حال انتقال به درگاه پرداخت...", { id: toastId });
+        window.location.href = response.data.data.paymentUrl;
+      } else {
+        toast.error(response.data?.message || "خطا در دریافت آدرس پرداخت.", { id: toastId });
+        setIsPayingRfid(false);
+      }
+    } catch (err: any) {
+      toast.error(
+        err.response?.data?.message || "خطا در اتصال به درگاه پرداخت. لطفاً دوباره تلاش کنید.",
+        { id: toastId }
+      );
+      setIsPayingRfid(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in">
+      
+      {/* ================== کارت وضعیت پرداخت کارت RFID ================== */}
+      <div
+        className={`p-5 rounded-2xl border transition-all ${
+          userProfile?.hasPaidRfid
+            ? "bg-emerald-50/70 border-emerald-200"
+            : "bg-amber-50/80 border-amber-200"
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div
+              className={`p-3 rounded-2xl shrink-0 ${
+                userProfile?.hasPaidRfid
+                  ? "bg-emerald-500 text-white"
+                  : "bg-amber-500 text-white"
+              }`}
+            >
+              <CreditCard size={24} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-black text-gray-800">
+                  وضعیت کارت هوشمند سلامت (RFID)
+                </h3>
+                {userProfile?.hasPaidRfid ? (
+                  <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2 py-0.5 rounded-md">
+                    <CheckCircle2 size={12} /> پرداخت شده و فعال
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[11px] font-bold px-2 py-0.5 rounded-md">
+                    <AlertCircle size={12} /> پرداخت نشده
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                {userProfile?.hasPaidRfid
+                  ? "هزینه صدور کارت هوشمند پرداخت گردیده و اطلاعات پرونده پزشکی بر روی چیپ RFID ثبت شده است."
+                  : "برای صدور و دریافت کارت فیزیکی هوشمند و پرونده الکترونیک همراه، هزینه کارت را تسویه نمایید."}
+              </p>
+            </div>
+          </div>
+
+          {/* دکمه پرداخت در صورت عدم تسویه */}
+          {!userProfile?.hasPaidRfid && (
+            <button
+              type="button"
+              disabled={isPayingRfid}
+              onClick={handlePayRfid}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-3 px-5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isPayingRfid ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  <span>در حال انتقال...</span>
+                </>
+              ) : (
+                <>
+                  <span>پرداخت و فعال‌سازی کارت</span>
+                  <ArrowLeft size={16} />
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-4">
           <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2">

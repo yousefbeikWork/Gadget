@@ -96,7 +96,7 @@ export default function Footer() {
         {/* کپی رایت */}
         <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-gray-400 font-medium text-center md:text-left">
-            تمامی حقوق مادی و معنوی این وب‌سایت متعلق به <span className="font-bold text-gray-600">نوریان هلث</span> می‌باشد. © ۲۰۲۶
+            تمامی حقوق مادی و معنوی این وب‌سایت متعلق به <span className="font-bold text-gray-600">نوریا هلث</span> می‌باشد. © ۲۰۲۶
           </p>
           <div className="flex items-center gap-4 text-xs font-bold text-gray-400">
             <span className="hover:text-gadget-dark transition-colors cursor-pointer">حریم خصوصی</span>

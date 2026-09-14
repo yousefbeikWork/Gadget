@@ -18,7 +18,6 @@ import {
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-// 👈 فوتر جدید را اینجا ایمپورت کنید
 import Footer from "../components/Footer";
 
 interface TranslatedService {
@@ -65,33 +64,41 @@ export default function Home() {
   return (
     <div className="flex-1 bg-gray-50 md:rounded-2xl shadow-lg overflow-y-auto overflow-x-hidden" dir={i18n.dir()}>
       
-      {/* 1. هدر اصلی (شعار سایت) */}
-      <div className="bg-linear-to-r from-gadget-dark to-gadget-light p-10 md:p-14 text-center relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('/cubes.png')] opacity-40 mix-blend-overlay"></div>
-        <div className={`absolute -top-24 w-64 h-64 bg-white opacity-10 blur-3xl rounded-full ${isLtr ? '-left-24' : '-right-24'}`}></div>
+      {/* 1. هدر اصلی با پس‌زمینه عکس بنر و لایه گرادینت */}
+      <div className="relative min-h-95 md:min-h-110 flex items-center justify-center p-8 md:p-14 text-center overflow-hidden">
+        {/* تصویر پس‌زمینه اصلی */}
+        <img
+          src="/health-tourism-banner.jpeg"
+          alt="بنر سلامت و گردشگری درمانی"
+          className="absolute inset-0 w-full h-full object-cover object-center scale-105"
+        />
 
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <span className="inline-block py-1 px-4 rounded-full bg-white/20 backdrop-blur-sm text-white text-sm font-bold tracking-wider mb-4 border border-white/10">
+        {/* لایه گرادینت تیره جهت خوانایی کامل متون */}
+        <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/50 to-black/40 backdrop-blur-[0.5px]"></div>
+
+        {/* محتوای متنی روی بنر */}
+        <div className="relative z-10 max-w-4xl mx-auto pb-6">
+          <span className="inline-block py-1.5 px-4 rounded-full bg-white/20 backdrop-blur-md text-white text-xs md:text-sm font-bold tracking-wider mb-4 border border-white/25 shadow-sm">
             {t("hero_tag")}
           </span>
-          <h1 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight drop-shadow-md">
+          <h1 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight drop-shadow-lg">
             {t("hero_title")}
           </h1>
-          <p className="text-gray-100 text-sm md:text-base leading-relaxed md:leading-loose max-w-3xl mx-auto drop-shadow-sm mb-8">
+          <p className="text-gray-200 text-xs md:text-base leading-relaxed md:leading-loose max-w-3xl mx-auto drop-shadow-md">
             {t("hero_desc")}
           </p>
         </div>
       </div>
 
       <div className="pt-8 px-8">
-        {/* 2. کارت‌های آماری */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16 -mt-14 relative z-20">
+        {/* 2. کارت‌های آماری (شناور روی انتهای بنر) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16 -mt-16 relative z-20">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={index} className="bg-white rounded-xl p-5 shadow-lg border border-gray-100 hover:-translate-y-1 transition-transform">
+              <div key={index} className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:-translate-y-1 transition-transform">
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`p-3 rounded-lg ${stat.bg} ${stat.color}`}>
+                  <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
                     <Icon size={24} strokeWidth={2} />
                   </div>
                   <span className={`flex items-center text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full ${isLtr ? 'flex-row' : 'flex-row-reverse'}`}>
@@ -174,7 +181,7 @@ export default function Home() {
 
       </div>
       
-      {/* 5. فوتر کامل که نماد اینماد هم داخلش است */}
+      {/* 5. فوتر کامل سایت */}
       <Footer />
       
     </div>

@@ -1,23 +1,26 @@
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import {
   Users,
   Stethoscope,
   Compass,
   FlaskConical,
   Building2,
-  Hospital as HospitalIcon, // 👈 ایمپورت آیکون بیمارستان
+  Hospital as HospitalIcon,
   ShieldAlert,
-  Loader2,
   Activity,
   Server,
   Database,
   RefreshCcw,
   Settings,
-  BellRing
+  BellRing,
+  CreditCard, // آیکون‌های جدید
+  Edit,
+  Check,
+  X,
 } from "lucide-react";
 import api from "../../services/api";
 
-// ایمپورت کامپوننت‌های نمودار از Recharts
 import {
   BarChart,
   Bar,
@@ -29,17 +32,16 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend
+  Legend,
 } from "recharts";
 
-// 👈 اضافه شدن Hospital به اینترفیس
 interface SystemStats {
   patients: number;
   doctors: number;
   leaders: number;
   laboratories: number;
   medicalCenters: number;
-  Hospital: number; 
+  Hospital: number;
   admins?: number;
 }
 
@@ -48,30 +50,112 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchStats = async () => {
+  // استیت‌های مربوط به مدیریت قیمت RFID
+  const [rfidPrice, setRfidPrice] = useState<number | null>(null);
+  const [isEditingRfid, setIsEditingRfid] = useState(false);
+  const [editPriceValue, setEditPriceValue] = useState("");
+  const [isUpdatingRfid, setIsUpdatingRfid] = useState(false);
+
+  const fetchData = async () => {
     setLoading(true);
     setError("");
     try {
-      const response = await api.get("/Admin/getAllItemsCount");
-      if (response.data && response.data.success) {
-        setStats(response.data.data);
+      // دریافت همزمان آمار کل و قیمت RFID
+      const [statsRes, rfidRes] = await Promise.all([
+        api.get("/Admin/getAllItemsCount"),
+        api.get("/Admin/rfid-price").catch(() => null), // در صورت خطا، کل داشبورد کرش نکند
+      ]);
+
+      if (statsRes.data && statsRes.data.success) {
+        setStats(statsRes.data.data);
+      }
+      
+      if (rfidRes?.data?.success) {
+        setRfidPrice(rfidRes.data.data.price);
+        setEditPriceValue(rfidRes.data.data.price.toString());
       }
     } catch (err) {
-      setError("خطا در دریافت آمار سیستم. لطفا دوباره تلاش کنید.");
+      setError("خطا در دریافت اطلاعات سیستم. لطفا دوباره تلاش کنید.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStats();
+    fetchData();
   }, []);
 
+  // تابع بروزرسانی قیمت RFID
+  const handleUpdateRfidPrice = async () => {
+    if (!editPriceValue || Number(editPriceValue) <= 0) {
+      toast.error("لطفاً یک مبلغ معتبر وارد کنید.");
+      return;
+    }
+    
+    setIsUpdatingRfid(true);
+    try {
+      const response = await api.put("/Admin/rfid-price", { price: Number(editPriceValue) });
+      if (response.data.success) {
+        setRfidPrice(response.data.data.price);
+        setIsEditingRfid(false);
+        toast.success("قیمت کارت RFID با موفقیت بروزرسانی شد.");
+      }
+    } catch (error) {
+      toast.error("خطا در بروزرسانی قیمت.");
+    } finally {
+      setIsUpdatingRfid(false);
+    }
+  };
+
+  // ================= 👈 لودر مدرن اسکلتون (Skeleton Loading) =================
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[60vh] text-gadget-light">
-        <Loader2 className="animate-spin mb-4" size={40} />
-        <p className="font-bold text-gray-500">در حال بارگذاری داشبورد مدیریت...</p>
+      <div className="bg-gray-50 rounded-3xl w-full h-full overflow-y-auto custom-scrollbar p-4 md:p-8 font-sans animate-pulse" dir="rtl">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* اسکلتون هدر */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-xs">
+            <div className="space-y-2">
+              <div className="h-7 w-64 bg-gray-200 rounded-xl"></div>
+              <div className="h-4 w-48 bg-gray-100 rounded-lg"></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-100 rounded-xl"></div>
+              <div className="w-32 h-10 bg-gray-200 rounded-xl"></div>
+            </div>
+          </div>
+
+          {/* اسکلتون ۶ کارت آماری */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-2xs flex flex-col items-center justify-center space-y-3">
+                <div className="w-14 h-14 bg-gray-100 rounded-2xl"></div>
+                <div className="h-7 w-16 bg-gray-200 rounded-lg"></div>
+                <div className="h-3 w-20 bg-gray-100 rounded-md"></div>
+              </div>
+            ))}
+          </div>
+
+          {/* اسکلتون نمودارها */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 shadow-xs space-y-6">
+              <div className="h-5 w-52 bg-gray-200 rounded-lg border-b border-gray-50 pb-3"></div>
+              <div className="h-75 w-full bg-gray-50 rounded-xl"></div>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs flex flex-col space-y-4">
+              <div className="h-5 w-44 bg-gray-200 rounded-lg"></div>
+              <div className="flex-1 flex items-center justify-center py-6">
+                <div className="w-44 h-44 rounded-full border-8 border-gray-100"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* اسکلتون باکس‌های پایینی (۳ ستون) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="bg-gray-800 rounded-2xl p-6 shadow-lg space-y-4 h-48"></div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs space-y-4 h-48"></div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs space-y-4 h-48"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -85,7 +169,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // 👈 اضافه شدن بیمارستان‌ها به نمودار میله‌ای
   const barChartData = [
     { name: "بیماران", count: stats.patients, color: "#3b82f6" },
     { name: "پزشکان", count: stats.doctors, color: "#10b981" },
@@ -95,7 +178,6 @@ export default function AdminDashboard() {
     { name: "بیمارستان‌ها", count: stats.Hospital, color: "#14b8a6" },
   ];
 
-  // 👈 اضافه شدن بیمارستان‌ها به نمودار دایره‌ای
   const pieChartData = [
     { name: "پزشکان", value: stats.doctors, color: "#10b981" },
     { name: "لیدرها", value: stats.leaders, color: "#f59e0b" },
@@ -104,7 +186,6 @@ export default function AdminDashboard() {
     { name: "بیمارستان‌ها", value: stats.Hospital, color: "#14b8a6" },
   ];
 
-  // 👈 اضافه شدن کارت آماری بیمارستان‌ها
   const statCards = [
     { title: "کل بیماران", value: stats.patients || 0, icon: Users, color: "text-blue-600", bg: "bg-blue-100", border: "border-blue-200" },
     { title: "پزشکان فعال", value: stats.doctors || 0, icon: Stethoscope, color: "text-emerald-600", bg: "bg-emerald-100", border: "border-emerald-200" },
@@ -132,8 +213,8 @@ export default function AdminDashboard() {
               <BellRing size={20} />
               <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
             </button>
-            <button onClick={fetchStats} className="flex items-center gap-2 bg-gadget-dark/10 hover:bg-gadget-dark/20 text-gadget-dark font-bold px-4 py-2.5 rounded-xl transition-colors cursor-pointer text-sm border border-gadget-dark/20">
-              <RefreshCcw size={16} /> بروزرسانی آمار
+            <button onClick={fetchData} className="flex items-center gap-2 bg-gadget-dark/10 hover:bg-gadget-dark/20 text-gadget-dark font-bold px-4 py-2.5 rounded-xl transition-colors cursor-pointer text-sm border border-gadget-dark/20">
+              <RefreshCcw size={16} /> بروزرسانی
             </button>
           </div>
         </div>
@@ -153,8 +234,6 @@ export default function AdminDashboard() {
 
         {/* ================= بخش نمودارها ================= */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* نمودار میله‌ای (کل کاربران) */}
           <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 shadow-xs">
             <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2 border-b border-gray-100 pb-3">
               <Users size={18} className="text-blue-500" />
@@ -164,23 +243,17 @@ export default function AdminDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                  <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <Tooltip 
-                    cursor={{ fill: '#f9fafb' }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  />
+                  <XAxis dataKey="name" tick={{ fill: "#6b7280", fontSize: 12, fontWeight: "bold" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#6b7280", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{ fill: "#f9fafb" }} contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
                   <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                    {barChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                    {barChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* نمودار دایره‌ای (توزیع ارائه‌دهندگان) */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs flex flex-col">
             <h3 className="font-bold text-gray-800 mb-2 flex items-center gap-2 border-b border-gray-100 pb-3">
               <Building2 size={18} className="text-purple-500" />
@@ -189,30 +262,16 @@ export default function AdminDashboard() {
             <div className="flex-1 min-h-62.5 w-full relative" dir="ltr">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={85}
-                    paddingAngle={5}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {pieChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                  <Pie data={pieChartData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value" stroke="none">
+                    {pieChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }}/>
+                  <Tooltip contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: "12px", fontWeight: "bold" }} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none -mt-7">
                 <div className="text-center">
                   <span className="block text-2xl font-black text-gray-800">
-                    {/* 👈 محاسبه جمع با در نظر گرفتن آمار بیمارستان */}
                     {stats.doctors + stats.leaders + stats.laboratories + stats.medicalCenters + (stats.Hospital || 0)}
                   </span>
                   <span className="block text-[10px] text-gray-500 font-bold">مرکز/شخص</span>
@@ -222,23 +281,22 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* ================= بخش ابزارها و وضعیت سرور (UI نمایشی) ================= */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* ================= وضعیت سرور، تنظیمات و RFID (ردیف پایینی ৩ ستونه) ================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* وضعیت سرور */}
-          <div className="bg-gray-800 rounded-2xl p-6 shadow-lg text-white">
+          {/* باکس ۱: وضعیت سرور */}
+          <div className="bg-gray-800 rounded-2xl p-6 shadow-lg text-white flex flex-col">
             <h3 className="font-bold mb-5 flex items-center gap-2 border-b border-gray-700 pb-3 text-gray-100">
-              <Server size={18} className="text-emerald-400" />
-              وضعیت پایداری سرور و دیتابیس
+              <Server size={18} className="text-emerald-400" /> وضعیت پایداری سرور
             </h3>
-            <div className="space-y-5">
+            <div className="space-y-5 flex-1 justify-center flex flex-col">
               <div>
                 <div className="flex justify-between text-xs mb-1.5 font-bold">
                   <span className="text-gray-400">مصرف CPU (نرمال)</span>
                   <span className="text-emerald-400">24%</span>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '24%' }}></div>
+                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: "24%" }}></div>
                 </div>
               </div>
               <div>
@@ -247,46 +305,104 @@ export default function AdminDashboard() {
                   <span className="text-blue-400">4.2GB / 16GB</span>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '35%' }}></div>
+                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: "35%" }}></div>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-xs mb-1.5 font-bold">
-                  <span className="text-gray-400 flex items-center gap-1"><Database size={12}/> وضعیت دیتابیس</span>
-                  <span className="text-emerald-400 flex items-center gap-1"><div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div> متصل و آنلاین</span>
+                  <span className="text-gray-400 flex items-center gap-1"><Database size={12} /> وضعیت دیتابیس</span>
+                  <span className="text-emerald-400 flex items-center gap-1">
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div> متصل و آنلاین
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* دسترسی‌های سریع */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs">
+          {/* باکس ۲: تنظیمات کارت RFID (اضافه شده) */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs flex flex-col">
+            <h3 className="font-bold text-gray-800 mb-5 flex items-center gap-2 border-b border-gray-100 pb-3">
+              <CreditCard size={18} className="text-orange-500" />
+              تنظیمات مالی و RFID
+            </h3>
+            <div className="flex-1 flex flex-col justify-center">
+              {!isEditingRfid ? (
+                <div className="bg-orange-50/50 rounded-xl p-5 border border-orange-100 text-center relative overflow-hidden group transition-all hover:bg-orange-50">
+                  <div className="absolute -right-4 -top-4 opacity-10"><CreditCard size={80} className="text-orange-500"/></div>
+                  <span className="block text-sm text-gray-500 mb-2 relative z-10 font-medium">هزینه صدور و فعال‌سازی RFID</span>
+                  <div className="text-3xl font-black text-gray-800 mb-4 relative z-10 flex items-center justify-center gap-1">
+                    {rfidPrice ? rfidPrice.toLocaleString() : "---"} 
+                    <span className="text-sm font-bold text-gray-400 mt-1">ریال</span>
+                  </div>
+                  <button
+                    onClick={() => setIsEditingRfid(true)}
+                    className="w-full py-2.5 bg-white border border-gray-200 hover:border-orange-500 hover:text-orange-600 text-gray-600 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs relative z-10"
+                  >
+                    <Edit size={16} /> ویرایش مبلغ کارت
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-3 shadow-inner">
+                  <label className="block text-xs font-bold text-gray-600">مبلغ جدید (ریال)</label>
+                  <input
+                    type="number"
+                    value={editPriceValue}
+                    onChange={(e) => setEditPriceValue(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-gadget-dark focus:ring-1 focus:ring-gadget-dark outline-none text-left font-bold"
+                    dir="ltr"
+                    placeholder="مثال: 500000"
+                  />
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={handleUpdateRfidPrice}
+                      disabled={isUpdatingRfid}
+                      className="flex-1 py-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                    >
+                      {isUpdatingRfid ? "..." : <><Check size={16}/> تایید</>}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditingRfid(false);
+                        setEditPriceValue(rfidPrice?.toString() || "");
+                      }}
+                      disabled={isUpdatingRfid}
+                      className="flex-1 py-2 bg-white border border-gray-200 hover:bg-red-50 hover:text-red-500 hover:border-red-200 text-gray-600 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <X size={16}/> انصراف
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* باکس ۳: دسترسی‌های سریع */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs flex flex-col">
             <h3 className="font-bold text-gray-800 mb-5 flex items-center gap-2 border-b border-gray-100 pb-3">
               <Settings size={18} className="text-gray-500" />
-              عملیات و دسترسی‌های سریع
+              دسترسی‌های سریع
             </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <button className="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gadget-light/10 border border-gray-100 rounded-xl transition-colors cursor-pointer group">
-                <Users className="text-gray-400 group-hover:text-gadget-dark mb-2 transition-colors" size={24} />
+            <div className="grid grid-cols-2 gap-3 flex-1">
+              <button className="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-gadget-light/10 border border-gray-100 rounded-xl transition-colors cursor-pointer group">
+                <Users className="text-gray-400 group-hover:text-gadget-dark mb-1.5 transition-colors" size={22} />
                 <span className="text-xs font-bold text-gray-600 group-hover:text-gadget-dark">مدیریت کاربران</span>
               </button>
-              <button className="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gadget-light/10 border border-gray-100 rounded-xl transition-colors cursor-pointer group">
-                <Activity className="text-gray-400 group-hover:text-gadget-dark mb-2 transition-colors" size={24} />
-                <span className="text-xs font-bold text-gray-600 group-hover:text-gadget-dark">گزارش‌گیری سیستم</span>
+              <button className="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-gadget-light/10 border border-gray-100 rounded-xl transition-colors cursor-pointer group">
+                <Activity className="text-gray-400 group-hover:text-gadget-dark mb-1.5 transition-colors" size={22} />
+                <span className="text-xs font-bold text-gray-600 group-hover:text-gadget-dark">گزارش‌گیری</span>
               </button>
-              <button className="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gadget-light/10 border border-gray-100 rounded-xl transition-colors cursor-pointer group">
-                <ShieldAlert className="text-gray-400 group-hover:text-gadget-dark mb-2 transition-colors" size={24} />
-                <span className="text-xs font-bold text-gray-600 group-hover:text-gadget-dark">بررسی لاگ‌های امنیتی</span>
+              <button className="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-gadget-light/10 border border-gray-100 rounded-xl transition-colors cursor-pointer group">
+                <ShieldAlert className="text-gray-400 group-hover:text-gadget-dark mb-1.5 transition-colors" size={22} />
+                <span className="text-xs font-bold text-gray-600 group-hover:text-gadget-dark">لاگ‌های امنیتی</span>
               </button>
-              <button className="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gadget-light/10 border border-gray-100 rounded-xl transition-colors cursor-pointer group">
-                <Settings className="text-gray-400 group-hover:text-gadget-dark mb-2 transition-colors" size={24} />
-                <span className="text-xs font-bold text-gray-600 group-hover:text-gadget-dark">تنظیمات اصلی سایت</span>
+              <button className="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-gadget-light/10 border border-gray-100 rounded-xl transition-colors cursor-pointer group">
+                <Settings className="text-gray-400 group-hover:text-gadget-dark mb-1.5 transition-colors" size={22} />
+                <span className="text-xs font-bold text-gray-600 group-hover:text-gadget-dark">تنظیمات اصلی</span>
               </button>
             </div>
           </div>
 
         </div>
-
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import api from "../services/api";
+import toast from "react-hot-toast";
 
 interface Guardian {
   firstName: string;
@@ -21,7 +22,7 @@ interface Manager {
   role?: string;
   mobile?: string;
   nationalId?: string;
-  email?: string; // 👈 فیلد ایمیل که در بیمارستان به مدیر اضافه می‌شود
+  email?: string;
 }
 
 interface TestItem {
@@ -100,6 +101,7 @@ interface UserProfile {
   gender?: "MALE" | "FEMALE" | string;
   maritalStatus?: "SINGLE" | "MARRIED" | string;
   guardian?: Guardian;
+  hasPaidRfid?: boolean; // 👈 وضعیت پرداخت کارت RFID
 
   // فیلدهای مشترک کلینیک و آزمایشگاه
   centerName?: string;
@@ -114,13 +116,13 @@ interface UserProfile {
   isActive?: boolean;
   manager?: Manager;
 
-  // 👈 فیلدهای اختصاصی بیمارستان
+  // فیلدهای اختصاصی بیمارستان
   hospitalName?: string;
   hospitalType?: string;
   establishmentDate?: string;
   emergencyMobile?: string;
   hospitalImages?: string[];
-  clinics?: any[]; // کلینیک‌های وابسته
+  clinics?: any[];
 
   // فیلدهای اختصاصی آزمایشگاه
   otherSpecialties?: string[];
@@ -129,7 +131,7 @@ interface UserProfile {
   availableTests?: TestItem[];
   laboratorImages?: string[];
 
-  // فیلدهای الحاق شده‌ی اختصاصی نقش لیدر
+  // فیلدهای اختصاصی نقش لیدر
   Address?: string;
   city?: string;
   hasCar?: boolean;
@@ -162,12 +164,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // تابع درخواست دریافت اطلاعات پروفایل از سرور
+  // نمایش توست هشدار عدم پرداخت به همراه دکمه پرداخت آنلاین
+  const showRfidPaymentToast = () => {
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-2 p-1 text-right font-sans" dir="rtl">
+          <div className="font-bold text-xs text-amber-900 flex items-center gap-1">
+            ⚠️ <span>کارت هوشمند سلامت (RFID)</span>
+          </div>
+          <p className="text-[11px] text-gray-600 leading-relaxed">
+            هزینه صدور کارت هوشمند سلامت پرداخت نشده است. جهت صدور کارت و ثبت پرونده اقدام فرمایید.
+          </p>
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              onClick={async () => {
+                toast.dismiss(t.id);
+                const toastLoading = toast.loading("در حال اتصال به درگاه پرداخت...");
+                try {
+                  const res = await api.post("/peyment/rfid/pay", {});
+                  if (res.data?.success && res.data?.data?.paymentUrl) {
+                    window.location.href = res.data.data.paymentUrl;
+                  } else {
+                    toast.error(res.data?.message || "خطا در دریافت لینک پرداخت", { id: toastLoading });
+                  }
+                } catch (err: any) {
+                  toast.error(err.response?.data?.message || "خطا در اتصال به درگاه پرداخت", { id: toastLoading });
+                }
+              }}
+              className="bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg transition-colors cursor-pointer shadow-2xs"
+            >
+              پرداخت آنلاین
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-600 text-[11px] font-medium py-1.5 px-3 rounded-lg transition-colors cursor-pointer"
+            >
+              بعداً
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        id: "rfid-unpaid-alert",
+        duration: 9000,
+        style: {
+          borderRadius: "16px",
+          border: "1px solid #fef3c7",
+          background: "#fffbeb",
+          padding: "12px 14px",
+          boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+          maxWidth: "380px",
+        },
+      }
+    );
+  };
+
+  // تابع واکشی اطلاعات پروفایل از سرور
   const fetchUserProfile = async () => {
     try {
       const response = await api.get("/users/profile");
       if (response.data && response.data.success) {
-        setUserProfile(response.data.data);
+        const profile: UserProfile = response.data.data;
+        setUserProfile(profile);
+
+        // بررسی وضعیت پرداخت کارت هوشمند بیمار
+        if (profile.role === "Patient" && profile.hasPaidRfid === false) {
+          showRfidPaymentToast();
+        }
       }
     } catch (error) {
       console.error("خطا در دریافت پروفایل کاربری:", error);
