@@ -32,6 +32,7 @@ import HospitalClinics from "./pages/HospitalClinics";
 import Hospitals from "./pages/Hospitals";
 import ManageHospitalClinic from "./pages/ManageHospitalClinic"; // 👈 مسیر فایلی که می‌سازیم
 import PaymentResult from "./pages/PaymentResult";
+import AdminInvoices from "./pages/AdminInvoices";
 
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div
@@ -237,6 +238,7 @@ function App() {
             {/* پنل مدیریت کلان */}
             <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
               <Route path="/admin-panel" element={<AdminDashboard />} />
+              <Route path="/invoices" element={<AdminInvoices />} />
             </Route>
             <Route element={<ProtectedRoute allowedRoles={["Hospital"]} />}>
               <Route path="/hospital-clinics" element={<HospitalClinics />} />

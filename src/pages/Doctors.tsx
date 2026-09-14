@@ -13,6 +13,7 @@ import {
   Calendar,
   AlignRight,
   Banknote,
+  Receipt,
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -21,6 +22,7 @@ import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import DoctorAvatar from "../components/DoctorAvatar";
+import DoctorInvoicesModal from "../components/DoctorInvoicesModal"; // 👈 ایمپورت کامپوننت اختصاصی مودال
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 
@@ -50,7 +52,7 @@ export default function Doctors() {
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // استیت‌های مودال رزرو نوبت
+  // استیت‌های مودال رزرو نوبت (بیمار)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedDate, setSelectedDate] = useState("");
@@ -58,9 +60,12 @@ export default function Doctors() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [bookingNotes, setBookingNotes] = useState("");
-  
-  // 👈 استیت برای جلوگیری از ارسال مکرر و نمایش وضعیت اتصال به درگاه
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 👈 استیت ساده مودال صورت‌حساب (ادمین)
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [selectedDoctorForInvoice, setSelectedDoctorForInvoice] =
+    useState<Doctor | null>(null);
 
   const fetchDoctors = async () => {
     try {
@@ -138,9 +143,9 @@ export default function Doctors() {
     }
   };
 
-  // 👈 مدیریت ارسال درخواست و ریدایرکت به درگاه پرداخت
   const handleConfirmBooking = async () => {
-    if (!selectedSlot || !selectedDate || !selectedDoctor || isSubmitting) return;
+    if (!selectedSlot || !selectedDate || !selectedDoctor || isSubmitting)
+      return;
 
     const payload = {
       doctorId: selectedDoctor._id,
@@ -152,28 +157,41 @@ export default function Doctors() {
     };
 
     setIsSubmitting(true);
-    const toastId = toast.loading("در حال ثبت درخواست و اتصال به درگاه پرداخت...");
+    const toastId = toast.loading(
+      "در حال ثبت درخواست و اتصال به درگاه پرداخت...",
+    );
 
     try {
       const response = await api.post("/book/bookslots", payload);
 
       if (response.data?.success && response.data?.data?.paymentUrl) {
-        toast.success("در حال انتقال به درگاه پرداخت بانکی...", { id: toastId });
-        
-        // هدایت مرورگر بیمار به درگاه سپ شاپرک
+        toast.success("در حال انتقال به درگاه پرداخت بانکی...", {
+          id: toastId,
+        });
         window.location.href = response.data.data.paymentUrl;
       } else {
-        toast.error(response.data?.message || "آدرس درگاه پرداخت یافت نشد.", { id: toastId });
+        toast.error(response.data?.message || "آدرس درگاه پرداخت یافت نشد.", {
+          id: toastId,
+        });
         setIsSubmitting(false);
       }
     } catch (err: any) {
       toast.error(
-        err.response?.data?.message || "خطا در اتصال به درگاه پرداخت. لطفاً دوباره تلاش کنید.",
-        { id: toastId }
+        err.response?.data?.message ||
+          "خطا در اتصال به درگاه پرداخت. لطفاً دوباره تلاش کنید.",
+        { id: toastId },
       );
       setIsSubmitting(false);
     }
   };
+
+  // باز کردن مودال صورت‌حساب برای پزشک منتخب
+  const openInvoiceModal = (doctor: Doctor) => {
+    setSelectedDoctorForInvoice(doctor);
+    setIsInvoiceModalOpen(true);
+  };
+
+  const isAdmin = userRole === "Admin" || userRole === "SUPER_ADMIN";
 
   return (
     <div
@@ -188,7 +206,9 @@ export default function Doctors() {
               لیست پزشکان و متخصصان
             </h1>
             <p className="text-gray-500 text-sm mt-1">
-              پزشک مورد نظر خود را پیدا کنید و نوبت بگیرید
+              {isAdmin
+                ? "مدیریت و مشاهده اطلاعات و صورت‌حساب‌های مالی پزشکان"
+                : "پزشک مورد نظر خود را پیدا کنید و نوبت بگیرید"}
             </p>
           </div>
 
@@ -306,34 +326,51 @@ export default function Doctors() {
                   </div>
                 </div>
 
-                {userRole !== "Admin" && userRole !== "SUPER_ADMIN" && (
-                  <div className="mt-auto pt-4 border-t border-gray-100">
-                    {isLoggedIn ? (
-                      <button
-                        onClick={() => openBookingModal(doctor)}
-                        className="w-full flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
-                      >
-                        <CalendarPlus size={18} />
-                        دریافت نوبت
-                      </button>
-                    ) : (
-                      <Link
-                        to="/login"
-                        className="w-full flex items-center justify-center gap-2 bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light py-2.5 rounded-xl text-sm font-bold transition-all"
-                      >
-                        <LogIn size={18} />
-                        برای رزرو وارد شوید
-                      </Link>
-                    )}
-                  </div>
-                )}
+                {/* دکمه عملیاتی کارت */}
+                <div className="mt-auto pt-4 border-t border-gray-100">
+                  {isAdmin ? (
+                    <button
+                      onClick={() => openInvoiceModal(doctor)}
+                      className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer shadow-xs"
+                    >
+                      <Receipt size={18} />
+                      صورت‌حساب‌های مالی
+                    </button>
+                  ) : isLoggedIn ? (
+                    <button
+                      onClick={() => openBookingModal(doctor)}
+                      className="w-full flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+                    >
+                      <CalendarPlus size={18} />
+                      دریافت نوبت
+                    </button>
+                  ) : (
+                    <Link
+                      to="/login"
+                      className="w-full flex items-center justify-center gap-2 bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light py-2.5 rounded-xl text-sm font-bold transition-all"
+                    >
+                      <LogIn size={18} />
+                      برای رزرو وارد شوید
+                    </Link>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* ================= مودال رزرو نوبت ================= */}
+      {/* ================= کامپوننت مجزای مودال صورت‌حساب‌ها (ادمین) ================= */}
+      <DoctorInvoicesModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => {
+          setIsInvoiceModalOpen(false);
+          setSelectedDoctorForInvoice(null);
+        }}
+        doctor={selectedDoctorForInvoice}
+      />
+
+      {/* ================= مودال رزرو نوبت (بیمار) ================= */}
       {isModalOpen && selectedDoctor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
@@ -363,46 +400,39 @@ export default function Doctors() {
 
             <div className="p-6 overflow-y-auto custom-scrollbar flex-1 min-h-105">
               <div className="mb-6">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  ابتدا تاریخ مراجعه را انتخاب کنید:
+                </label>
                 <div className="relative">
-                  <div className="mb-6">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      ابتدا تاریخ مراجعه را انتخاب کنید:
-                    </label>
-                    <div className="relative">
-                      <Calendar
-                        className="absolute right-3 top-3 text-gadget-light z-10"
-                        size={18}
-                      />
-                      <DatePicker
-                        calendar={persian}
-                        locale={persian_fa}
-                        value={selectedDate ? new Date(selectedDate) : ""}
-                        fixMainPosition={true}
-                        onChange={(date: any) => {
-                          if (date && date.isValid) {
-                            const jsDate = date.toDate();
-                            const year = jsDate.getFullYear();
-                            const month = String(
-                              jsDate.getMonth() + 1,
-                            ).padStart(2, "0");
-                            const day = String(jsDate.getDate()).padStart(
-                              2,
-                              "0",
-                            );
-
-                            const gregorianDate = `${year}-${month}-${day}`;
-                            fetchSlotsForDate(gregorianDate);
-                          } else {
-                            fetchSlotsForDate("");
-                          }
-                        }}
-                        format="YYYY/MM/DD"
-                        containerClassName="w-full"
-                        inputClass="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors cursor-pointer text-gray-700"
-                        placeholder="انتخاب تاریخ از تقویم..."
-                      />
-                    </div>
-                  </div>
+                  <Calendar
+                    className="absolute right-3 top-3 text-gadget-light z-10"
+                    size={18}
+                  />
+                  <DatePicker
+                    calendar={persian}
+                    locale={persian_fa}
+                    value={selectedDate ? new Date(selectedDate) : ""}
+                    fixMainPosition={true}
+                    onChange={(date: any) => {
+                      if (date && date.isValid) {
+                        const jsDate = date.toDate();
+                        const year = jsDate.getFullYear();
+                        const month = String(jsDate.getMonth() + 1).padStart(
+                          2,
+                          "0",
+                        );
+                        const day = String(jsDate.getDate()).padStart(2, "0");
+                        const gregorianDate = `${year}-${month}-${day}`;
+                        fetchSlotsForDate(gregorianDate);
+                      } else {
+                        fetchSlotsForDate("");
+                      }
+                    }}
+                    format="YYYY/MM/DD"
+                    containerClassName="w-full"
+                    inputClass="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:bg-white transition-colors cursor-pointer text-gray-700"
+                    placeholder="انتخاب تاریخ از تقویم..."
+                  />
                 </div>
               </div>
 
@@ -447,15 +477,22 @@ export default function Doctors() {
 
                     {selectedSlot && (
                       <div className="animate-in fade-in slide-in-from-top-2">
-                        {/* باکس نمایش مبلغ ویزیت */}
                         {selectedSlot.price !== undefined && (
                           <div className="mb-5 p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between">
                             <span className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
-                              <Banknote size={18} className="text-emerald-600" />
+                              <Banknote
+                                size={18}
+                                className="text-emerald-600"
+                              />
                               مبلغ قابل پرداخت:
                             </span>
-                            <span className="text-base font-black text-emerald-700" dir="ltr">
-                              {new Intl.NumberFormat("fa-IR").format(selectedSlot.price)}{" "}
+                            <span
+                              className="text-base font-black text-emerald-700"
+                              dir="ltr"
+                            >
+                              {new Intl.NumberFormat("fa-IR").format(
+                                selectedSlot.price,
+                              )}{" "}
                               <span className="text-xs font-bold">ریال</span>
                             </span>
                           </div>
@@ -504,7 +541,6 @@ export default function Doctors() {
               )}
             </div>
 
-            {/* فوتر مودال و دکمه پرداخت */}
             <div className="p-5 border-t border-gray-100 bg-gray-50 shrink-0">
               <button
                 disabled={!selectedSlot || isSubmitting}

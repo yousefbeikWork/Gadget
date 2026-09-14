@@ -27,6 +27,7 @@ const resources = {
       Adminpanel: "پنل ادمین",
       aboutUs: "درباره ما",
       contactUs: "تماس با ما",
+      invoices: "پرداخت ها",
 
       // نقش‌ها
       roles: {
@@ -502,6 +503,7 @@ const resources = {
       Adminpanel: "Admin Panel",
       aboutUs: "About Us",
       contactUs: "Contact Us",
+      invoices: "Invoices",
 
       // Roles
       roles: {

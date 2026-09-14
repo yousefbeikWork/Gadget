@@ -155,7 +155,7 @@ export default function PaymentResult() {
 
   return (
     <div
-      className="bg-gray-50/50 min-h-full w-full flex items-center justify-center p-4 md:p-8 font-sans rounded-2xl"
+      className="bg-gray-50 min-h-full w-full flex items-center justify-center p-4 md:p-8 font-sans rounded-2xl"
       dir="rtl"
     >
       <div className="bg-white max-w-xl w-full rounded-3xl border border-gray-100 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">

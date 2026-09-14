@@ -25,12 +25,12 @@ import {
   Info,
   PhoneCall,
   Warehouse,
+  Receipt,
 } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
 import DoctorAvatar from "./DoctorAvatar";
 
 const menuItems = [
-  // ... (آرایه menuItems دقیقاً مثل قبل باقی می‌ماند، نیازی به تغییر کلیدها نیست)
   {
     key: "home",
     path: "/dashboard",
@@ -49,6 +49,12 @@ const menuItems = [
     key: "Adminpanel",
     path: "admin-panel",
     icon: Shield,
+    allowedRoles: ["Admin"],
+  },
+  {
+    key: "invoices", // 👈 آیتم صورت‌حساب‌های کل سامانه برای ادمین
+    path: "/invoices",
+    icon: Receipt,
     allowedRoles: ["Admin"],
   },
   {
