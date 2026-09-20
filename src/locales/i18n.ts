@@ -50,7 +50,7 @@ const resources = {
       register: "ثبت‌نام جدید",
 
       // متون صفحه سرویس‌ها
-      servicesTitle: "خدمات سامانه TAP.NET",
+      servicesTitle: "خدمات سامانه نوریا",
       guestWelcome:
         "به عنوان کاربر مهمان خوش آمدید. برای استفاده از تمامی امکانات عملیاتی، وارد سیستم شوید.",
       userWelcome: "دسترسی سریع به امکانات پنل کاربری شما",
@@ -90,7 +90,7 @@ const resources = {
       hero_title: "سلامت هوشمند، بدون مرز",
       hero_desc:
         "اولین پلتفرم یکپارچه سلامت و گردشگری درمانی که با بهره‌گیری از فناوری‌های نوین، امکان پایش لحظه‌ای سلامت، مدیریت پرونده پزشکی بین‌المللی، ارتباط با پزشکان و مراکز درمانی معتبر و برنامه‌ریزی کامل سفر درمانی را در یک بستر امن فراهم می‌کند.",
-      btn_about: "درباره نوریان",
+      btn_about: "درباره نوریا",
       btn_contact: "تماس با ما",
       our_services: "خدمات ما",
       why_our_platform: "چرا پلتفرم ما؟",
@@ -526,7 +526,7 @@ const resources = {
       register: "Register",
 
       // Services Page Texts
-      servicesTitle: "TAP.NET System Services",
+      servicesTitle: "Nouria System Services",
       guestWelcome:
         "Welcome as a guest. Please log in to use all operational features.",
       userWelcome: "Quick access to your user panel features",

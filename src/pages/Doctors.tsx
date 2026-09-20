@@ -14,6 +14,8 @@ import {
   AlignRight,
   Banknote,
   Receipt,
+  ChevronRight,
+  ChevronLeft,
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -22,7 +24,7 @@ import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import DoctorAvatar from "../components/DoctorAvatar";
-import DoctorInvoicesModal from "../components/DoctorInvoicesModal"; // 👈 ایمپورت کامپوننت اختصاصی مودال
+import DoctorInvoicesModal from "../components/DoctorInvoicesModal";
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 
@@ -50,7 +52,11 @@ export default function Doctors() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // استیت‌های جستجو و صفحه‌بندی سمت سرور
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 9; // ۹ آیتم برای تقارن کامل گرید ۳ ستونه
 
   // استیت‌های مودال رزرو نوبت (بیمار)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -62,17 +68,29 @@ export default function Doctors() {
   const [bookingNotes, setBookingNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 👈 استیت ساده مودال صورت‌حساب (ادمین)
+  // استیت مودال صورت‌حساب (ادمین)
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [selectedDoctorForInvoice, setSelectedDoctorForInvoice] =
     useState<Doctor | null>(null);
 
-  const fetchDoctors = async () => {
+  // تابع دریافت پزشکان از سرور با اعمال فیلتر سرچ و پیجینیشن
+  const fetchDoctors = async (page = 1, search = "") => {
     try {
       setLoading(true);
-      const response = await api.get("/users/doctorsList?page=1&limit=10");
+      setError("");
+
+      let url = `/users/doctorsList?page=${page}&limit=${limit}`;
+      if (search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
+      }
+
+      const response = await api.get(url);
       if (response.data && response.data.success) {
-        setDoctors(response.data.data);
+        setDoctors(response.data.data || []);
+        if (response.data.pagination) {
+          setTotalPages(response.data.pagination.totalPages || 1);
+          setCurrentPage(response.data.pagination.currentPage || page);
+        }
       }
     } catch (err) {
       setError(
@@ -83,18 +101,23 @@ export default function Doctors() {
     }
   };
 
+  // اعمال دی‌بانس (Debounce) برای جلوگیری از درخواست‌های مکرر هنگام تایپ جستجو
   useEffect(() => {
-    fetchDoctors();
-  }, []);
+    const delayDebounce = setTimeout(() => {
+      setCurrentPage(1);
+      fetchDoctors(1, searchQuery);
+    }, 400);
 
-  const filteredDoctors = doctors.filter((doctor) => {
-    const fullName = `${doctor.firstName} ${doctor.lastName}`.toLowerCase();
-    const query = searchQuery.toLowerCase();
-    return (
-      fullName.includes(query) ||
-      (doctor.Expertise && doctor.Expertise.toLowerCase().includes(query))
-    );
-  });
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
+
+  // تغییر صفحه
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+      setCurrentPage(newPage);
+      fetchDoctors(newPage, searchQuery);
+    }
+  };
 
   const openBookingModal = (doctor: Doctor) => {
     setSelectedDoctor(doctor);
@@ -185,7 +208,6 @@ export default function Doctors() {
     }
   };
 
-  // باز کردن مودال صورت‌حساب برای پزشک منتخب
   const openInvoiceModal = (doctor: Doctor) => {
     setSelectedDoctorForInvoice(doctor);
     setIsInvoiceModalOpen(true);
@@ -195,17 +217,18 @@ export default function Doctors() {
 
   return (
     <div
-      className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 w-full h-full overflow-y-auto custom-scrollbar p-6 md:p-8 font-sans relative"
+      className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-gray-100 w-full h-full overflow-y-auto custom-scrollbar p-4 sm:p-6 md:p-8 font-sans relative"
       dir="rtl"
     >
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* ================= هدر صفحه و باکس جستجو ================= */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-gray-100">
           <div>
-            <h1 className="text-2xl font-bold text-gadget-dark flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-gadget-dark flex items-center gap-2">
               <Stethoscope className="text-gadget-light" size={28} />
               لیست پزشکان و متخصصان
             </h1>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-gray-500 text-xs sm:text-sm mt-1">
               {isAdmin
                 ? "مدیریت و مشاهده اطلاعات و صورت‌حساب‌های مالی پزشکان"
                 : "پزشک مورد نظر خود را پیدا کنید و نوبت بگیرید"}
@@ -227,6 +250,7 @@ export default function Doctors() {
           </div>
         </div>
 
+        {/* لودینگ */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-20 text-gadget-light">
             <Loader2 className="animate-spin mb-4" size={40} />
@@ -236,131 +260,151 @@ export default function Doctors() {
           </div>
         )}
 
+        {/* خطا */}
         {error && !loading && (
           <div className="bg-red-50 text-red-600 p-4 rounded-xl text-center text-sm font-medium border border-red-100">
             {error}
           </div>
         )}
 
+        {/* وضعیت بدون نتیجه */}
         {!loading && !error && doctors.length === 0 && (
           <div className="bg-gray-50 p-10 rounded-2xl border border-dashed border-gray-200 text-center">
             <div className="w-16 h-16 bg-white text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-              <Stethoscope size={32} />
+              {searchQuery ? <Search size={32} /> : <Stethoscope size={32} />}
             </div>
             <h3 className="text-lg font-bold text-gray-700 mb-1">
-              پزشکی یافت نشد
+              {searchQuery ? "نتیجه‌ای یافت نشد" : "پزشکی یافت نشد"}
             </h3>
             <p className="text-gray-500 text-sm">
-              در حال حاضر هیچ پزشکی در سیستم ثبت نشده است.
+              {searchQuery
+                ? `پزشکی با نام یا تخصص "${searchQuery}" در سیستم وجود ندارد.`
+                : "در حال حاضر هیچ پزشکی در سیستم ثبت نشده است."}
             </p>
           </div>
         )}
 
-        {!loading && doctors.length > 0 && filteredDoctors.length === 0 && (
-          <div className="bg-orange-50 p-10 rounded-2xl border border-dashed border-orange-200 text-center">
-            <div className="w-16 h-16 bg-white text-orange-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-              <Search size={32} />
-            </div>
-            <h3 className="text-lg font-bold text-orange-700 mb-1">
-              نتیجه‌ای یافت نشد
-            </h3>
-            <p className="text-orange-500 text-sm">
-              پزشکی با نام یا تخصص "{searchQuery}" در سیستم وجود ندارد.
-            </p>
-          </div>
-        )}
-
-        {!loading && filteredDoctors.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDoctors.map((doctor) => (
-              <div
-                key={doctor._id}
-                className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col h-full group"
-              >
-                <div className="flex items-center gap-4 mb-5 border-b border-gray-100 pb-4">
-                  <DoctorAvatar
-                    imageProfile={doctor.imageProfile}
-                    firstName={doctor.firstName}
-                    className="w-14 h-14 text-xl group-hover:scale-105 transition-transform"
-                  />
-                  <div className="overflow-hidden">
-                    <h3 className="font-bold text-lg text-gray-800 truncate">
-                      دکتر {doctor.firstName} {doctor.lastName}
-                    </h3>
-                    <span className="inline-block bg-gadget-light/10 text-[#239c97] text-xs font-bold px-2 py-1 rounded-md mt-1 truncate max-w-full">
-                      {doctor.Expertise}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-3 flex-1 mb-6">
-                  <div className="flex items-start gap-2 text-sm">
-                    <Award
-                      className="text-gray-400 shrink-0 mt-0.5"
-                      size={16}
+        {/* ================= گرید کارت‌های پزشکان ================= */}
+        {!loading && doctors.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {doctors.map((doctor) => (
+                <div
+                  key={doctor._id}
+                  className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col h-full group"
+                >
+                  <div className="flex items-center gap-4 mb-5 border-b border-gray-100 pb-4">
+                    <DoctorAvatar
+                      imageProfile={doctor.imageProfile}
+                      firstName={doctor.firstName}
+                      className="w-14 h-14 text-xl group-hover:scale-105 transition-transform"
                     />
-                    <span className="text-gray-600">
-                      نظام پزشکی:{" "}
-                      <span className="font-medium text-gray-800">
-                        {doctor.medicalCouncilCode}
+                    <div className="overflow-hidden min-w-0 flex-1">
+                      <h3 className="font-bold text-base sm:text-lg text-gray-800 truncate">
+                        دکتر {doctor.firstName} {doctor.lastName}
+                      </h3>
+                      <span className="inline-block bg-gadget-light/10 text-[#239c97] text-xs font-bold px-2 py-1 rounded-md mt-1 truncate max-w-full">
+                        {doctor.Expertise}
                       </span>
-                    </span>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <Phone
-                      className="text-gray-400 shrink-0 mt-0.5"
-                      size={16}
-                    />
-                    <span className="text-gray-600 font-medium" dir="ltr">
-                      {doctor.clinicPhone}
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm">
-                    <MapPin
-                      className="text-gray-400 shrink-0 mt-0.5"
-                      size={16}
-                    />
-                    <span className="text-gray-600 leading-relaxed">
-                      {doctor.clinicAddress}
-                    </span>
-                  </div>
-                </div>
 
-                {/* دکمه عملیاتی کارت */}
-                <div className="mt-auto pt-4 border-t border-gray-100">
-                  {isAdmin ? (
-                    <button
-                      onClick={() => openInvoiceModal(doctor)}
-                      className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer shadow-xs"
-                    >
-                      <Receipt size={18} />
-                      صورت‌حساب‌های مالی
-                    </button>
-                  ) : isLoggedIn ? (
-                    <button
-                      onClick={() => openBookingModal(doctor)}
-                      className="w-full flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
-                    >
-                      <CalendarPlus size={18} />
-                      دریافت نوبت
-                    </button>
-                  ) : (
-                    <Link
-                      to="/login"
-                      className="w-full flex items-center justify-center gap-2 bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light py-2.5 rounded-xl text-sm font-bold transition-all"
-                    >
-                      <LogIn size={18} />
-                      برای رزرو وارد شوید
-                    </Link>
-                  )}
+                  <div className="space-y-3 flex-1 mb-6">
+                    <div className="flex items-start gap-2 text-sm">
+                      <Award
+                        className="text-gray-400 shrink-0 mt-0.5"
+                        size={16}
+                      />
+                      <span className="text-gray-600">
+                        نظام پزشکی:{" "}
+                        <span className="font-medium text-gray-800">
+                          {doctor.medicalCouncilCode}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2 text-sm">
+                      <Phone
+                        className="text-gray-400 shrink-0 mt-0.5"
+                        size={16}
+                      />
+                      <span className="text-gray-600 font-medium" dir="ltr">
+                        {doctor.clinicPhone}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2 text-sm">
+                      <MapPin
+                        className="text-gray-400 shrink-0 mt-0.5"
+                        size={16}
+                      />
+                      <span className="text-gray-600 leading-relaxed line-clamp-2">
+                        {doctor.clinicAddress}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* دکمه عملیاتی کارت */}
+                  <div className="mt-auto pt-4 border-t border-gray-100">
+                    {isAdmin ? (
+                      <button
+                        onClick={() => openInvoiceModal(doctor)}
+                        className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer shadow-xs"
+                      >
+                        <Receipt size={18} />
+                        صورت‌حساب‌های مالی
+                      </button>
+                    ) : isLoggedIn ? (
+                      <button
+                        onClick={() => openBookingModal(doctor)}
+                        className="w-full flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+                      >
+                        <CalendarPlus size={18} />
+                        دریافت نوبت
+                      </button>
+                    ) : (
+                      <Link
+                        to="/login"
+                        className="w-full flex items-center justify-center gap-2 bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light py-2.5 rounded-xl text-sm font-bold transition-all"
+                      >
+                        <LogIn size={18} />
+                        برای رزرو وارد شوید
+                      </Link>
+                    )}
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {/* ================= کنترل‌های صفحه‌بندی ================= */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between bg-white border border-gray-200 p-3 sm:p-4 rounded-2xl shadow-2xs mt-8">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
+                >
+                  <ChevronRight size={16} />
+                  <span>قبلی</span>
+                </button>
+
+                <span className="text-xs sm:text-sm font-bold text-gray-700">
+                  صفحه {currentPage} از {totalPages}
+                </span>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
+                >
+                  <span>بعدی</span>
+                  <ChevronLeft size={16} />
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* ================= کامپوننت مجزای مودال صورت‌حساب‌ها (ادمین) ================= */}
+      {/* ================= مودال صورت‌حساب‌ها (ادمین) ================= */}
       <DoctorInvoicesModal
         isOpen={isInvoiceModalOpen}
         onClose={() => {

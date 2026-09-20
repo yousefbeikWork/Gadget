@@ -371,7 +371,7 @@ export default function Profile() {
                   </div>
                   <div className="flex-1 w-full text-center md:text-right">
                     <h3 className="font-bold text-gray-700 text-sm mb-1">
-                      تصویر پروفایل پزشک (TAP.NET)
+                      تصویر پروفایل پزشک
                     </h3>
                     <p className="text-xs text-gray-500 mb-4 leading-relaxed">
                       تصویر شما پس از آپلود، مستقیماً به سرور متصل شده و در تمام

@@ -21,7 +21,6 @@ import {
 import toast from "react-hot-toast";
 import api from "../services/api";
 
-// 👈 ایمپورت‌های مربوط به تقویم فارسی
 import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
@@ -40,7 +39,6 @@ export default function CenterRegister() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  // استیت موقت برای افزودن تست آزمایشگاه
   const [newTest, setNewTest] = useState<TestItem>({
     testName: "",
     testCode: "",
@@ -50,7 +48,6 @@ export default function CenterRegister() {
     preparationInstructions: "",
   });
 
-  // استیت یکپارچه و مسطح برای مدیریت راحت‌تر فرم
   const [formData, setFormData] = useState({
     managerFirstName: "",
     managerLastName: "",
@@ -67,7 +64,7 @@ export default function CenterRegister() {
 
     specialty: "",
     activeStaffCount: "",
-    establishmentDate: "", // 👈 برای نگهداری تاریخ میلادی تبدیل شده از تقویم شمسی
+    establishmentDate: "",
     emergencyMobile: "",
 
     address: "",
@@ -78,7 +75,6 @@ export default function CenterRegister() {
     agreement: false,
   });
 
-  // --- توابع کمکی ---
   const toEnglishDigits = (str: string) => {
     const persianNumbers = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
     return str
@@ -102,7 +98,6 @@ export default function CenterRegister() {
 
     let finalValue = toEnglishDigits(value);
 
-    // فیلدهای عددی مطلق
     if (
       [
         "managerMobile",
@@ -113,16 +108,13 @@ export default function CenterRegister() {
       ].includes(name)
     ) {
       finalValue = onlyNumbers(finalValue);
-    }
-    // فیلد تلفن‌های ثابت (اعداد، خط تیره، کاما، فاصله)
-    else if (name === "phones") {
+    } else if (name === "phones") {
       finalValue = finalValue.replace(/[^\d\s,-]/g, "");
     }
 
     setFormData((prev) => ({ ...prev, [name]: finalValue }));
   };
 
-  // --- توابع مدیریت تست آزمایشگاهی ---
   const handleAddTest = () => {
     if (!newTest.testName.trim()) {
       toast.error("وارد کردن نام تست الزامی است.");
@@ -149,7 +141,6 @@ export default function CenterRegister() {
     }));
   };
 
-  // --- سابمیت و ارسال به سرور ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -261,55 +252,58 @@ export default function CenterRegister() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-gray-50 p-4 py-10 font-sans"
+      className="min-h-screen flex items-center justify-center bg-gray-50 p-3 sm:p-4 py-8 md:py-10 font-sans"
       dir="rtl"
     >
       <div className="w-full max-w-5xl bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-        {/* ================== هدر فرم ================== */}
-        <div className="bg-gadget-dark p-8 relative overflow-hidden">
+        
+        {/* ================== هدر فرم (اصلاح شده برای موبایل) ================== */}
+        <div className="bg-gadget-dark p-6 sm:p-8 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-[url('/cubes.png')] opacity-10 mix-blend-overlay"></div>
+          
+          {/* دکمه بازگشت شکیل و دارای استایل بج */}
           <Link
             to="/register"
-            className="absolute right-6 top-8 text-white/70 hover:text-white transition-colors flex items-center gap-1 text-sm font-medium z-10"
+            className="absolute right-4 top-4 sm:right-6 sm:top-6 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl backdrop-blur-xs transition-colors flex items-center gap-1.5 text-xs font-bold z-20"
           >
-            <ArrowRight size={16} /> بازگشت به انتخاب نقش
+            <ArrowRight size={14} />
+            <span>بازگشت به انتخاب نقش</span>
           </Link>
-          <div className="relative z-10 text-center mt-4">
-            <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm border border-white/20">
-              <Building2 size={32} className="text-white" />
+
+          {/* محتوای وسط هدر با حریم بالایی امن */}
+          <div className="relative z-10 text-center pt-8 sm:pt-2">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 backdrop-blur-sm border border-white/20 shadow-inner">
+              <Building2 size={28} className="text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">
+            <h1 className="text-xl sm:text-2xl font-black text-white mb-2">
               ثبت‌نام مراکز درمانی و خدمات سلامت
             </h1>
-            <p className="text-gadget-light text-sm">
+            <p className="text-gadget-light text-xs sm:text-sm font-medium">
               شامل کلینیک‌ها، بیمارستان‌ها و آزمایشگاه‌ها
             </p>
           </div>
         </div>
 
-        <div className="p-6 md:p-8">
-          <form onSubmit={handleSubmit} className="space-y-10">
+        <div className="p-4 sm:p-6 md:p-8">
+          <form onSubmit={handleSubmit} className="space-y-8 md:space-y-10">
+            
             {/* ================== ۱. اطلاعات مدیر و حساب کاربری ================== */}
-            <div className="bg-blue-50/30 border border-blue-100 rounded-2xl p-6">
+            <div className="bg-blue-50/40 border border-blue-100 rounded-2xl p-4 sm:p-6">
               <h3 className="text-sm font-bold text-blue-800 mb-4 flex items-center gap-2 border-b border-blue-100 pb-3">
-                <ShieldCheck size={18} /> مشخصات مدیر مرکز و اطلاعات ورود به
-                سیستم
+                <ShieldCheck size={18} /> مشخصات مدیر مرکز و اطلاعات ورود به سیستم
               </h3>
 
-              <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl flex items-start gap-3 mb-6">
+              <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3.5 sm:p-4 rounded-xl flex items-start gap-3 mb-6">
                 <AlertCircle
-                  size={20}
+                  size={18}
                   className="shrink-0 mt-0.5 text-blue-600"
                 />
                 <p className="text-xs font-medium leading-relaxed">
-                  <strong>توجه:</strong> شماره موبایل و رمز عبوری که در این بخش
-                  وارد می‌کنید، به عنوان <strong>نام کاربری و رمز عبور</strong>{" "}
-                  شما برای ورود به پنل مدیریت مرکز استفاده خواهد شد. لطفاً در
-                  نگهداری آن دقت فرمایید.
+                  <strong>توجه:</strong> شماره موبایل و رمز عبوری که در این بخش وارد می‌کنید، به عنوان <strong>نام کاربری و رمز عبور</strong> شما برای ورود به پنل مدیریت مرکز استفاده خواهد شد.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">
                     نام مدیر *
@@ -412,13 +406,14 @@ export default function CenterRegister() {
             </div>
 
             {/* ================== ۲ و ۳. نوع مرکز و مشخصات ================== */}
-            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                  <Building2 size={18} className="text-gadget-dark" /> مشخصات
-                  مرکز درمانی
+                  <Building2 size={18} className="text-gadget-dark" /> مشخصات مرکز درمانی
                 </h3>
-                <div className="flex items-center gap-2 bg-white border border-gray-200 p-1 rounded-xl shadow-xs">
+                
+                {/* تب‌های کاملاً منظم و ریسپانسیو */}
+                <div className="grid grid-cols-3 gap-1 bg-white border border-gray-200 p-1 rounded-xl shadow-2xs w-full sm:w-auto">
                   {(["Clinic", "Laboratory", "Hospital"] as const).map(
                     (type) => (
                       <button
@@ -427,9 +422,9 @@ export default function CenterRegister() {
                         onClick={() =>
                           setFormData({ ...formData, centerType: type })
                         }
-                        className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                        className={`px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer text-center ${
                           formData.centerType === type
-                            ? "bg-gadget-dark text-white"
+                            ? "bg-gadget-dark text-white shadow-2xs"
                             : "text-gray-500 hover:bg-gray-100"
                         }`}
                       >
@@ -444,7 +439,7 @@ export default function CenterRegister() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                 <div className="md:col-span-2">
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">
                     نام کامل مرکز *
@@ -481,7 +476,7 @@ export default function CenterRegister() {
                     name="ownershipType"
                     value={formData.ownershipType}
                     onChange={handleChange}
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light cursor-pointer"
                   >
                     <option value="Private">خصوصی</option>
                     <option value="Public">دولتی</option>
@@ -522,7 +517,6 @@ export default function CenterRegister() {
                   </div>
                 )}
 
-                {/* 👈 تقویم شمسی اضافه شده برای تاریخ تاسیس بیمارستان */}
                 {formData.centerType === "Hospital" && (
                   <>
                     <div>
@@ -582,10 +576,9 @@ export default function CenterRegister() {
             {/* ================== ۴. اطلاعات تماس مرکز ================== */}
             <div className="space-y-4">
               <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 border-b border-gray-100 pb-2">
-                <MapPin size={18} className="text-gadget-light" /> اطلاعات تماس
-                و موقعیت مکانی
+                <MapPin size={18} className="text-gadget-light" /> اطلاعات تماس و موقعیت مکانی
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                 <div className="md:col-span-3">
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">
                     آدرس دقیق پستی *
@@ -640,12 +633,12 @@ export default function CenterRegister() {
 
             {/* ================== ۵. فقط برای آزمایشگاه: لیست تست‌ها ================== */}
             {formData.centerType === "Laboratory" && (
-              <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-6 animate-in fade-in slide-in-from-top-4">
+              <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-4 sm:p-6 animate-in fade-in slide-in-from-top-4">
                 <h3 className="text-sm font-bold text-purple-800 mb-4 flex items-center gap-2 border-b border-purple-100 pb-2">
                   <FlaskConical size={18} /> لیست تست‌ها و آزمایش‌های قابل ارائه
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end bg-white p-4 rounded-xl border border-purple-100 mb-4 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end bg-white p-4 rounded-xl border border-purple-100 mb-4 shadow-2xs">
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">
                       نام تست *
@@ -739,12 +732,12 @@ export default function CenterRegister() {
                     {formData.availableTests.map((test, index) => (
                       <div
                         key={index}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-purple-100 shadow-xs gap-3"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-purple-100 shadow-2xs gap-3"
                       >
                         <div>
                           <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
                             {test.testName}{" "}
-                            <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">
                               {test.department || "عمومی"}
                             </span>
                           </p>
@@ -774,7 +767,7 @@ export default function CenterRegister() {
 
             {/* ================== ۶. تایید قوانین و ثبت ================== */}
             <div className="pt-6 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 w-full md:w-auto">
                 <div className="flex items-center h-5">
                   <input
                     id="agreement"
@@ -789,8 +782,7 @@ export default function CenterRegister() {
                   htmlFor="agreement"
                   className="text-xs text-gray-600 leading-relaxed cursor-pointer font-medium max-w-lg"
                 >
-                  با ثبت این فرم، صحت تمامی اطلاعات وارد شده را تایید می‌کنم و
-                  متعهد به ارائه مدارک معتبر در مرحله بعد هستم.
+                  با ثبت این فرم، صحت تمامی اطلاعات وارد شده را تایید می‌کنم و متعهد به ارائه مدارک معتبر در مرحله بعد هستم.
                 </label>
               </div>
 
