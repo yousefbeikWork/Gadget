@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Users, Search, Phone, CreditCard, 
   Loader2, Wifi, WifiOff, ChevronRight, ChevronLeft,
-  ScanLine, X, Save, Filter
+  ScanLine, X, Save, Filter, AlertCircle
 } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
@@ -14,6 +14,7 @@ interface AdminPatientItem {
   nationalId: string;
   mobile: string;
   rfid?: string;
+  hasPaidRfid?: boolean; // 👈 اضافه شدن وضعیت پرداخت هزینه کارت
 }
 
 interface PaginationData {
@@ -35,7 +36,7 @@ export default function AdminPatients() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // 👈 استیت جدید برای فیلتر RFID
+  // استیت فیلتر RFID
   const [rfidFilter, setRfidFilter] = useState<'ALL' | 'WITH_RFID' | 'WITHOUT_RFID'>('ALL');
 
   // ================= استیت‌های مودال RFID =================
@@ -48,7 +49,7 @@ export default function AdminPatients() {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      setCurrentPage(1); // با هر جستجوی جدید، برگرد به صفحه اول
+      setCurrentPage(1);
     }, 500);
     return () => clearTimeout(handler);
   }, [searchTerm]);
@@ -58,7 +59,6 @@ export default function AdminPatients() {
     try {
       setLoading(true);
 
-      // تعیین مقدار پارامتر hasRfid بر اساس فیلتر انتخاب شده
       let hasRfidParam: boolean | undefined = undefined;
       if (rfidFilter === 'WITH_RFID') hasRfidParam = true;
       if (rfidFilter === 'WITHOUT_RFID') hasRfidParam = false;
@@ -66,8 +66,8 @@ export default function AdminPatients() {
       const response = await api.get('/Admin/getPatients', {
         params: {
           page: currentPage,
-          limit: 12, // برای ظاهر بهتر گرید، 12 پیشنهاد می‌شود (میتوانید 6 بگذارید)
-          hasRfid: hasRfidParam, // 👈 ارسال پارامتر به بک‌اند
+          limit: 12,
+          hasRfid: hasRfidParam,
           search: debouncedSearch || undefined
         }
       });
@@ -83,7 +83,6 @@ export default function AdminPatients() {
     }
   };
 
-  // 👈 اضافه شدن rfidFilter به Dependency Array تا با تغییر آن API دوباره صدا زده شود
   useEffect(() => {
     fetchPatients();
   }, [currentPage, debouncedSearch, rfidFilter]);
@@ -94,13 +93,12 @@ export default function AdminPatients() {
     }
   };
 
-  // 👈 تابع تغییر فیلتر که همزمان صفحه را هم به 1 برمی‌گرداند
   const handleFilterChange = (filter: 'ALL' | 'WITH_RFID' | 'WITHOUT_RFID') => {
     setRfidFilter(filter);
     setCurrentPage(1);
   };
 
-  // ================= تابع هندل کردن ثبت RFID =================
+  // ================= ثبت RFID =================
   const handleSetRfid = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPatient || !rfidInput.trim()) {
@@ -143,103 +141,108 @@ export default function AdminPatients() {
   };
 
   const openRfidModal = (patient: AdminPatientItem) => {
+    if (!patient.hasPaidRfid) {
+      toast.error("هزینه صدور کارت توسط بیمار پرداخت نشده است.");
+      return;
+    }
     setSelectedPatient(patient);
     setRfidInput(patient.rfid || '');
     setIsRfidModalOpen(true);
   };
 
   return (
-    <div className="bg-gray-50 rounded-2xl md:rounded-3xl border border-gray-100 w-full h-full overflow-y-auto custom-scrollbar p-6 md:p-8 font-sans" dir="rtl">
-      <div className="max-w-7xl mx-auto flex flex-col h-full">
+    <div className="bg-gray-50 rounded-2xl md:rounded-3xl border border-gray-100 w-full h-full overflow-y-auto custom-scrollbar p-4 sm:p-6 md:p-8 font-sans" dir="rtl">
+      <div className="max-w-7xl mx-auto flex flex-col h-full space-y-6">
         
         {/* ================== هدر و جستجو ================== */}
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-8 gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-xs">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-2xs">
           
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-green-50 text-green-800 rounded-2xl">
-              <Users size={28} />
+            <div className="p-3 bg-green-50 text-green-800 rounded-2xl shrink-0">
+              <Users size={26} />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-black text-gray-800">بانک جامع بیماران</h1>
-              <p className="text-gray-500 text-sm mt-1 font-medium">
+              <h1 className="text-lg sm:text-2xl font-black text-gray-800">بانک جامع بیماران</h1>
+              <p className="text-gray-500 text-xs sm:text-sm mt-0.5 font-medium">
                 {pagination ? `تعداد کل کاربران یافت‌شده: ${pagination.total.toLocaleString()} نفر` : 'مدیریت و نظارت بر بیماران سامانه'}
               </p>
             </div>
           </div>
 
           <div className="flex flex-col md:flex-row items-center gap-3 w-full xl:w-auto">
-            
-            {/* 👈 دکمه‌های فیلتر RFID */}
-            <div className="flex items-center bg-gray-50 p-1.5 rounded-xl border border-gray-200 w-full md:w-auto">
+            {/* دکمه‌های فیلتر RFID */}
+            <div className="flex items-center bg-gray-50 p-1 rounded-xl border border-gray-200 w-full md:w-auto">
               <button
                 onClick={() => handleFilterChange('ALL')}
-                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-lg cursor-pointer ${
-                  rfidFilter === 'ALL' ? 'bg-white shadow-xs text-gadget-dark border border-gray-100' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 md:flex-none px-3.5 py-2 text-xs font-bold rounded-lg cursor-pointer transition-all ${
+                  rfidFilter === 'ALL' ? 'bg-white shadow-2xs text-gadget-dark border border-gray-100' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 همه
               </button>
               <button
                 onClick={() => handleFilterChange('WITH_RFID')}
-                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 ${
-                  rfidFilter === 'WITH_RFID' ? 'bg-emerald-50 text-emerald-700 shadow-xs border border-emerald-100' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 md:flex-none px-3.5 py-2 text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 transition-all ${
+                  rfidFilter === 'WITH_RFID' ? 'bg-emerald-50 text-emerald-700 shadow-2xs border border-emerald-100' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <Wifi size={14} /> دارای کارت
+                <Wifi size={13} /> دارای کارت
               </button>
               <button
                 onClick={() => handleFilterChange('WITHOUT_RFID')}
-                className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 ${
-                  rfidFilter === 'WITHOUT_RFID' ? 'bg-white shadow-xs text-gray-800 border border-gray-100' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 md:flex-none px-3.5 py-2 text-xs font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5 transition-all ${
+                  rfidFilter === 'WITHOUT_RFID' ? 'bg-white shadow-2xs text-gray-800 border border-gray-100' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <WifiOff size={14} /> بدون کارت
+                <WifiOff size={13} /> بدون کارت
               </button>
             </div>
 
             {/* باکس جستجو */}
             <div className="relative w-full md:w-72">
-              <Search className="absolute right-3 top-3 text-gray-400" size={18} />
+              <Search className="absolute right-3 top-3 text-gray-400" size={17} />
               <input 
                 type="text" 
                 placeholder="جستجو (نام، کدملی، موبایل)..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:outline-hidden focus:border-gadget-dark focus:bg-white transition-all shadow-2xs"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl pr-9 pl-4 py-2.5 text-xs sm:text-sm focus:outline-hidden focus:border-gadget-dark focus:bg-white transition-all shadow-2xs"
               />
             </div>
           </div>
 
         </div>
 
-        {/* ================== مدیریت وضعیت لودینگ و خطا ================== */}
+        {/* وضعیت لودینگ */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-20 text-gadget-dark flex-1">
-            <Loader2 className="animate-spin mb-4" size={40} />
-            <p className="text-sm font-bold text-gray-500">در حال همگام‌سازی اطلاعات از سرور...</p>
+            <Loader2 className="animate-spin mb-3" size={38} />
+            <p className="text-xs sm:text-sm font-bold text-gray-500">در حال دریافت اطلاعات از سرور...</p>
           </div>
         )}
 
+        {/* وضعیت خطا */}
         {error && !loading && (
-          <div className="bg-red-50 text-red-600 p-6 rounded-xl text-center text-sm font-bold border border-red-100 max-w-md mx-auto mt-10">
+          <div className="bg-red-50 text-red-600 p-6 rounded-2xl text-center text-xs sm:text-sm font-bold border border-red-100 max-w-md mx-auto my-auto">
             {error}
-            <button onClick={fetchPatients} className="block mt-4 mx-auto bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg transition-colors cursor-pointer">
+            <button onClick={fetchPatients} className="block mt-4 mx-auto bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-xl transition-colors cursor-pointer">
               تلاش مجدد
             </button>
           </div>
         )}
 
+        {/* بدون نتیجه */}
         {!loading && !error && patients.length === 0 && (
-          <div className="bg-white p-10 rounded-2xl border border-dashed border-gray-200 text-center flex-1 flex flex-col items-center justify-center mt-4">
-            <div className="w-16 h-16 bg-gray-50 text-gray-400 rounded-2xl flex items-center justify-center mb-4">
-              <Filter size={32} />
+          <div className="bg-white p-10 rounded-2xl border border-dashed border-gray-200 text-center flex-1 flex flex-col items-center justify-center my-auto">
+            <div className="w-14 h-14 bg-gray-50 text-gray-400 rounded-2xl flex items-center justify-center mb-3">
+              <Filter size={28} />
             </div>
-            <h3 className="text-lg font-bold text-gray-700 mb-2">بیماری یافت نشد</h3>
-            <p className="text-gray-500 text-sm">هیچ کاربری با این مشخصات و فیلترها در سیستم ثبت نشده است.</p>
+            <h3 className="text-base font-bold text-gray-800 mb-1">بیماری یافت نشد</h3>
+            <p className="text-gray-500 text-xs">هیچ کاربری با این مشخصات در سیستم ثبت نشده است.</p>
             {rfidFilter !== 'ALL' && (
               <button 
                 onClick={() => handleFilterChange('ALL')}
-                className="mt-4 text-xs font-bold text-gadget-light hover:underline cursor-pointer"
+                className="mt-3 text-xs font-bold text-gadget-light hover:underline cursor-pointer"
               >
                 نمایش تمامی بیماران
               </button>
@@ -249,57 +252,87 @@ export default function AdminPatients() {
 
         {/* ================== لیست کارت بیماران ================== */}
         {!loading && patients.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 mb-6">
             {patients.map((patient) => (
-              <div key={patient._id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col relative overflow-hidden group">
+              <div key={patient._id} className="bg-white border border-gray-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs hover:shadow-xs transition-shadow flex flex-col relative overflow-hidden group">
                 
                 <div className="absolute top-0 right-0 w-full h-1 bg-linear-to-r from-gray-200 to-gray-100 group-hover:from-green-400 group-hover:to-green-600 transition-all"></div>
 
-                <div className="flex items-start justify-between mb-4 mt-2">
-                  <div>
-                    <h3 className="font-black text-base text-gray-800 truncate pr-1">
+                <div className="flex items-start justify-between mb-3 mt-1 gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-black text-sm sm:text-base text-gray-800 truncate">
                       {patient.firstName} {patient.lastName}
                     </h3>
                   </div>
                   
-                  {patient.rfid ? (
-                    <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2 py-1.5 rounded-lg text-[10px] font-bold border border-emerald-100" title={`RFID: ${patient.rfid}`}>
-                      <Wifi size={12} /> دارای کارت
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 bg-gray-50 text-gray-400 px-2 py-1.5 rounded-lg text-[10px] font-bold border border-gray-200">
-                      <WifiOff size={12} /> بدون کارت
-                    </div>
-                  )}
+                  {/* بج وضعیت کارت و وضعیت پرداخت */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {patient.rfid ? (
+                      <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-bold border border-emerald-100" title={`RFID: ${patient.rfid}`}>
+                        <Wifi size={12} /> دارای کارت
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 bg-gray-50 text-gray-500 px-2 py-1 rounded-lg text-[10px] font-bold border border-gray-200">
+                        <WifiOff size={12} /> بدون کارت
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-3 bg-gray-50/50 p-3 rounded-xl border border-gray-100 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 text-xs font-bold flex items-center gap-1.5">
-                      <CreditCard size={14} /> کد ملی:
+                {/* اطلاعات مشخصات */}
+                <div className="space-y-2.5 bg-gray-50/70 p-3 rounded-xl border border-gray-100 mb-4 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500 font-medium flex items-center gap-1.5">
+                      <CreditCard size={13} className="text-gray-400" /> کد ملی:
                     </span>
-                    <span className="font-medium text-gray-700" dir="ltr">{patient.nationalId || 'ثبت‌نشده'}</span>
+                    <span className="font-bold text-gray-800 font-mono" dir="ltr">{patient.nationalId || '---'}</span>
                   </div>
                   
-                  <div className="flex items-center justify-between text-sm border-t border-gray-100 pt-3">
-                    <span className="text-gray-500 text-xs font-bold flex items-center gap-1.5">
-                      <Phone size={14} /> موبایل:
+                  <div className="flex items-center justify-between border-t border-gray-200/50 pt-2">
+                    <span className="text-gray-500 font-medium flex items-center gap-1.5">
+                      <Phone size={13} className="text-gray-400" /> موبایل:
                     </span>
-                    <span className="font-medium font-sans text-gray-700" dir="ltr">{patient.mobile || 'ثبت‌نشده'}</span>
+                    <span className="font-bold text-gray-800 font-mono" dir="ltr">{patient.mobile || '---'}</span>
+                  </div>
+
+                  {/* وضعیت پرداخت هزینه RFID */}
+                  <div className="flex items-center justify-between border-t border-gray-200/50 pt-2">
+                    <span className="text-gray-500 font-medium">وضعیت پرداخت RFID:</span>
+                    <span className={`font-bold text-[11px] px-2 py-0.5 rounded-md ${
+                      patient.hasPaidRfid 
+                        ? "bg-emerald-100 text-emerald-800" 
+                        : "bg-amber-100 text-amber-800"
+                    }`}>
+                      {patient.hasPaidRfid ? "پرداخت شده" : "پرداخت نشده"}
+                    </span>
                   </div>
                 </div>
 
-                <div className="mt-auto border-t border-gray-50 pt-4">
+                {/* 👈 دکمه اختصاص / ویرایش RFID (غیرفعال در صورت عدم پرداخت) */}
+                <div className="mt-auto border-t border-gray-100 pt-3">
                   <button
+                    disabled={!patient.hasPaidRfid}
                     onClick={() => openRfidModal(patient)}
-                    className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      patient.rfid 
-                      ? "bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200" 
-                      : "bg-gadget-dark hover:bg-gadget-dark/90 text-white shadow-sm"
+                    title={!patient.hasPaidRfid ? "هزینه صدور کارت توسط بیمار پرداخت نشده است" : ""}
+                    className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      !patient.hasPaidRfid
+                        ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-75"
+                        : patient.rfid 
+                        ? "bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 cursor-pointer shadow-2xs" 
+                        : "bg-gadget-dark hover:bg-gadget-dark/90 text-white shadow-sm cursor-pointer"
                     }`}
                   >
-                    <ScanLine size={16} />
-                    {patient.rfid ? "ویرایش کد RFID" : "اختصاص کارت RFID"}
+                    {!patient.hasPaidRfid ? (
+                      <>
+                        <AlertCircle size={15} />
+                        <span>عدم پرداخت هزینه کارت</span>
+                      </>
+                    ) : (
+                      <>
+                        <ScanLine size={15} />
+                        <span>{patient.rfid ? "ویرایش کد RFID" : "اختصاص کارت RFID"}</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
@@ -310,18 +343,18 @@ export default function AdminPatients() {
 
         {/* ================== صفحه‌بندی ================== */}
         {!loading && pagination && pagination.totalPages > 1 && (
-          <div className="mt-auto flex items-center justify-between bg-white px-6 py-4 rounded-2xl border border-gray-100 shadow-xs">
+          <div className="mt-auto flex items-center justify-between bg-white px-4 sm:px-6 py-3.5 rounded-2xl border border-gray-100 shadow-2xs">
             <p className="text-xs font-bold text-gray-500">
-              نمایش صفحه <span className="text-gray-800">{pagination.currentPage}</span> از <span className="text-gray-800">{pagination.totalPages}</span>
+              صفحه <span className="text-gray-800">{pagination.currentPage}</span> از <span className="text-gray-800">{pagination.totalPages}</span>
             </p>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button 
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                className="p-1.5 sm:p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
               >
-                <ChevronRight size={18} />
+                <ChevronRight size={17} />
               </button>
               
               <div className="flex items-center gap-1">
@@ -336,9 +369,9 @@ export default function AdminPatients() {
                       <button
                         key={pageNumber}
                         onClick={() => handlePageChange(pageNumber)}
-                        className={`w-8 h-8 rounded-xl text-xs font-bold flex items-center justify-center transition-colors cursor-pointer ${
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl text-xs font-bold flex items-center justify-center transition-colors cursor-pointer ${
                           currentPage === pageNumber 
-                          ? "bg-gadget-dark text-white shadow-sm" 
+                          ? "bg-gadget-dark text-white shadow-2xs" 
                           : "text-gray-600 hover:bg-gray-100"
                         }`}
                       >
@@ -349,7 +382,7 @@ export default function AdminPatients() {
                     pageNumber === currentPage - 2 || 
                     pageNumber === currentPage + 2
                   ) {
-                    return <span key={pageNumber} className="text-gray-400 text-xs">...</span>;
+                    return <span key={pageNumber} className="text-gray-400 text-xs px-0.5">...</span>;
                   }
                   return null;
                 })}
@@ -358,9 +391,9 @@ export default function AdminPatients() {
               <button 
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === pagination.totalPages}
-                className="p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                className="p-1.5 sm:p-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={17} />
               </button>
             </div>
           </div>
@@ -370,36 +403,36 @@ export default function AdminPatients() {
 
       {/* ================== مودال ثبت RFID ================== */}
       {isRfidModalOpen && selectedPatient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-500/20 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                <ScanLine className="text-gadget-light" size={20} />
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50/70">
+              <h3 className="font-bold text-gray-800 text-sm sm:text-base flex items-center gap-2">
+                <ScanLine className="text-gadget-light" size={19} />
                 {selectedPatient.rfid ? "ویرایش کارت سلامت" : "اختصاص کارت سلامت"}
               </h3>
               <button 
                 onClick={() => setIsRfidModalOpen(false)}
                 className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors cursor-pointer"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSetRfid} className="p-6">
+            <form onSubmit={handleSetRfid} className="p-5 sm:p-6 space-y-4">
               
-              <div className="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <p className="text-xs text-gray-500 mb-1">بیمار انتخاب شده:</p>
-                <p className="font-bold text-gray-800">
+              <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100 text-xs">
+                <p className="text-gray-500 mb-1">بیمار انتخاب شده:</p>
+                <p className="font-black text-gray-900 text-sm">
                   {selectedPatient.firstName} {selectedPatient.lastName}
                 </p>
-                <p className="text-xs text-gray-500 mt-1" dir="ltr">
-                  {selectedPatient.nationalId}
+                <p className="text-gray-500 mt-1 font-mono" dir="ltr">
+                  کد ملی: {selectedPatient.nationalId}
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-gray-700">کد یکتای کارت RFID</label>
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-bold text-gray-700">کد یکتای کارت RFID</label>
                 <input
                   type="text"
                   required
@@ -408,14 +441,14 @@ export default function AdminPatients() {
                   value={rfidInput}
                   onChange={(e) => setRfidInput(e.target.value)}
                   placeholder="مثال: RFID123456"
-                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-hidden focus:border-gadget-light focus:ring-2 focus:ring-gadget-light/20 transition-all text-left font-mono"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-hidden focus:border-gadget-light focus:ring-2 focus:ring-gadget-light/20 transition-all text-left font-mono"
                 />
-                <p className="text-[11px] text-gray-500">
-                  لطفاً کد درج شده روی کارت هوشمند را با دقت وارد نمایید.
+                <p className="text-[11px] text-gray-400">
+                  کد خوانده‌شده توسط دستگاه کارت‌خوان را وارد فرمایید.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 mt-8">
+              <div className="flex items-center gap-2.5 pt-4">
                 <button
                   type="button"
                   onClick={() => setIsRfidModalOpen(false)}
@@ -426,14 +459,14 @@ export default function AdminPatients() {
                 <button
                   type="submit"
                   disabled={isSubmittingRfid || !rfidInput.trim()}
-                  className="flex-2 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gadget-dark hover:bg-gadget-dark/90 transition-colors shadow-md disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                  className="flex-2 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold text-white bg-gadget-dark hover:bg-gadget-dark/90 transition-colors shadow-md disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {isSubmittingRfid ? (
                     <Loader2 size={16} className="animate-spin" />
                   ) : (
                     <Save size={16} />
                   )}
-                  {isSubmittingRfid ? "در حال ثبت..." : "ثبت و تخصیص کارت"}
+                  <span>{isSubmittingRfid ? "در حال ثبت..." : "ثبت و تخصیص کارت"}</span>
                 </button>
               </div>
 
