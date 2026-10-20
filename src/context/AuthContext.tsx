@@ -79,6 +79,14 @@ interface AvailableDay {
   nightShift?: ShiftDetails | null;
 }
 
+// 👈 اینترفیس اعتبارسنجی کارت ملی
+export interface NationalIdVerification {
+  frontImage?: string | null;
+  backImage?: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED" | "NOT_UPLOADED" | string;
+  rejectReason?: string | null;
+}
+
 interface UserProfile {
   _id?: string;
   firstName: string;
@@ -101,7 +109,8 @@ interface UserProfile {
   gender?: "MALE" | "FEMALE" | string;
   maritalStatus?: "SINGLE" | "MARRIED" | string;
   guardian?: Guardian;
-  hasPaidRfid?: boolean; // 👈 وضعیت پرداخت کارت RFID
+  hasPaidRfid?: boolean;
+  nationalIdVerification?: NationalIdVerification; // 👈 اضافه شدن وضعیت مدارک
 
   // فیلدهای مشترک کلینیک و آزمایشگاه
   centerName?: string;
@@ -164,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // نمایش توست هشدار عدم پرداخت به همراه دکمه پرداخت آنلاین
+  // نمایش توست هشدار عدم پرداخت کارت هوشمند
   const showRfidPaymentToast = () => {
     toast(
       (t) => (
@@ -173,22 +182,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ⚠️ <span>کارت هوشمند سلامت (RFID)</span>
           </div>
           <p className="text-[11px] text-gray-600 leading-relaxed">
-            هزینه صدور کارت هوشمند سلامت پرداخت نشده است. جهت صدور کارت و ثبت پرونده اقدام فرمایید.
+            هزینه صدور کارت هوشمند سلامت پرداخت نشده است. جهت فعال‌سازی کارت
+            اقدام فرمایید.
           </p>
           <div className="flex items-center gap-2 pt-1">
             <button
               onClick={async () => {
                 toast.dismiss(t.id);
-                const toastLoading = toast.loading("در حال اتصال به درگاه پرداخت...");
+                const toastLoading = toast.loading(
+                  "در حال اتصال به درگاه پرداخت...",
+                );
                 try {
                   const res = await api.post("/peyment/rfid/pay", {});
                   if (res.data?.success && res.data?.data?.paymentUrl) {
                     window.location.href = res.data.data.paymentUrl;
                   } else {
-                    toast.error(res.data?.message || "خطا در دریافت لینک پرداخت", { id: toastLoading });
+                    toast.error(
+                      res.data?.message || "خطا در دریافت لینک پرداخت",
+                      { id: toastLoading },
+                    );
                   }
                 } catch (err: any) {
-                  toast.error(err.response?.data?.message || "خطا در اتصال به درگاه پرداخت", { id: toastLoading });
+                  toast.error(
+                    err.response?.data?.message ||
+                      "خطا در اتصال به درگاه پرداخت",
+                    { id: toastLoading },
+                  );
                 }
               }}
               className="bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg transition-colors cursor-pointer shadow-2xs"
@@ -215,7 +234,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
           maxWidth: "380px",
         },
-      }
+      },
+    );
+  };
+
+  // 👈 نمایش توست در صورت رد شدن مدارک هویتی توسط ادمین
+  const showDocumentRejectedToast = (reason?: string | null) => {
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-2 p-1 text-right font-sans" dir="rtl">
+          <div className="font-bold text-xs text-rose-900 flex items-center gap-1">
+            ❌ <span>مدارک هویتی شما تایید نشد</span>
+          </div>
+          <p className="text-[11px] text-gray-700 leading-relaxed">
+            {reason
+              ? `دلیل رد مدرک: ${reason}`
+              : "تصویر کارت ملی ناخوانا بوده یا با مشخصات کدملی تطابق ندارد."}
+          </p>
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                window.location.href = "/dashboard";
+              }}
+              className="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg transition-colors cursor-pointer"
+            >
+              بارگذاری مجدد مدارک
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-600 text-[11px] font-medium py-1.5 px-3 rounded-lg transition-colors cursor-pointer"
+            >
+              متوجه شدم
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        id: "doc-rejected-alert",
+        duration: 10000,
+        style: {
+          borderRadius: "16px",
+          border: "1px solid #fecdd3",
+          background: "#fff1f2",
+          padding: "12px 14px",
+          maxWidth: "380px",
+        },
+      },
     );
   };
 
@@ -227,9 +292,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profile: UserProfile = response.data.data;
         setUserProfile(profile);
 
-        // بررسی وضعیت پرداخت کارت هوشمند بیمار
-        if (profile.role === "Patient" && profile.hasPaidRfid === false) {
-          showRfidPaymentToast();
+        if (profile.role === "Patient") {
+          // بررسی وضعیت پرداخت کارت RFID
+          if (profile.hasPaidRfid === false) {
+            showRfidPaymentToast();
+          }
+
+          // بررسی وضعیت مدارک هویتی (اگر رد شده بود، بلافاصله هشدار دهد)
+          if (profile.nationalIdVerification?.status === "REJECTED") {
+            showDocumentRejectedToast(
+              profile.nationalIdVerification.rejectReason,
+            );
+          }
         }
       }
     } catch (error) {
