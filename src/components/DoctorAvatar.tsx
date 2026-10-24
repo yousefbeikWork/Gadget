@@ -3,7 +3,7 @@ import { User, Loader2 } from "lucide-react";
 import api from "../services/api";
 
 interface DoctorAvatarProps {
-  imageProfile?: string;
+  imageProfile?: string | null;
   firstName?: string;
   className?: string;
 }

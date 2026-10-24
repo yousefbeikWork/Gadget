@@ -32,10 +32,9 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccessRefresh: () => void;
-  importType?: "doctors" | "patients"; // 👈 پراپ تعیین‌کننده نوع ایمپورت (پیش‌فرض: پزشکان)
+  importType?: "doctors" | "patients";
 }
 
-// تنظیمات داینامیک بر اساس نوع کاربری
 const IMPORT_CONFIG = {
   doctors: {
     title: "افزودن دسته‌جمعی پزشکان",
@@ -70,7 +69,6 @@ export default function ExcelImportModal({
 
   const config = IMPORT_CONFIG[importType];
 
-  // استخراج هوشمند لیست خطاها (چه پزشک باشد چه بیمار)
   const failedList: FailedRecord[] =
     importResult?.failedDoctors || importResult?.failedPatients || [];
 
@@ -166,6 +164,10 @@ export default function ExcelImportModal({
                   setMinioObjectName(objectName);
                   setOriginalFileName(origName);
                 }}
+                onRemove={() => {
+                  setMinioObjectName(null); // 👈 پاکسازی استیت با زدن ضربدر حذف فایل
+                  setOriginalFileName(null);
+                }}
               />
 
               {minioObjectName && (
@@ -236,7 +238,8 @@ export default function ExcelImportModal({
                       >
                         <div className="flex items-center justify-between font-bold text-rose-900">
                           <span>
-                            سطر {item.rowNumber -1 }: {item.fullName || "نامشخص"}
+                            سطر {item.rowNumber - 1}:{" "}
+                            {item.fullName || "نامشخص"}
                           </span>
                         </div>
                         <p className="text-[11px] text-rose-700 leading-relaxed">
@@ -261,15 +264,7 @@ export default function ExcelImportModal({
         </div>
 
         {/* فوتر مودال */}
-        <div className="p-8 bg-gray-50 border-t border-gray-100 flex justify-end">
-          {/* <button
-            type="button"
-            onClick={handleClose}
-            className="px-6 py-2 bg-white border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
-          >
-            بستن
-          </button> */}
-        </div>
+        <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end"></div>
       </div>
     </div>
   );
