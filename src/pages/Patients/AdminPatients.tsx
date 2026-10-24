@@ -196,9 +196,7 @@ export default function AdminPatients() {
         payload.rejectReason = rejectReason.trim();
       }
 
-      const response = await api.put("/Admin/reviewPatientDocuments", payload, {
-        params: { patientId: selectedDocPatient._id },
-      });
+      const response = await api.put(`/Admin/${selectedDocPatient._id}/reviewPatientDocuments`, payload);
 
       if (response.status === 200 || response.data?.success) {
         toast.success(
