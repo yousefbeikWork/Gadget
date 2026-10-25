@@ -189,22 +189,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ⚠️ <span>کارت هوشمند سلامت (RFID)</span>
           </div>
           <p className="text-[11px] text-gray-600 leading-relaxed">
-            هزینه صدور کارت هوشمند سلامت پرداخت نشده است. جهت فعال‌سازی کارت اقدام فرمایید.
+            هزینه صدور کارت هوشمند سلامت پرداخت نشده است. جهت فعال‌سازی کارت
+            اقدام فرمایید.
           </p>
           <div className="flex items-center gap-2 pt-1">
             <button
               onClick={async () => {
                 toast.dismiss(t.id);
-                const toastLoading = toast.loading("در حال اتصال به درگاه پرداخت...");
+                const toastLoading = toast.loading(
+                  "در حال اتصال به درگاه پرداخت...",
+                );
                 try {
                   const res = await api.post("/peyment/rfid/pay", {});
                   if (res.data?.success && res.data?.data?.paymentUrl) {
                     window.location.href = res.data.data.paymentUrl;
                   } else {
-                    toast.error(res.data?.message || "خطا در دریافت لینک پرداخت", { id: toastLoading });
+                    toast.error(
+                      res.data?.message || "خطا در دریافت لینک پرداخت",
+                      { id: toastLoading },
+                    );
                   }
                 } catch (err: any) {
-                  toast.error(err.response?.data?.message || "خطا در اتصال به درگاه پرداخت", { id: toastLoading });
+                  toast.error(
+                    err.response?.data?.message ||
+                      "خطا در اتصال به درگاه پرداخت",
+                    { id: toastLoading },
+                  );
                 }
               }}
               className="bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg transition-colors cursor-pointer shadow-2xs"
@@ -230,7 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           padding: "12px 14px",
           maxWidth: "380px",
         },
-      }
+      },
     );
   };
 
@@ -242,7 +252,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ❌ <span>{title}</span>
           </div>
           <p className="text-[11px] text-gray-700 leading-relaxed">
-            {reason ? `دلیل رد مدرک: ${reason}` : "مدارک ارسالی ناخوانا بوده یا با مشخصات ثبت‌نامی همخوانی ندارد."}
+            {reason
+              ? `دلیل رد مدرک: ${reason}`
+              : "مدارک ارسالی ناخوانا بوده یا با مشخصات ثبت‌نامی همخوانی ندارد."}
           </p>
           <div className="flex items-center gap-2 pt-1">
             <button
@@ -273,7 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           padding: "12px 14px",
           maxWidth: "380px",
         },
-      }
+      },
     );
   };
 
@@ -289,11 +301,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             showRfidPaymentToast();
           }
           if (profile.nationalIdVerification?.status === "REJECTED") {
-            showDocumentRejectedToast("مدارک هویتی شما تایید نشد", profile.nationalIdVerification.rejectReason);
+            showDocumentRejectedToast(
+              "مدارک هویتی شما تایید نشد",
+              profile.nationalIdVerification.rejectReason,
+            );
           }
         }
-
-        // 👈 بررسی وضعیت مدارک برای پزشک
         if (profile.role === "Doctor") {
           if (
             profile.nationalIdVerification?.status === "REJECTED" ||
@@ -302,7 +315,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const reason =
               profile.medicalDocuments?.rejectReason ||
               profile.nationalIdVerification?.rejectReason;
-            showDocumentRejectedToast("مدارک پزشکی / هویتی شما تایید نشد", reason);
+            showDocumentRejectedToast(
+              "مدارک پزشکی / هویتی شما تایید نشد",
+              reason,
+            );
+          }
+        }
+        if (profile.role === "Leader") {
+          if (profile.nationalIdVerification?.status === "REJECTED") {
+            showDocumentRejectedToast(
+              "مدارک هویتی یا ترابری شما تایید نشد",
+              profile.nationalIdVerification.rejectReason,
+            );
           }
         }
       }

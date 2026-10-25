@@ -162,7 +162,7 @@ export default function ExcelImportModal({
                 acceptedTypes=".xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
                 onUploadSuccess={(objectName, origName) => {
                   setMinioObjectName(objectName);
-                  setOriginalFileName(origName);
+                  setOriginalFileName(origName ?? null);
                 }}
                 onRemove={() => {
                   setMinioObjectName(null); // 👈 پاکسازی استیت با زدن ضربدر حذف فایل

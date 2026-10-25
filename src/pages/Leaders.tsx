@@ -15,9 +15,11 @@ import {
   Clock,
   X,
   CheckCircle2,
+  XCircle,
   Banknote,
   LogIn,
   Compass,
+  FileCheck,
 } from "lucide-react";
 import api from "../services/api";
 import toast from "react-hot-toast";
@@ -25,6 +27,8 @@ import { useAuth } from "../context/AuthContext";
 import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
+import LeaderReviewModal from "../components/LeaderReviewModal";
+import SecureImage from "../components/SecureImage";
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 
@@ -46,6 +50,23 @@ interface Leader {
     color: string;
     plateNumber: string;
     manufactureYear: number;
+    documents?: {
+      vehicleCardFront?: string | null;
+      vehicleCardBack?: string | null;
+      insurancePhoto?: string | null;
+      drivingLicenseFront?: string | null;
+      drivingLicenseBack?: string | null;
+    };
+  };
+  nationalIdVerification?: {
+    frontImage?: string | null;
+    backImage?: string | null;
+    status?: string;
+    rejectReason?: string | null;
+  };
+  nationalIdPhotos?: {
+    front?: string | null;
+    back?: string | null;
   };
   createdAt?: string;
 }
@@ -90,12 +111,12 @@ interface LeaderAvailability {
 export default function Leaders() {
   const navigate = useNavigate();
   const { isLoggedIn, userRole } = useAuth();
+  const isAdmin = userRole === "Admin" || userRole === "SUPER_ADMIN";
 
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // 👈 استیت باز و بسته کردن متن آدرس‌های طولانی
   const [expandedAddresses, setExpandedAddresses] = useState<Record<string, boolean>>({});
 
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -104,11 +125,10 @@ export default function Leaders() {
     totalPages: 0,
   });
 
-  // استیت‌های مودال رزرو لیدر
+  // استیت‌های مودال رزرو لیدر (بیمار)
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [bookingLeader, setBookingLeader] = useState<Leader | null>(null);
-  const [availabilityData, setAvailabilityData] =
-    useState<LeaderAvailability | null>(null);
+  const [availabilityData, setAvailabilityData] = useState<LeaderAvailability | null>(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState<string>("");
@@ -118,6 +138,11 @@ export default function Leaders() {
   const [shiftType, setShiftType] = useState<"DAY" | "NIGHT" | "">("");
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<string[]>([]);
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+
+  // استیت‌های مودال بررسی مدارک لیدر (ادمین)
+  const [reviewLeader, setReviewLeader] = useState<Leader | null>(null);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const toggleAddressExpand = (id: string) => {
     setExpandedAddresses((prev) => ({
@@ -131,23 +156,18 @@ export default function Leaders() {
       setLoading(true);
       let url = `/users/LedearList?page=${page}&limit=9`;
       if (search) {
-        url += `&search=${search}`;
+        url += `&search=${encodeURIComponent(search.trim())}`;
       }
       const response = await api.get(url);
       if (response.data && response.data.success) {
-        // 👈 فقط لیدرهای با وضعیت فعال در لیست قرار می‌گیرند
-        const activeOnly = (response.data.data || []).filter(
-          (l: Leader) => l.isActive === true,
-        );
-        setLeaders(activeOnly);
-
+        setLeaders(response.data.data || []);
         setPagination({
           totalItems: response.data.pagination?.totalItems || 0,
           currentPage: response.data.pagination?.currentPage || 1,
           totalPages: response.data.pagination?.totalPages || 0,
         });
       }
-    } catch (err) {
+    } catch {
       toast.error("مشکلی در دریافت اطلاعات لیدرها از سرور پیش آمد.");
     } finally {
       setLoading(false);
@@ -172,6 +192,90 @@ export default function Leaders() {
     return new Intl.NumberFormat("fa-IR").format(price) + " تومان";
   };
 
+  // فیلتر هوشمند: ادمین همه لیدرها را ببیند، سایر کاربران فقط لیدرهای فعال را
+  const displayedLeaders = isAdmin
+    ? leaders
+    : leaders.filter((l) => l.isActive === true);
+
+  // ارسال تصمیم بررسی ادمین به سرور
+  const handleReviewSubmit = async (action: "APPROVE" | "REJECT", reason?: string) => {
+    if (!reviewLeader) return;
+    setIsSubmittingReview(true);
+    const toastId = toast.loading("در حال ثبت نتیجه بررسی مدارک...");
+
+    try {
+      const response = await api.put(
+        `/Admin/${reviewLeader._id}/reviewLeaderDocuments`,
+        {
+          action,
+          rejectReason: reason,
+        }
+      );
+
+      toast.success(
+        response.data?.message ||
+          (action === "APPROVE" ? "حساب لیدر تایید و فعال شد." : "مدارک رد شد."),
+        { id: toastId }
+      );
+
+      // به‌روزرسانی آنی در جدول بدون رفرش صفحه
+      setLeaders((prev) =>
+        prev.map((l) =>
+          l._id === reviewLeader._id
+            ? {
+                ...l,
+                isActive: action === "APPROVE",
+                nationalIdVerification: {
+                  ...l.nationalIdVerification,
+                  status: action === "APPROVE" ? "APPROVED" : "REJECTED",
+                  rejectReason: action === "REJECT" ? reason : null,
+                },
+              }
+            : l
+        )
+      );
+
+      setReviewLeader(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "خطا در بررسی مدارک لیدر.", {
+        id: toastId,
+      });
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const getDocBadge = (leader: Leader) => {
+    const status = leader.nationalIdVerification?.status || "NOT_UPLOADED";
+    if (leader.isActive || status === "APPROVED") {
+      return (
+        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+          <CheckCircle2 size={11} /> تایید شده
+        </span>
+      );
+    }
+    if (status === "REJECTED") {
+      return (
+        <span className="flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+          <XCircle size={11} /> رد شده
+        </span>
+      );
+    }
+    if (status === "PENDING") {
+      return (
+        <span className="flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md animate-pulse">
+          <Clock size={11} /> در انتظار بررسی
+        </span>
+      );
+    }
+    return (
+      <span className="text-[10px] font-bold text-gray-400 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-md">
+        مدارک ثبت‌نشده
+      </span>
+    );
+  };
+
+  // مودال رزرو نوبت (برای بیماران)
   const openBookingModal = async (leader: Leader) => {
     if (!isLoggedIn) {
       toast.error("برای رزرو و هماهنگی با لیدر، ابتدا وارد حساب کاربری خود شوید.");
@@ -190,12 +294,12 @@ export default function Leaders() {
 
     try {
       const response = await api.get(
-        `/leader/getLeaderAvailability?leaderId=${leader._id}`,
+        `/leader/getLeaderAvailability?leaderId=${leader._id}`
       );
       if (response.data?.success) {
         setAvailabilityData(response.data.data);
       }
-    } catch (error) {
+    } catch {
       toast.error("خطا در دریافت تقویم کاری لیدر.");
       setBookingModalOpen(false);
     } finally {
@@ -225,7 +329,7 @@ export default function Leaders() {
 
   const handleTimeSlotToggle = (time: string) => {
     setSelectedTimeSlots((prev) =>
-      prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time],
+      prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]
     );
   };
 
@@ -271,7 +375,7 @@ export default function Leaders() {
 
       const response = await api.post(
         "/leader/LeaderAppointmentReservation",
-        payload,
+        payload
       );
       if (response.data) {
         toast.success("درخواست رزرو لیدر با موفقیت ثبت شد!");
@@ -285,7 +389,7 @@ export default function Leaders() {
   };
 
   const selectedDayData = availabilityData?.availableDays.find(
-    (d) => d.date === selectedDate,
+    (d) => d.date === selectedDate
   );
 
   return (
@@ -294,7 +398,6 @@ export default function Leaders() {
       dir="rtl"
     >
       <div className="max-w-7xl mx-auto space-y-6">
-        
         {/* ================= هدر صفحه و باکس جستجو ================= */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100">
           <div>
@@ -303,7 +406,9 @@ export default function Leaders() {
               لیست لیدرهای گردشگری سلامت
             </h1>
             <p className="text-gray-500 text-xs sm:text-sm mt-1">
-              راهنما و مترجم مورد نظر خود را برای همراهی درمانی انتخاب و رزرو کنید
+              {isAdmin
+                ? "مدیریت لیدرها، احراز هویت اسناد و ترابری"
+                : "راهنما و مترجم مورد نظر خود را برای همراهی درمانی انتخاب و رزرو کنید"}
             </p>
           </div>
 
@@ -325,21 +430,25 @@ export default function Leaders() {
             <Loader2 className="animate-spin mb-4" size={40} />
             <p className="text-sm font-medium">در حال دریافت لیست لیدرها...</p>
           </div>
-        ) : leaders.length === 0 ? (
+        ) : displayedLeaders.length === 0 ? (
           <div className="bg-gray-50 border border-dashed border-gray-200 p-12 text-center rounded-2xl text-gray-500 max-w-lg mx-auto">
             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 text-gray-400 shadow-xs">
               <UserX size={32} />
             </div>
-            <h3 className="font-bold text-base text-gray-700 mb-1">لیدر فعالی یافت نشد</h3>
+            <h3 className="font-bold text-base text-gray-700 mb-1">
+              {isAdmin ? "لیدری یافت نشد" : "لیدر فعالی یافت نشد"}
+            </h3>
             <p className="text-xs text-gray-400">
-              در حال حاضر لیدر فعالی مطابق با جستجوی شما وجود ندارد.
+              {isAdmin
+                ? "هیچ لیدری با مشخصات وارد شده در سیستم ثبت نشده است."
+                : "در حال حاضر هیچ لیدر تاییدشده و فعالی مطابق با جستجوی شما وجود ندارد."}
             </p>
           </div>
         ) : (
           <>
             {/* ================= گرید کارت‌های لیدر ================= */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {leaders.map((leader) => {
+              {displayedLeaders.map((leader) => {
                 const isAddressExpanded = !!expandedAddresses[leader._id];
                 const fullAddress = leader.Address
                   ? `${leader.city}، ${leader.Address}`
@@ -350,39 +459,56 @@ export default function Leaders() {
                     key={leader._id}
                     className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col h-full group"
                   >
-                    {/* هدر کارت: آواتار و نام (بدون تگ فعال/غیرفعال) */}
-                    <div className="flex items-center gap-4 mb-5 border-b border-gray-100 pb-4">
-                      <div className="w-14 h-14 rounded-2xl bg-[#14b8a6] text-white flex items-center justify-center text-xl font-black shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    {/* هدر کارت: نام و بج وضعیت برای ادمین */}
+                    <div className="flex items-center gap-4 mb-4 border-b border-gray-100 pb-4">
+                      <div className="w-13 h-13 rounded-2xl bg-teal-600 text-white flex items-center justify-center text-xl font-black shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
                         {leader.lastName ? leader.lastName.charAt(0) : "ل"}
                       </div>
 
                       <div className="overflow-hidden min-w-0 flex-1">
-                        {/* متن نام در صورت طولانی بودن به سطر دوم می‌رود و بریده نمی‌شود */}
-                        <h3 className="font-bold text-base sm:text-lg text-gray-800 wrap-break-word leading-snug">
-                          {leader.firstName} {leader.lastName}
-                        </h3>
-                        <div className="mt-1">
-                          <span className="inline-block bg-gadget-light/10 text-[#14b8a6] text-xs font-bold px-2 py-0.5 rounded-md">
-                            لیدر همراه • {leader.city}
-                          </span>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <h3 className="font-bold text-base text-gray-800 truncate">
+                            {leader.firstName} {leader.lastName}
+                          </h3>
+                          {isAdmin && (
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                                leader.isActive
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  : "bg-gray-100 text-gray-500 border border-gray-200"
+                              }`}
+                            >
+                              {leader.isActive ? "فعال" : "غیرفعال"}
+                            </span>
+                          )}
                         </div>
+                        <span className="inline-block bg-teal-50 text-teal-700 text-xs font-bold px-2 py-0.5 rounded-md">
+                          لیدر همراه • {leader.city}
+                        </span>
                       </div>
                     </div>
 
-                    {/* بدنه کارت: جزئیات بدون شماره موبایل و با امکان دیدن متن کامل */}
-                    <div className="space-y-3 flex-1 mb-6 text-sm text-gray-600">
+                    {/* مشخصات و بَج مدارک برای ادمین */}
+                    <div className="space-y-2.5 flex-1 mb-5 text-xs text-gray-600">
+                      {isAdmin && (
+                        <div className="flex items-center justify-between bg-gray-50/80 p-2.5 rounded-xl border border-gray-100 mb-2">
+                          <span className="text-gray-500 font-medium">وضعیت مدارک:</span>
+                          {getDocBadge(leader)}
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-2">
-                        <CreditCard className="text-gray-400 shrink-0" size={16} />
+                        <CreditCard className="text-gray-400 shrink-0" size={15} />
                         <span>
                           کد ملی:{" "}
-                          <span className="font-medium text-gray-800" dir="ltr">
+                          <span className="font-medium text-gray-800 font-mono" dir="ltr">
                             {leader.nationalId || "---"}
                           </span>
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <Users className="text-gray-400 shrink-0" size={16} />
+                        <Users className="text-gray-400 shrink-0" size={15} />
                         <span>
                           سن لیدر:{" "}
                           <span className="font-medium text-gray-800">
@@ -392,35 +518,34 @@ export default function Leaders() {
                       </div>
 
                       <div className="flex items-start gap-2">
-                        <Car className="text-gray-400 shrink-0 mt-0.5" size={16} />
-                        <div className="min-w-0">
-                          <span className="text-gray-500">وضعیت ترابری: </span>
-                          <span className="font-medium text-gray-800 wrap-break-word">
+                        <Car className="text-gray-400 shrink-0 mt-0.5" size={15} />
+                        <div className="min-w-0 leading-relaxed">
+                          <span className="text-gray-500">خودرو: </span>
+                          <span className="font-medium text-gray-800">
                             {leader.hasCar && leader.car
-                              ? `${leader.car.brand} ${leader.car.model} (${leader.car.color}) - سال ساخت: ${leader.car.manufactureYear || "-"}`
+                              ? `${leader.car.brand} ${leader.car.model} (${leader.car.color})`
                               : "فاقد خودروی شخصی"}
                           </span>
                         </div>
                       </div>
 
-                      {/* بخش آدرس با قابلیت نمایش کامل در صورت طولانی بودن */}
+                      {/* بخش آدرس با قابلیت نمایش کامل */}
                       <div className="flex items-start gap-2">
-                        <MapPin className="text-gray-400 shrink-0 mt-0.5" size={16} />
+                        <MapPin className="text-gray-400 shrink-0 mt-0.5" size={15} />
                         <div className="min-w-0 flex-1">
                           <p
-                            className={`text-gray-600 leading-relaxed text-xs sm:text-sm ${
+                            className={`text-gray-600 leading-relaxed ${
                               isAddressExpanded ? "" : "line-clamp-2"
                             }`}
                           >
                             {fullAddress}
                           </p>
 
-                          {/* دکمه باز کردن متن در صورتی که آدرس طولانی باشد */}
                           {fullAddress.length > 45 && (
                             <button
                               type="button"
                               onClick={() => toggleAddressExpand(leader._id)}
-                              className="text-[11px] font-bold text-gadget-dark hover:text-gadget-light hover:underline mt-1 cursor-pointer transition-colors"
+                              className="text-[11px] font-bold text-teal-700 hover:underline mt-0.5 cursor-pointer"
                             >
                               {isAddressExpanded ? "بستن متن آدرس ▲" : "مشاهده کامل آدرس ▼"}
                             </button>
@@ -429,56 +554,63 @@ export default function Leaders() {
                       </div>
                     </div>
 
-                    {/* فوتر کارت: دکمه رزرو نوبت */}
-                    {userRole !== "Admin" && userRole !== "SUPER_ADMIN" && (
-                      <div className="mt-auto pt-4 border-t border-gray-100">
-                        {isLoggedIn ? (
-                          <button
-                            onClick={() => openBookingModal(leader)}
-                            className="w-full flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-xs hover:shadow-md cursor-pointer"
-                          >
-                            <CalendarIcon size={18} />
-                            رزرو و هماهنگی
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => navigate("/login")}
-                            className="w-full flex items-center justify-center gap-2 bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer"
-                          >
-                            <LogIn size={18} />
-                            برای رزرو وارد شوید
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    {/* فوتر کارت: دکمه‌های عملیاتی ادمین یا رزرو کاربر */}
+                    <div className="mt-auto pt-3 border-t border-gray-100">
+                      {isAdmin ? (
+                        <button
+                          type="button"
+                          onClick={() => setReviewLeader(leader)}
+                          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors cursor-pointer shadow-2xs"
+                        >
+                          <FileCheck size={15} />
+                          <span>بررسی مدارک و ترابری</span>
+                        </button>
+                      ) : isLoggedIn ? (
+                        <button
+                          onClick={() => openBookingModal(leader)}
+                          className="w-full flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer"
+                        >
+                          <CalendarIcon size={16} />
+                          رزرو و هماهنگی
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => navigate("/login")}
+                          className="w-full flex items-center justify-center gap-2 bg-gray-50 border border-gray-200 hover:border-gadget-light text-gray-600 hover:text-gadget-light py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer"
+                        >
+                          <LogIn size={16} />
+                          برای رزرو وارد شوید
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* ================= کنترل‌های صفحه‌بندی ================= */}
+            {/* کنترل‌های صفحه‌بندی */}
             {pagination.totalPages > 1 && (
               <div className="flex items-center justify-between bg-white border border-gray-200 p-3 sm:p-4 rounded-2xl shadow-2xs mt-6">
                 <button
                   onClick={() => handlePageChange(pagination.currentPage - 1)}
                   disabled={pagination.currentPage === 1}
-                  className="flex items-center gap-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
+                  className="flex items-center gap-1 px-3 sm:px-4 py-2 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight size={15} />
                   <span>قبلی</span>
                 </button>
 
-                <span className="text-xs sm:text-sm font-bold text-gray-700">
+                <span className="text-xs font-bold text-gray-700">
                   صفحه {pagination.currentPage} از {pagination.totalPages}
                 </span>
 
                 <button
                   onClick={() => handlePageChange(pagination.currentPage + 1)}
                   disabled={pagination.currentPage === pagination.totalPages}
-                  className="flex items-center gap-1 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shadow-2xs"
+                  className="flex items-center gap-1 px-3 sm:px-4 py-2 text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   <span>بعدی</span>
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={15} />
                 </button>
               </div>
             )}
@@ -486,27 +618,60 @@ export default function Leaders() {
         )}
       </div>
 
-      {/* ===================== مُدال رزرو لیدر ===================== */}
+      {/* ===================== مُدال بررسی مدارک لیدر (ادمین) ===================== */}
+      <LeaderReviewModal
+        isOpen={!!reviewLeader}
+        onClose={() => setReviewLeader(null)}
+        leader={reviewLeader}
+        onSubmitReview={handleReviewSubmit}
+        onPreviewImage={(file) => setPreviewImage(file)}
+        isSubmitting={isSubmittingReview}
+      />
+
+      {/* ===================== مُدال پیش‌نمایش تصویر مدارک ===================== */}
+      {previewImage && (
+        <div
+          onClick={() => setPreviewImage(null)}
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl p-4 max-w-2xl w-full shadow-2xl space-y-3 animate-in zoom-in-95"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+              <h4 className="text-xs font-bold text-gray-800">مشاهده مدرک لیدر</h4>
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="text-gray-400 hover:text-red-500 p-1 rounded-lg cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="h-72 sm:h-96 w-full rounded-2xl overflow-hidden bg-gray-50 flex items-center justify-center border border-gray-100">
+              <SecureImage fileName={previewImage} className="w-full h-full object-contain" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== مُدال رزرو نوبت لیدر (کاربر) ===================== */}
       {bookingModalOpen && bookingLeader && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in"
           dir="rtl"
         >
           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
-            
-            {/* هدر مودال */}
+            {/* هدر مودال رزرو */}
             <div className="flex items-center justify-between p-5 md:p-6 border-b border-gray-100 bg-gray-50/70 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg font-bold">
+                <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center text-lg font-bold">
                   {bookingLeader.lastName ? bookingLeader.lastName.charAt(0) : "ل"}
                 </div>
                 <div>
                   <h2 className="text-base sm:text-lg font-bold text-gray-800">
                     رزرو خدمات لیدر {bookingLeader.firstName} {bookingLeader.lastName}
                   </h2>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    شهر فعالیت: {bookingLeader.city}
-                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">شهر فعالیت: {bookingLeader.city}</p>
                 </div>
               </div>
               <button
@@ -517,8 +682,8 @@ export default function Leaders() {
               </button>
             </div>
 
-            {/* بدنه مودال */}
-            <div className="p-5 md:p-6 overflow-y-auto custom-scrollbar space-y-6 flex-1">
+            {/* بدنه مودال رزرو */}
+            <div className="p-5 md:p-6 overflow-y-auto custom-scrollbar space-y-6 flex-1 min-h-90">
               {availabilityLoading ? (
                 <div className="flex flex-col items-center justify-center py-16 text-gadget-light">
                   <Loader2 className="animate-spin mb-3" size={32} />
@@ -543,6 +708,9 @@ export default function Leaders() {
                         locale={persian_fa}
                         value={selectedDate ? new Date(selectedDate) : ""}
                         onChange={handleDateChange}
+                        portal={true}
+                        zIndex={9999}
+                        fixMainPosition={true}
                         format="YYYY/MM/DD"
                         containerClassName="w-full"
                         inputClass="w-full bg-white border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 sm:py-3 text-sm focus:border-gadget-light font-bold text-gray-800 outline-hidden cursor-pointer shadow-2xs"
@@ -555,7 +723,6 @@ export default function Leaders() {
                     </div>
                   </div>
 
-                  {/* وضعیت تاریخ */}
                   {selectedDate && !selectedDayData && (
                     <div className="p-3.5 bg-red-50 border border-red-100 rounded-xl text-center">
                       <span className="text-red-600 font-bold text-xs sm:text-sm">
@@ -596,8 +763,8 @@ export default function Leaders() {
                               selectedDayData.nightShift.isBooked
                                 ? "opacity-50 cursor-not-allowed bg-gray-50 border-gray-200"
                                 : bookingType === "FULL_DAY"
-                                  ? "border-emerald-500 bg-emerald-50 shadow-2xs cursor-pointer"
-                                  : "border-gray-200 bg-white hover:bg-gray-50 cursor-pointer"
+                                ? "border-emerald-500 bg-emerald-50 shadow-2xs cursor-pointer"
+                                : "border-gray-200 bg-white hover:bg-gray-50 cursor-pointer"
                             }`}
                           >
                             <span className="font-bold text-xs sm:text-sm text-gray-800">
@@ -616,7 +783,7 @@ export default function Leaders() {
                               setBookingType(
                                 selectedDayData.dayShift!.hours.length > 0
                                   ? "HOURLY"
-                                  : "DAY_SHIFT",
+                                  : "DAY_SHIFT"
                               );
                               setShiftType("DAY");
                               setSelectedTimeSlots([]);
@@ -625,15 +792,16 @@ export default function Leaders() {
                               selectedDayData.dayShift.isBooked
                                 ? "opacity-50 cursor-not-allowed bg-gray-50 border-gray-200"
                                 : shiftType === "DAY"
-                                  ? "border-blue-500 bg-blue-50 shadow-2xs cursor-pointer"
-                                  : "border-gray-200 bg-white hover:bg-gray-50 cursor-pointer"
+                                ? "border-blue-500 bg-blue-50 shadow-2xs cursor-pointer"
+                                : "border-gray-200 bg-white hover:bg-gray-50 cursor-pointer"
                             }`}
                           >
                             <span className="font-bold text-xs sm:text-sm text-gray-800">
                               شیفت روز
                             </span>
                             <span className="text-[10px] text-blue-600 font-medium">
-                              {selectedDayData.dayShift.startTime} الی {selectedDayData.dayShift.endTime}
+                              {selectedDayData.dayShift.startTime} الی{" "}
+                              {selectedDayData.dayShift.endTime}
                             </span>
                           </button>
                         )}
@@ -645,7 +813,7 @@ export default function Leaders() {
                               setBookingType(
                                 selectedDayData.nightShift!.hours.length > 0
                                   ? "HOURLY"
-                                  : "NIGHT_SHIFT",
+                                  : "NIGHT_SHIFT"
                               );
                               setShiftType("NIGHT");
                               setSelectedTimeSlots([]);
@@ -654,21 +822,22 @@ export default function Leaders() {
                               selectedDayData.nightShift.isBooked
                                 ? "opacity-50 cursor-not-allowed bg-gray-50 border-gray-200"
                                 : shiftType === "NIGHT"
-                                  ? "border-indigo-500 bg-indigo-50 shadow-2xs cursor-pointer"
-                                  : "border-gray-200 bg-white hover:bg-gray-50 cursor-pointer"
+                                ? "border-indigo-500 bg-indigo-50 shadow-2xs cursor-pointer"
+                                : "border-gray-200 bg-white hover:bg-gray-50 cursor-pointer"
                             }`}
                           >
                             <span className="font-bold text-xs sm:text-sm text-gray-800">
                               شیفت شب
                             </span>
                             <span className="text-[10px] text-indigo-600 font-medium">
-                              {selectedDayData.nightShift.startTime} الی {selectedDayData.nightShift.endTime}
+                              {selectedDayData.nightShift.startTime} الی{" "}
+                              {selectedDayData.nightShift.endTime}
                             </span>
                           </button>
                         )}
                       </div>
 
-                      {/* گزینه‌های ساعتی */}
+                      {/* بازه‌های ساعتی */}
                       {(shiftType === "DAY" || shiftType === "NIGHT") && (
                         <div className="bg-gray-50/80 border border-gray-200 rounded-xl p-3 sm:p-4 space-y-3">
                           {(() => {
@@ -679,8 +848,7 @@ export default function Leaders() {
                             if (!currentShiftData) return null;
 
                             const hasHours =
-                              currentShiftData.hours &&
-                              currentShiftData.hours.length > 0;
+                              currentShiftData.hours && currentShiftData.hours.length > 0;
                             const hasBookedSlots =
                               hasHours && currentShiftData.hours.some((h) => h.isBooked);
 
@@ -702,7 +870,7 @@ export default function Leaders() {
                                       disabled={hasBookedSlots}
                                       onClick={() => {
                                         setBookingType(
-                                          shiftType === "DAY" ? "DAY_SHIFT" : "NIGHT_SHIFT",
+                                          shiftType === "DAY" ? "DAY_SHIFT" : "NIGHT_SHIFT"
                                         );
                                         setSelectedTimeSlots([]);
                                       }}
@@ -760,7 +928,8 @@ export default function Leaders() {
                             return (
                               <div className="text-center text-xs font-bold text-emerald-700 bg-emerald-50 py-2.5 rounded-lg border border-emerald-100 flex items-center justify-center gap-1.5">
                                 <CheckCircle2 size={16} />
-                                رزرو یکپارچه شیفت {shiftType === "DAY" ? "روز" : "شب"} ({currentShiftData.startTime} الی {currentShiftData.endTime})
+                                رزرو یکپارچه شیفت {shiftType === "DAY" ? "روز" : "شب"} (
+                                {currentShiftData.startTime} الی {currentShiftData.endTime})
                               </div>
                             );
                           })()}

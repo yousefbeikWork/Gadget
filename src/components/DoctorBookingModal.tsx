@@ -33,10 +33,13 @@ export default function DoctorBookingModal({ isOpen, onClose, doctor }: Props) {
 
     try {
       setLoadingSlots(true);
-      const res = await api.get(`/book/available-slots?doctorId=${doctor._id}&date=${date}`);
+      const res = await api.get(
+        `/book/available-slots?doctorId=${doctor._id}&date=${date}`,
+      );
       if (res.data?.success) {
         setAvailableSlots(res.data.data);
-        if (res.data.data.length === 0) toast("در این تاریخ نوبت خالی وجود ندارد.", { icon: "ℹ️" });
+        if (res.data.data.length === 0)
+          toast("در این تاریخ نوبت خالی وجود ندارد.", { icon: "ℹ️" });
       }
     } catch {
       setAvailableSlots([]);
@@ -49,7 +52,9 @@ export default function DoctorBookingModal({ isOpen, onClose, doctor }: Props) {
     if (!selectedSlot || !selectedDate || isSubmitting) return;
 
     setIsSubmitting(true);
-    const toastId = toast.loading("در حال ثبت درخواست و اتصال به درگاه پرداخت...");
+    const toastId = toast.loading(
+      "در حال ثبت درخواست و اتصال به درگاه پرداخت...",
+    );
 
     try {
       const res = await api.post("/book/bookslots", {
@@ -65,43 +70,69 @@ export default function DoctorBookingModal({ isOpen, onClose, doctor }: Props) {
         toast.success("در حال انتقال به درگاه...", { id: toastId });
         window.location.href = res.data.data.paymentUrl;
       } else {
-        toast.error(res.data?.message || "خطا در اتصال به درگاه پرداخت.", { id: toastId });
+        toast.error(res.data?.message || "خطا در اتصال به درگاه پرداخت.", {
+          id: toastId,
+        });
         setIsSubmitting(false);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "خطا در برقراری ارتباط.", { id: toastId });
+      toast.error(err.response?.data?.message || "خطا در برقراری ارتباط.", {
+        id: toastId,
+      });
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in" dir="rtl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in"
+      dir="rtl"
+    >
+      {/* 👈 کادر مودال با طراحی ریسپانسیو و مدیریت ارتفاع خودکار */}
       <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] animate-in zoom-in-95 duration-150">
-        
         {/* هدر */}
         <div className="bg-gadget-dark p-4 sm:p-5 flex items-center justify-between text-white shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <DoctorAvatar imageProfile={doctor.imageProfile} firstName={doctor.firstName} className="w-10 h-10 text-sm border border-white/20 shrink-0" />
+            <DoctorAvatar
+              imageProfile={doctor.imageProfile}
+              firstName={doctor.firstName}
+              className="w-10 h-10 text-sm border border-white/20 shrink-0"
+            />
             <div className="truncate">
-              <h3 className="font-bold text-sm truncate">دکتر {doctor.firstName} {doctor.lastName}</h3>
-              <p className="text-xs text-gray-300 truncate">{doctor.Expertise}</p>
+              <h3 className="font-bold text-sm truncate">
+                دکتر {doctor.firstName} {doctor.lastName}
+              </h3>
+              <p className="text-xs text-gray-300 truncate">
+                {doctor.Expertise}
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-300 hover:text-white bg-white/10 p-2 rounded-xl cursor-pointer">
+          <button
+            onClick={onClose}
+            className="text-gray-300 hover:text-white bg-white/10 p-2 rounded-xl cursor-pointer"
+          >
             <X size={18} />
           </button>
         </div>
 
-        {/* محتوای تقویم و اسلات‌ها */}
-        <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-5">
+        {/* 👈 اضافه شدن min-h-[360px] جهت جلوگیری از برش خوردن پنجره تقویم */}
+        <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-5 min-h-90">
           <div>
-            <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2">تاریخ مراجعه را انتخاب کنید:</label>
+            <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2">
+              تاریخ مراجعه را انتخاب کنید:
+            </label>
             <div className="relative">
-              <Calendar className="absolute right-3.5 top-3 text-gadget-light z-10" size={17} />
+              <Calendar
+                className="absolute right-3.5 top-3 text-gadget-light z-10"
+                size={17}
+              />
               <DatePicker
                 calendar={persian}
                 locale={persian_fa}
                 value={selectedDate ? new Date(selectedDate) : ""}
+                portal={true} // 👈 رندر تقویم خارج از کادر اسکرول تا زیر پاپ‌آپ گیر نکند
+                zIndex={9999}
+                fixMainPosition={true}
                 onChange={(date: any) => {
                   if (date?.isValid) {
                     const js = date.toDate();
@@ -113,8 +144,8 @@ export default function DoctorBookingModal({ isOpen, onClose, doctor }: Props) {
                 }}
                 format="YYYY/MM/DD"
                 containerClassName="w-full"
-                inputClass="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-xs sm:text-sm focus:border-gadget-light outline-hidden cursor-pointer"
-                placeholder="انتخاب تاریخ..."
+                inputClass="w-full bg-gray-50 border border-gray-200 rounded-xl pr-10 pl-4 py-2.5 text-xs sm:text-sm focus:border-gadget-light focus:bg-white outline-hidden cursor-pointer"
+                placeholder="انتخاب تاریخ از تقویم..."
               />
             </div>
           </div>
@@ -122,12 +153,16 @@ export default function DoctorBookingModal({ isOpen, onClose, doctor }: Props) {
           {loadingSlots ? (
             <div className="flex flex-col items-center justify-center py-8 text-gadget-light">
               <Loader2 className="animate-spin mb-2" size={26} />
-              <p className="text-xs text-gray-500">در حال بررسی نوبت‌ها...</p>
+              <p className="text-xs text-gray-500 font-medium">
+                در حال بررسی نوبت‌ها...
+              </p>
             </div>
           ) : selectedDate && availableSlots.length > 0 ? (
             <div className="space-y-4 animate-in fade-in">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">ساعت‌های خالی:</label>
+                <label className="block text-xs font-bold text-gray-700 mb-2">
+                  ساعت‌های خالی:
+                </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {availableSlots.map((slot, i) => (
                     <button
@@ -151,16 +186,22 @@ export default function DoctorBookingModal({ isOpen, onClose, doctor }: Props) {
                   {selectedSlot.price !== undefined && (
                     <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between text-xs sm:text-sm">
                       <span className="font-bold text-emerald-800 flex items-center gap-1.5">
-                        <Banknote size={16} className="text-emerald-600" /> مبلغ نوبت:
+                        <Banknote size={16} className="text-emerald-600" /> مبلغ
+                        نوبت:
                       </span>
                       <span className="font-black text-emerald-700" dir="ltr">
-                        {new Intl.NumberFormat("fa-IR").format(selectedSlot.price)} ریال
+                        {new Intl.NumberFormat("fa-IR").format(
+                          selectedSlot.price,
+                        )}{" "}
+                        ریال
                       </span>
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1.5">توضیحات بیمار (اختیاری):</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                      توضیحات یا علت مراجعه (اختیاری):
+                    </label>
                     <textarea
                       rows={2}
                       value={bookingNotes}
@@ -173,7 +214,9 @@ export default function DoctorBookingModal({ isOpen, onClose, doctor }: Props) {
               )}
             </div>
           ) : selectedDate ? (
-            <p className="text-xs text-center text-orange-600 bg-orange-50 p-4 rounded-xl">نوبت خالی در این تاریخ وجود ندارد.</p>
+            <p className="text-xs text-center text-orange-600 bg-orange-50 border border-orange-100 p-4 rounded-xl">
+              نوبت خالی در این تاریخ وجود ندارد.
+            </p>
           ) : null}
         </div>
 
@@ -188,11 +231,20 @@ export default function DoctorBookingModal({ isOpen, onClose, doctor }: Props) {
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
             }`}
           >
-            {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : <CalendarPlus size={16} />}
-            <span>{isSubmitting ? "در حال اتصال به بانک..." : selectedSlot ? `تایید و پرداخت نوبت ساعت ${selectedSlot.startTime}` : "انتخاب ساعت نوبت"}</span>
+            {isSubmitting ? (
+              <Loader2 className="animate-spin" size={16} />
+            ) : (
+              <CalendarPlus size={16} />
+            )}
+            <span>
+              {isSubmitting
+                ? "در حال اتصال به بانک..."
+                : selectedSlot
+                  ? `تایید و پرداخت نوبت ساعت ${selectedSlot.startTime}`
+                  : "انتخاب ساعت نوبت"}
+            </span>
           </button>
         </div>
-
       </div>
     </div>
   );
