@@ -132,6 +132,7 @@ interface UserProfile {
   activeStaffCount?: number;
   specialty?: string;
   manager?: Manager;
+  documents?: CenterDocuments; // 👈 اسناد و پروانه‌های مرکز درمانی
 
   // فیلدهای اختصاصی بیمارستان
   hospitalName?: string;
@@ -171,6 +172,15 @@ interface AuthContextType {
   login: (role: string) => void;
   logout: () => void;
   refreshProfile: () => Promise<void>;
+}
+export interface CenterDocuments {
+  establishmentLicenseFile?: string | null;
+  exploitationLicenseFile?: string | null;
+  managerIdFiles?: string[];
+  introductionLetterFile?: string | null;
+  liabilityInsuranceFile?: string | null;
+  status?: "PENDING" | "APPROVED" | "REJECTED" | "NOT_UPLOADED" | string;
+  rejectReason?: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -326,6 +336,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             showDocumentRejectedToast(
               "مدارک هویتی یا ترابری شما تایید نشد",
               profile.nationalIdVerification.rejectReason,
+            );
+          }
+        }
+        if (profile.role === "MedicalCenter") {
+          if (profile.documents?.status === "REJECTED") {
+            showDocumentRejectedToast(
+              "مدارک و پروانه‌های مرکز درمانی تایید نشد",
+              profile.documents.rejectReason,
             );
           }
         }

@@ -1,19 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
-  CheckCircle2,
-  ShieldAlert,
   Stethoscope,
   Users,
-  FileCheck,
-  Loader2,
   TestTube2,
   Plus,
   Banknote,
   ClipboardList,
+  Loader2,
 } from "lucide-react";
 import api from "../../services/api";
 import toast from "react-hot-toast";
-import FileUpload from "../../components/FileUpload";
+import CenterDocumentsSection from "./components/CenterDocumentsSection";
 
 interface TestItem {
   _id?: string;
@@ -32,21 +29,8 @@ interface Props {
 
 export default function LaboratoryProfile({ userProfile, refreshProfile }: Props) {
   const [isSubmittingTest, setIsSubmittingTest] = useState(false);
-  const [docsLoading, setDocsLoading] = useState(false);
 
-  // === استیت اطلاعات پایه و مدیر (فقط برای نمایش) ===
-  const [formData, setFormData] = useState({
-    centerName: "",
-    specialty: "",
-    address: "",
-    phone: "",
-    managerFirstName: "",
-    managerLastName: "",
-    managerNationalId: "",
-    managerMobile: "",
-  });
-
-  // === استیت تست فعال در فرم ===
+  // فرم ثبت تست جدید
   const [newTest, setNewTest] = useState<TestItem>({
     testName: "",
     testCode: "",
@@ -56,40 +40,16 @@ export default function LaboratoryProfile({ userProfile, refreshProfile }: Props
     preparationInstructions: "",
   });
 
-  // === استیت مدارک ===
-  const [labDocs, setLabDocs] = useState({
-    establishmentLicenseFile: "",
-    exploitationLicenseFile: "",
-    managerIdFront: "",
-    managerIdBack: "",
-    introductionLetterFile: "",
-    liabilityInsuranceFile: "",
-  });
-
-  // پر کردن فیلدهای نمایشی از پروفایل لاگین شده
-  useEffect(() => {
-    if (userProfile) {
-      setFormData({
-        centerName: userProfile.centerName || "---",
-        specialty: userProfile.specialty || "---",
-        address: userProfile.address || "---",
-        phone: userProfile.phones?.[0] || "---",
-        managerFirstName: userProfile.manager?.firstName || "---",
-        managerLastName: userProfile.manager?.lastName || "---",
-        managerNationalId: userProfile.manager?.nationalId || "---",
-        managerMobile: userProfile.manager?.mobile || "---",
-      });
-    }
-  }, [userProfile]);
-
-  const handleNewTestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNewTestChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setNewTest({ ...newTest, [e.target.name]: e.target.value });
   };
 
-  // 👈 ارسال تست جدید به سرور با متد POST
+  // ارسال تست جدید به سرور
   const handleAddTestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTest.testName || !newTest.price) {
+    if (!newTest.testName.trim() || !newTest.price) {
       toast.error("وارد کردن نام و قیمت تست الزامی است.");
       return;
     }
@@ -97,19 +57,18 @@ export default function LaboratoryProfile({ userProfile, refreshProfile }: Props
     setIsSubmittingTest(true);
     try {
       const payload = {
-        testName: newTest.testName,
-        testCode: newTest.testCode,
-        department: newTest.department,
+        testName: newTest.testName.trim(),
+        testCode: newTest.testCode.trim(),
+        department: newTest.department.trim(),
         price: Number(newTest.price),
         isAvailable: newTest.isAvailable,
-        preparationInstructions: newTest.preparationInstructions,
+        preparationInstructions: newTest.preparationInstructions.trim(),
       };
 
       await api.post("/laboratory/Addtests", payload);
-      
-      toast.success("تست جدید با موفقیت به آزمایشگاه اضافه شد.");
-      
-      // ریست کردن فرم افزودن تست
+      toast.success("تست جدید با موفقیت به فهرست آزمایشگاه اضافه شد.");
+
+      // ریست فرم
       setNewTest({
         testName: "",
         testCode: "",
@@ -119,48 +78,11 @@ export default function LaboratoryProfile({ userProfile, refreshProfile }: Props
         preparationInstructions: "",
       });
 
-      // رفرش کردن دیتای کامپوننت برای نمایش در لیست تست‌های تحت پوشش
       await refreshProfile();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "خطا در ثبت تست جدید.");
     } finally {
       setIsSubmittingTest(false);
-    }
-  };
-
-  // آپلود مدارک
-  const handleUploadSuccess = (field: keyof typeof labDocs) => (minioObjectName: string) => {
-    setLabDocs((prev) => ({ ...prev, [field]: minioObjectName }));
-  };
-
-  const handleLabDocsSubmit = async () => {
-    const requiredFiles = Object.values(labDocs);
-    if (requiredFiles.some((file) => file === "")) {
-      toast.error("لطفاً تمامی مدارک خواسته‌شده را بارگذاری کنید.");
-      return;
-    }
-
-    setDocsLoading(true);
-    try {
-      const payload = {
-        laboratoryId: userProfile?._id,
-        establishmentLicenseFile: labDocs.establishmentLicenseFile,
-        exploitationLicenseFile: labDocs.exploitationLicenseFile,
-        managerIdFiles: [labDocs.managerIdFront, labDocs.managerIdBack],
-        introductionLetterFile: labDocs.introductionLetterFile,
-        liabilityInsuranceFile: labDocs.liabilityInsuranceFile,
-      };
-
-      const response = await api.post("/laboratory/updatelaboratoryDocuments", payload);
-
-      if (response.data) {
-        toast.success(response.data.message || "مدارک با موفقیت ثبت شدند.");
-        await refreshProfile();
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "خطا در ثبت مدارک.");
-    } finally {
-      setDocsLoading(false);
     }
   };
 
@@ -170,133 +92,132 @@ export default function LaboratoryProfile({ userProfile, refreshProfile }: Props
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in">
-      {/* ================= وضعیت تاییدیه مرکز ================= */}
-      {userProfile?.isActive ? (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-6 flex items-center gap-5 shadow-sm">
-          <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-            <CheckCircle2 size={28} className="text-green-600" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-green-900 mb-1">پرونده مرکز شما فعال است</h3>
-            <p className="text-sm text-green-700/90">اکنون به تمامی امکانات نوبت‌دهی سیستم دسترسی دارید.</p>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-5 flex items-start gap-3 text-sm font-medium">
-          <ShieldAlert size={24} className="shrink-0 mt-0.5 text-amber-600" />
-          <div>
-            <p className="font-bold text-amber-900 mb-1">تکمیل پرونده مرکز</p>
-            <p className="leading-relaxed text-amber-700/90">
-              حساب کاربری شما غیرفعال است. جهت بررسی و فعال‌سازی، مدارک انتهای صفحه را بارگذاری کنید.
-            </p>
-          </div>
-        </div>
-      )}
+    <div
+      className="space-y-6 sm:space-y-8 animate-in fade-in duration-200 font-sans"
+      dir="rtl"
+    >
+      {/* ================= ۱. وضعیت و بارگذاری ۳ مدرک اصلی آزمایشگاه ================= */}
+      <CenterDocumentsSection
+        userProfile={userProfile}
+        refreshProfile={refreshProfile}
+        updateEndpoint="/laboratory/updatelaboratoryDocuments"
+        centerTypeName="آزمایشگاه"
+        extraPayload={{ laboratoryId: userProfile?._id }}
+      />
 
-      {/* ================= مشخصات مرکز (Read-only) ================= */}
-      <div className="space-y-4 opacity-85">
-        <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2 border-b border-gray-100 pb-2">
-          <Stethoscope size={18} className="text-gray-400" />
-          مشخصات ثبتی آزمایشگاه (غیرقابل ویرایش)
+      {/* ================= ۲. مشخصات ثبتی آزمایشگاه (Read-only) ================= */}
+      <div className="space-y-4 bg-white border border-gray-200/80 p-5 rounded-2xl sm:rounded-3xl shadow-2xs">
+        <h2 className="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-2 border-b border-gray-100 pb-2.5">
+          <Stethoscope size={18} className="text-gadget-light" />
+          مشخصات ثبتی آزمایشگاه
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1">نام آزمایشگاه</label>
-            <div className="w-full bg-gray-50/80 border border-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-sm font-medium cursor-not-allowed">
-              {formData.centerName}
+            <label className="block text-[11px] font-bold text-gray-500 mb-1">نام آزمایشگاه</label>
+            <div className="w-full bg-gray-50 border border-gray-200/70 text-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold">
+              {userProfile?.centerName || "---"}
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1">تخصص اصلی</label>
-            <div className="w-full bg-gray-50/80 border border-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-sm font-medium cursor-not-allowed">
-              {formData.specialty}
+            <label className="block text-[11px] font-bold text-gray-500 mb-1">کد پروانه / مجوز</label>
+            <div className="w-full bg-gray-50 border border-gray-200/70 text-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono" dir="ltr">
+              {userProfile?.licenseCode || "---"}
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1">شماره تماس پذیرش</label>
-            <div className="w-full bg-gray-50/80 border border-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-sm font-medium cursor-not-allowed" dir="ltr">
-              {formData.phone}
+            <label className="block text-[11px] font-bold text-gray-500 mb-1">تخصص اصلی</label>
+            <div className="w-full bg-gray-50 border border-gray-200/70 text-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold">
+              {userProfile?.specialty || "آزمایشگاه تشخیص طبی"}
             </div>
           </div>
           <div className="md:col-span-2 lg:col-span-3">
-            <label className="block text-xs font-bold text-gray-400 mb-1">آدرس کامل مرکز</label>
-            <div className="w-full bg-gray-50/80 border border-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-sm font-medium cursor-not-allowed">
-              {formData.address}
+            <label className="block text-[11px] font-bold text-gray-500 mb-1">شماره تماس پذیرش</label>
+            <div className="w-full bg-gray-50 border border-gray-200/70 text-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono" dir="ltr">
+              {userProfile?.phones?.join(" ، ") || "---"}
+            </div>
+          </div>
+          <div className="md:col-span-2 lg:col-span-3">
+            <label className="block text-[11px] font-bold text-gray-500 mb-1">آدرس کامل مرکز</label>
+            <div className="w-full bg-gray-50 border border-gray-200/70 text-gray-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm leading-relaxed">
+              {userProfile?.address || "---"}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ================= مشخصات مدیر (Read-only) ================= */}
-      <div className="space-y-4 opacity-85">
-        <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2 border-b border-gray-100 pb-2">
-          <Users size={18} className="text-gray-400" />
-          مشخصات مسئول فنی / مدیر
+      {/* ================= ۳. مشخصات مسئول فنی / مدیر (Read-only) ================= */}
+      <div className="space-y-4 bg-white border border-gray-200/80 p-5 rounded-2xl sm:rounded-3xl shadow-2xs">
+        <h2 className="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-2 border-b border-gray-100 pb-2.5">
+          <Users size={18} className="text-gadget-light" />
+          مشخصات مسئول فنی / مدیر آزمایشگاه
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1">نام مدیر</label>
-            <div className="w-full bg-gray-50/80 border border-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-sm font-medium cursor-not-allowed">
-              {formData.managerFirstName}
+            <label className="block text-[11px] font-bold text-gray-500 mb-1">نام و نام خانوادگی مدیر</label>
+            <div className="w-full bg-gray-50 border border-gray-200/70 text-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold">
+              {userProfile?.manager?.firstName} {userProfile?.manager?.lastName}
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1">نام خانوادگی مدیر</label>
-            <div className="w-full bg-gray-50/80 border border-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-sm font-medium cursor-not-allowed">
-              {formData.managerLastName}
+            <label className="block text-[11px] font-bold text-gray-500 mb-1">کد ملی</label>
+            <div className="w-full bg-gray-50 border border-gray-200/70 text-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono" dir="ltr">
+              {userProfile?.manager?.nationalId || "---"}
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1">کد ملی</label>
-            <div className="w-full bg-gray-50/80 border border-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-sm font-medium cursor-not-allowed" dir="ltr">
-              {formData.managerNationalId}
+            <label className="block text-[11px] font-bold text-gray-500 mb-1">شماره تماس مدیر</label>
+            <div className="w-full bg-gray-50 border border-gray-200/70 text-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono" dir="ltr">
+              {userProfile?.manager?.mobile || "---"}
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-400 mb-1">شماره موبایل مدیر</label>
-            <div className="w-full bg-gray-50/80 border border-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-sm font-medium cursor-not-allowed" dir="ltr">
-              {formData.managerMobile}
+            <label className="block text-[11px] font-bold text-gray-500 mb-1">سمت سازمانی</label>
+            <div className="w-full bg-gray-50 border border-gray-200/70 text-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
+              {userProfile?.manager?.role || "مسئول فنی"}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ================= مدیریت تست‌های آزمایشگاه ================= */}
-      <div className="space-y-6 pt-4 border-t border-gray-100">
-        <h2 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-          <TestTube2 size={18} className="text-blue-500" />
-          لیست تست‌های تحت پوشش مرکز
+      {/* ================= ۴. مدیریت تست‌های آزمایشگاه ================= */}
+      <div className="space-y-5 bg-white border border-gray-200/80 p-5 rounded-2xl sm:rounded-3xl shadow-2xs">
+        <h2 className="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-2 border-b border-gray-100 pb-2.5">
+          <TestTube2 size={18} className="text-teal-600" />
+          تست‌ها و آزمایش‌های تحت پوشش مرکز
         </h2>
 
-        {/* ۱. نمایش لیست کل تست‌ها از سرور */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* لیست آزمایش‌های ثبت شده */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {!userProfile?.availableTests || userProfile.availableTests.length === 0 ? (
-            <div className="col-span-full bg-gray-50 text-gray-400 text-sm p-6 rounded-xl text-center border border-dashed border-gray-200">
-              هیچ تستی برای این آزمایشگاه ثبت نشده است. از فرم زیر جهت اضافه کردن استفاده کنید.
+            <div className="col-span-full bg-gray-50 text-gray-400 text-xs sm:text-sm p-6 rounded-2xl text-center border border-dashed border-gray-200">
+              هنوز آزمایشی برای این مرکز ثبت نشده است. از فرم زیر جهت افزودن استفاده کنید.
             </div>
           ) : (
             userProfile.availableTests.map((test: any, index: number) => (
-              <div key={index} className="bg-white border border-gray-200 rounded-xl p-4 shadow-xs flex flex-col justify-between gap-3">
+              <div
+                key={index}
+                className="bg-gray-50/60 border border-gray-200/80 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-2xs"
+              >
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-gray-800 text-sm">{test.testName}</span>
+                    <span className="font-bold text-gray-900 text-xs sm:text-sm">{test.testName}</span>
                     {test.testCode && (
-                      <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md" dir="ltr">
+                      <span className="text-[10px] bg-white border border-gray-200 text-gray-500 px-2 py-0.5 rounded-md font-mono" dir="ltr">
                         کد: {test.testCode}
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-500 flex gap-4">
-                    <span>بخش: {test.department || "عام"}</span>
-                    <span className="text-emerald-600 font-bold flex items-center gap-1">
+                  <div className="text-xs text-gray-500 flex items-center justify-between pt-1">
+                    <span>بخش: <strong className="text-gray-700">{test.department || "عمومی"}</strong></span>
+                    <span className="text-emerald-700 font-bold flex items-center gap-1">
                       <Banknote size={14} /> {formatPrice(test.price)}
                     </span>
                   </div>
                 </div>
+
                 {test.preparationInstructions && (
-                  <div className="text-[11px] text-amber-700 bg-amber-50 p-2.5 rounded-lg flex gap-1.5 items-start border border-amber-100 leading-relaxed">
-                    <ClipboardList size={13} className="shrink-0 mt-0.5" />
+                  <div className="text-[11px] text-amber-800 bg-amber-50 p-2.5 rounded-xl flex gap-1.5 items-start border border-amber-200/70 leading-relaxed">
+                    <ClipboardList size={13} className="shrink-0 mt-0.5 text-amber-600" />
                     <span>{test.preparationInstructions}</span>
                   </div>
                 )}
@@ -305,31 +226,35 @@ export default function LaboratoryProfile({ userProfile, refreshProfile }: Props
           )}
         </div>
 
-        {/* ۲. فرم اختصاصی افزودن تست جدید (POST) */}
-        <form onSubmit={handleAddTestSubmit} className="bg-blue-50/40 border border-blue-100 p-5 rounded-2xl space-y-4">
-          <h3 className="text-xs font-bold text-blue-800 flex items-center gap-1">
-            <Plus size={14} /> ثبت و افزودن آزمایش جدید به سیستم
+        {/* فرم ثبت آزمایش جدید */}
+        <form
+          onSubmit={handleAddTestSubmit}
+          className="bg-blue-50/40 border border-blue-100 p-4 sm:p-5 rounded-2xl space-y-3.5"
+        >
+          <h3 className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+            <Plus size={15} /> افزودن آزمایش جدید به لیست خدمات
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <input
                 type="text"
                 name="testName"
-                placeholder="نام آزمایش (مثلاً HVP)"
+                placeholder="نام آزمایش (مثلاً CBC)*"
                 required
                 value={newTest.testName}
                 onChange={handleNewTestChange}
-                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2.5 text-sm outline-hidden focus:border-blue-400"
+                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2 text-xs sm:text-sm outline-hidden focus:border-blue-400"
               />
             </div>
             <div>
               <input
                 type="text"
                 name="department"
-                placeholder="نام بخش (مثلاً ژنتیک)"
+                placeholder="نام بخش (مثلاً هماتولوژی)"
                 value={newTest.department}
                 onChange={handleNewTestChange}
-                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2.5 text-sm outline-hidden focus:border-blue-400"
+                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2 text-xs sm:text-sm outline-hidden focus:border-blue-400"
               />
             </div>
             <div>
@@ -339,91 +264,44 @@ export default function LaboratoryProfile({ userProfile, refreshProfile }: Props
                 placeholder="کد اختصاصی تست"
                 value={newTest.testCode}
                 onChange={handleNewTestChange}
-                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2.5 text-sm outline-hidden focus:border-blue-400"
+                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2 text-xs sm:text-sm outline-hidden focus:border-blue-400 font-mono"
               />
             </div>
             <div>
               <input
                 type="number"
                 name="price"
-                placeholder="هزینه به تومان *"
+                placeholder="هزینه (تومان)*"
                 required
                 value={newTest.price}
                 onChange={handleNewTestChange}
-                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2.5 text-sm outline-hidden focus:border-blue-400"
+                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2 text-xs sm:text-sm outline-hidden focus:border-blue-400 font-mono"
               />
             </div>
             <div className="sm:col-span-2 lg:col-span-3">
               <input
                 type="text"
                 name="preparationInstructions"
-                placeholder="دستورالعمل‌ها (مثلاً نیاز به ۱۰ ساعت ناشتایی قبل از آزمایش)"
+                placeholder="دستورالعمل‌ها (مثلاً ۸ ساعت ناشتایی کامل قبل از آزمایش)"
                 value={newTest.preparationInstructions}
                 onChange={handleNewTestChange}
-                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2.5 text-sm outline-hidden focus:border-blue-400"
+                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2 text-xs sm:text-sm outline-hidden focus:border-blue-400"
               />
             </div>
             <div className="flex items-end">
               <button
                 type="submit"
                 disabled={isSubmittingTest}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-70"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-60"
               >
-                {isSubmittingTest ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
-                {isSubmittingTest ? "در حال ثبت..." : "ثبت تست جدید"}
+                {isSubmittingTest ? <Loader2 className="animate-spin" size={15} /> : <Plus size={15} />}
+                <span>{isSubmittingTest ? "در حال ثبت..." : "افزودن تست"}</span>
               </button>
             </div>
           </div>
         </form>
       </div>
 
-      {/* ================= بارگذاری مدارک (فقط در صورت غیرفعال بودن مرکز) ================= */}
-      {!userProfile?.isActive && (
-        <div className="mt-10 border-t border-gray-100 pt-8 space-y-6">
-          <h2 className="text-md font-bold text-amber-900 flex items-center gap-2">
-            <FileCheck size={20} className="text-amber-600" />
-            بارگذاری اسناد مدارک جهت تایید نهایی پرونده
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <FileUpload
-              label="تصویر مجوز تأسیس از وزارت بهداشت *"
-              onUploadSuccess={handleUploadSuccess("establishmentLicenseFile")}
-            />
-            <FileUpload
-              label="پروانه بهره‌برداری *"
-              onUploadSuccess={handleUploadSuccess("exploitationLicenseFile")}
-            />
-            <FileUpload
-              label="تصویر روی کارت ملی مدیر / مسئول فنی *"
-              onUploadSuccess={handleUploadSuccess("managerIdFront")}
-              acceptedTypes="image/jpeg,image/png,image/jpg"
-            />
-            <FileUpload
-              label="تصویر پشت کارت ملی مدیر / مسئول فنی *"
-              onUploadSuccess={handleUploadSuccess("managerIdBack")}
-              acceptedTypes="image/jpeg,image/png,image/jpg"
-            />
-            <FileUpload
-              label="معرفی‌نامه رسمی مرکز *"
-              onUploadSuccess={handleUploadSuccess("introductionLetterFile")}
-            />
-            <FileUpload
-              label="بیمه مسئولیت مرکز *"
-              onUploadSuccess={handleUploadSuccess("liabilityInsuranceFile")}
-            />
-          </div>
-          <div className="pt-6 flex justify-end">
-            <button
-              onClick={handleLabDocsSubmit}
-              disabled={docsLoading}
-              className="w-full md:w-auto bg-gadget-dark hover:bg-gadget-dark/90 text-white py-3.5 px-10 rounded-xl text-sm font-bold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-70"
-            >
-              {docsLoading ? <Loader2 className="animate-spin" size={20} /> : <FileCheck size={20} />}
-              {docsLoading ? "در حال ارسال..." : "ارسال مدارک برای تایید"}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
