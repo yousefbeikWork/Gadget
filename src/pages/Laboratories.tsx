@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronRight,
-  Users,
   X,
   Info,
   TestTube2,
@@ -194,7 +193,7 @@ export default function Laboratories() {
     try {
       await api.put(`/Admin/${reviewLab._id}/reviewCenterDocuments`, {
         action,
-        centerType: "Laboratory",
+        centerType: "laboratorCenter",
         rejectReason: reason,
       });
 
@@ -834,7 +833,7 @@ export default function Laboratories() {
         isOpen={!!reviewLab}
         onClose={() => setReviewLab(null)}
         center={reviewLab}
-        centerType="LaboratoryCenter"
+        centerType="LaboratorCenter"
         onSubmitReview={handleReviewSubmit}
         onPreviewImage={(file) => setPreviewImage(file)}
         isSubmitting={isSubmittingReview}

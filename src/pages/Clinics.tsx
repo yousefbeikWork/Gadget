@@ -78,6 +78,7 @@ export default function Clinics() {
           phone: item.phones?.[0] || "نامشخص",
           address: item.address,
           status: item.isActive === false ? "غیرفعال" : "فعال",
+          isActive: item.isActive ?? true,
           licenseCode: item.licenseCode,
           centerType: "MedicalCenter", // 👈 هماهنگ با بک‌اند
           manager: item.manager,

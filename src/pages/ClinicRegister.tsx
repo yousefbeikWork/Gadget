@@ -250,17 +250,35 @@ export default function CenterRegister() {
     }
   };
 
+  // حذف کاراکترهای غیرعددی و تبدیل ارقام فارسی/عربی به انگلیسی
+  const cleanNumber = (val: string | number | null | undefined): string => {
+    if (val === null || val === undefined) return "";
+    return val
+      .toString()
+      .replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d).toString())
+      .replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d).toString())
+      .replace(/\D/g, "");
+  };
+
+  // فرمت سه‌رقم‌سه‌رقم با کاما
+  const formatWithCommas = (
+    val: string | number | null | undefined,
+  ): string => {
+    const raw = cleanNumber(val);
+    if (!raw) return "";
+    return raw.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
   return (
     <div
       className="min-h-screen flex items-center justify-center bg-gray-50 p-3 sm:p-4 py-8 md:py-10 font-sans"
       dir="rtl"
     >
       <div className="w-full max-w-5xl bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-        
         {/* ================== هدر فرم (اصلاح شده برای موبایل) ================== */}
         <div className="bg-gadget-dark p-6 sm:p-8 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-[url('/cubes.png')] opacity-10 mix-blend-overlay"></div>
-          
+
           {/* دکمه بازگشت شکیل و دارای استایل بج */}
           <Link
             to="/register"
@@ -286,11 +304,11 @@ export default function CenterRegister() {
 
         <div className="p-4 sm:p-6 md:p-8">
           <form onSubmit={handleSubmit} className="space-y-8 md:space-y-10">
-            
             {/* ================== ۱. اطلاعات مدیر و حساب کاربری ================== */}
             <div className="bg-blue-50/40 border border-blue-100 rounded-2xl p-4 sm:p-6">
               <h3 className="text-sm font-bold text-blue-800 mb-4 flex items-center gap-2 border-b border-blue-100 pb-3">
-                <ShieldCheck size={18} /> مشخصات مدیر مرکز و اطلاعات ورود به سیستم
+                <ShieldCheck size={18} /> مشخصات مدیر مرکز و اطلاعات ورود به
+                سیستم
               </h3>
 
               <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3.5 sm:p-4 rounded-xl flex items-start gap-3 mb-6">
@@ -299,7 +317,9 @@ export default function CenterRegister() {
                   className="shrink-0 mt-0.5 text-blue-600"
                 />
                 <p className="text-xs font-medium leading-relaxed">
-                  <strong>توجه:</strong> شماره موبایل و رمز عبوری که در این بخش وارد می‌کنید، به عنوان <strong>نام کاربری و رمز عبور</strong> شما برای ورود به پنل مدیریت مرکز استفاده خواهد شد.
+                  <strong>توجه:</strong> شماره موبایل و رمز عبوری که در این بخش
+                  وارد می‌کنید، به عنوان <strong>نام کاربری و رمز عبور</strong>{" "}
+                  شما برای ورود به پنل مدیریت مرکز استفاده خواهد شد.
                 </p>
               </div>
 
@@ -409,9 +429,10 @@ export default function CenterRegister() {
             <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                  <Building2 size={18} className="text-gadget-dark" /> مشخصات مرکز درمانی
+                  <Building2 size={18} className="text-gadget-dark" /> مشخصات
+                  مرکز درمانی
                 </h3>
-                
+
                 {/* تب‌های کاملاً منظم و ریسپانسیو */}
                 <div className="grid grid-cols-3 gap-1 bg-white border border-gray-200 p-1 rounded-xl shadow-2xs w-full sm:w-auto">
                   {(["Clinic", "Laboratory", "Hospital"] as const).map(
@@ -576,7 +597,8 @@ export default function CenterRegister() {
             {/* ================== ۴. اطلاعات تماس مرکز ================== */}
             <div className="space-y-4">
               <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 border-b border-gray-100 pb-2">
-                <MapPin size={18} className="text-gadget-light" /> اطلاعات تماس و موقعیت مکانی
+                <MapPin size={18} className="text-gadget-light" /> اطلاعات تماس
+                و موقعیت مکانی
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                 <div className="md:col-span-3">
@@ -688,15 +710,16 @@ export default function CenterRegister() {
                     </label>
                     <input
                       type="text"
-                      value={newTest.price}
+                      dir="ltr"
+                      value={formatWithCommas(newTest.price)}
                       onChange={(e) =>
                         setNewTest({
                           ...newTest,
-                          price: onlyNumbers(e.target.value),
+                          price: cleanNumber(e.target.value),
                         })
                       }
                       placeholder="0"
-                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:border-purple-400"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-hidden focus:border-purple-400 text-right"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -782,7 +805,8 @@ export default function CenterRegister() {
                   htmlFor="agreement"
                   className="text-xs text-gray-600 leading-relaxed cursor-pointer font-medium max-w-lg"
                 >
-                  با ثبت این فرم، صحت تمامی اطلاعات وارد شده را تایید می‌کنم و متعهد به ارائه مدارک معتبر در مرحله بعد هستم.
+                  با ثبت این فرم، صحت تمامی اطلاعات وارد شده را تایید می‌کنم و
+                  متعهد به ارائه مدارک معتبر در مرحله بعد هستم.
                 </label>
               </div>
 

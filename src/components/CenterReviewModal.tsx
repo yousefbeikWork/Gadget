@@ -16,8 +16,11 @@ interface CenterReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   center: any;
-  centerType: "Hospital" | "MedicalCenter" | "LaboratoryCenter";
-  onSubmitReview: (action: "APPROVE" | "REJECT", reason?: string) => Promise<void>;
+  centerType: "Hospital" | "MedicalCenter" | "LaboratorCenter" | "Laboratory";
+  onSubmitReview: (
+    action: "APPROVE" | "REJECT",
+    reason?: string,
+  ) => Promise<void>;
   onPreviewImage: (fileName: string) => void;
   isSubmitting: boolean;
 }
@@ -33,10 +36,16 @@ export default function CenterReviewModal({
 }: CenterReviewModalProps) {
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [rejectReason, setRejectReason] = useState(
-    center?.documents?.rejectReason || ""
+    center?.documents?.rejectReason || "",
   );
 
   if (!isOpen || !center) return null;
+
+  // 👈 تشخیص هوشمند وضعیت فعال بودن مرکز
+  const isCenterActive =
+    typeof center.isActive === "boolean"
+      ? center.isActive
+      : center.status === "فعال";
 
   const docs = center.documents || {};
   const managerIdFiles: string[] = Array.isArray(docs.managerIdFiles)
@@ -46,10 +55,19 @@ export default function CenterReviewModal({
   const centerTitle =
     center.hospitalName || center.centerName || center.name || "مرکز درمانی";
 
-  // استخراج ۳ مدرک اصلی و قانونی مرکز
+  const getTypeName = () => {
+    if (centerType === "Hospital") return "بیمارستان";
+    if (
+      centerType === "LaboratorCenter" ||
+      (centerType as string) === "Laboratory"
+    )
+      return "آزمایشگاه";
+    return "کلینیک";
+  };
+
   const requiredCards = [
     {
-      title: `۱. پروانه کسب / بهره‌برداری ${centerType === "Hospital" ? "بیمارستان" : centerType === "LaboratoryCenter" ? "آزمایشگاه" : "کلینیک"} *`,
+      title: `۱. پروانه کسب / بهره‌برداری ${getTypeName()} *`,
       file: docs.exploitationLicenseFile,
       icon: <ShieldCheck size={16} className="text-emerald-600" />,
     },
@@ -64,6 +82,11 @@ export default function CenterReviewModal({
       icon: <User size={16} className="text-teal-600" />,
     },
   ];
+  // بررسی اینکه آیا اصلاً فایلی آپلود شده است یا خیر
+  const hasAnyUploadedDoc = Boolean(
+    docs.exploitationLicenseFile ||
+    (managerIdFiles && managerIdFiles.length > 0),
+  );
 
   return (
     <div
@@ -71,8 +94,7 @@ export default function CenterReviewModal({
       dir="rtl"
     >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92dvh] animate-in zoom-in-95 duration-150">
-        
-        {/* ================= هدر مودال ================= */}
+        {/* ================= هدر ================= */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50/90 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-10 h-10 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
@@ -83,7 +105,8 @@ export default function CenterReviewModal({
                 بررسی مدارک {centerTitle}
               </h3>
               <p className="text-[11px] text-gray-500 mt-0.5">
-                نوع مرکز: {centerType === "Hospital" ? "بیمارستان" : centerType === "LaboratoryCenter" ? "آزمایشگاه" : "کلینیک"} • کد پروانه: {center.licenseCode || "---"}
+                نوع مرکز: {getTypeName()} • کد پروانه:{" "}
+                {center.licenseCode || "---"}
               </p>
             </div>
           </div>
@@ -97,31 +120,46 @@ export default function CenterReviewModal({
 
         {/* ================= محتوای مشخصات و اسناد ================= */}
         <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-5 flex-1">
-          
           {/* مشخصات مدیریتی و تماس */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-gray-50 border border-gray-200/70 p-3.5 rounded-2xl text-xs">
             <div>
-              <span className="text-gray-400 block text-[10px]">مدیر / مسئول فنی:</span>
+              <span className="text-gray-400 block text-[10px]">
+                مدیر / مسئول فنی:
+              </span>
               <strong className="text-gray-800">
-                {center.manager ? `${center.manager.firstName} ${center.manager.lastName}` : "---"}
+                {center.manager
+                  ? `${center.manager.firstName} ${center.manager.lastName}`
+                  : "---"}
               </strong>
             </div>
             <div>
-              <span className="text-gray-400 block text-[10px]">کد ملی مدیر:</span>
+              <span className="text-gray-400 block text-[10px]">
+                کد ملی مدیر:
+              </span>
               <strong className="font-mono text-gray-800" dir="ltr">
                 {center.manager?.nationalId || "---"}
               </strong>
             </div>
             <div>
-              <span className="text-gray-400 block text-[10px]">شماره تماس:</span>
+              <span className="text-gray-400 block text-[10px]">
+                شماره تماس:
+              </span>
               <strong className="font-mono text-gray-800" dir="ltr">
                 {center.phones?.[0] || center.mobile || "---"}
               </strong>
             </div>
             <div>
-              <span className="text-gray-400 block text-[10px]">وضعیت حساب:</span>
-              <strong className={center.isActive ? "text-emerald-700 font-bold" : "text-amber-700 font-bold"}>
-                {center.isActive ? "فعال" : "غیرفعال"}
+              <span className="text-gray-400 block text-[10px]">
+                وضعیت حساب:
+              </span>
+              <strong
+                className={
+                  isCenterActive
+                    ? "text-emerald-700 font-bold"
+                    : "text-amber-700 font-bold"
+                }
+              >
+                {isCenterActive ? "فعال" : "غیرفعال"}
               </strong>
             </div>
           </div>
@@ -141,7 +179,10 @@ export default function CenterReviewModal({
                 >
                   <div className="flex items-center gap-1.5 min-w-0">
                     {item.icon}
-                    <span className="text-xs font-bold text-gray-700 truncate" title={item.title}>
+                    <span
+                      className="text-xs font-bold text-gray-700 truncate"
+                      title={item.title}
+                    >
                       {item.title}
                     </span>
                   </div>
@@ -181,7 +222,7 @@ export default function CenterReviewModal({
                 rows={3}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="مثال: تصویر پروانه بهره‌برداری ناخوانا است یا کد ملی با مشخصات همخوانی ندارد..."
+                placeholder="مثال: تصویر پروانه بهره‌برداری ناخوانا است..."
                 className="w-full bg-white border border-rose-300 rounded-xl p-2.5 text-xs focus:outline-hidden focus:border-rose-500 resize-none"
               />
             </div>
@@ -191,8 +232,9 @@ export default function CenterReviewModal({
         {/* ================= فوتر اکشن‌ها ================= */}
         <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2 shrink-0">
           <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer hover:bg-gray-100"
+            className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer hover:bg-gray-100 transition-colors"
           >
             انصراف
           </button>
@@ -202,9 +244,9 @@ export default function CenterReviewModal({
               <>
                 <button
                   type="button"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !hasAnyUploadedDoc}
                   onClick={() => setShowRejectInput(true)}
-                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs"
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
                 >
                   <XCircle size={15} /> رد مدارک
                 </button>
@@ -248,7 +290,6 @@ export default function CenterReviewModal({
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

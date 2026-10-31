@@ -131,15 +131,6 @@ export default function LeaderForm() {
             <input name="city" value={formData.city} onChange={handleChange} required type="text" className="w-full border border-gray-200 rounded-lg pr-10 pl-4 py-2.5 text-sm focus:border-gadget-light outline-hidden" placeholder=" تهران" />
           </div>
         </div>
-
-        {/* <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">هزینه دستمزد روزانه (تومان)</label>
-          <div className="relative">
-            <Banknote className="absolute left-3 top-2.5 text-gray-400" size={16} />
-            <input name="DailyPrice" value={formData.DailyPrice} onChange={handleChange} required type="text" className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:border-gadget-light text-left outline-hidden" dir="ltr" placeholder="مبلغ به عدد" />
-          </div>
-        </div> */}
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">وضعیت مالکیت خودرو</label>
           <div className="relative">
