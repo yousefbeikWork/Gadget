@@ -86,11 +86,20 @@ export interface NationalIdVerification {
   rejectReason?: string | null;
 }
 
-// 👈 اینترفیس مدارک پزشکی و نظام پزشکی
 export interface MedicalDocuments {
   medicalCouncilCard?: string | null;
   medicalLicense?: string | null;
   status: "PENDING" | "APPROVED" | "REJECTED" | "NOT_UPLOADED" | string;
+  rejectReason?: string | null;
+}
+
+export interface CenterDocuments {
+  establishmentLicenseFile?: string | null;
+  exploitationLicenseFile?: string | null;
+  managerIdFiles?: string[];
+  introductionLetterFile?: string | null;
+  liabilityInsuranceFile?: string | null;
+  status?: "PENDING" | "APPROVED" | "REJECTED" | "NOT_UPLOADED" | string;
   rejectReason?: string | null;
 }
 
@@ -111,7 +120,7 @@ interface UserProfile {
   orgAddress?: string;
   clinicPhone?: string;
   medicalCouncilCode?: string;
-  medicalDocuments?: MedicalDocuments; // 👈 مدارک پزشکی
+  medicalDocuments?: MedicalDocuments;
 
   // فیلدهای مخصوص بیمار
   fatherName?: string;
@@ -119,9 +128,9 @@ interface UserProfile {
   maritalStatus?: "SINGLE" | "MARRIED" | string;
   guardian?: Guardian;
   hasPaidRfid?: boolean;
-  nationalIdVerification?: NationalIdVerification; // 👈 مدارک هویتی
+  nationalIdVerification?: NationalIdVerification;
 
-  // فیلدهای مشترک کلینیک و آزمایشگاه
+  // فیلدهای مشترک مراکز (کلینیک، بیمارستان، آزمایشگاه)
   centerName?: string;
   centerType?: string;
   licenseCode?: string;
@@ -132,7 +141,7 @@ interface UserProfile {
   activeStaffCount?: number;
   specialty?: string;
   manager?: Manager;
-  documents?: CenterDocuments; // 👈 اسناد و پروانه‌های مرکز درمانی
+  documents?: CenterDocuments;
 
   // فیلدهای اختصاصی بیمارستان
   hospitalName?: string;
@@ -149,7 +158,7 @@ interface UserProfile {
   availableTests?: TestItem[];
   laboratorImages?: string[];
 
-  // فیلدهای اختصاصی نقش لیدر
+  // فیلدهای اختصاصی لیدر
   Address?: string;
   city?: string;
   hasCar?: boolean;
@@ -172,15 +181,6 @@ interface AuthContextType {
   login: (role: string) => void;
   logout: () => void;
   refreshProfile: () => Promise<void>;
-}
-export interface CenterDocuments {
-  establishmentLicenseFile?: string | null;
-  exploitationLicenseFile?: string | null;
-  managerIdFiles?: string[];
-  introductionLetterFile?: string | null;
-  liabilityInsuranceFile?: string | null;
-  status?: "PENDING" | "APPROVED" | "REJECTED" | "NOT_UPLOADED" | string;
-  rejectReason?: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -306,6 +306,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profile: UserProfile = response.data.data;
         setUserProfile(profile);
 
+        // ۱. بررسی وضعیت بیمار
         if (profile.role === "Patient") {
           if (profile.hasPaidRfid === false) {
             showRfidPaymentToast();
@@ -317,6 +318,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             );
           }
         }
+
+        // ۲. بررسی وضعیت پزشک
         if (profile.role === "Doctor") {
           if (
             profile.nationalIdVerification?.status === "REJECTED" ||
@@ -326,24 +329,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               profile.medicalDocuments?.rejectReason ||
               profile.nationalIdVerification?.rejectReason;
             showDocumentRejectedToast(
-              "مدارک پزشکی / هویتی شما تایید نشد",
+              "مدارک نظام پزشکی یا هویتی شما تایید نشد",
               reason,
             );
           }
         }
+
+        // ۳. بررسی وضعیت لیدر
         if (profile.role === "Leader") {
           if (profile.nationalIdVerification?.status === "REJECTED") {
             showDocumentRejectedToast(
-              "مدارک هویتی یا ترابری شما تایید نشد",
+              "مدارک هویتی یا خودروی شما تایید نشد",
               profile.nationalIdVerification.rejectReason,
             );
           }
         }
+
+        // ۴. بررسی وضعیت کلینیک و مرکز درمانی
         if (profile.role === "MedicalCenter") {
-          if (profile.documents?.status === "REJECTED") {
+          if (
+            profile.documents?.status === "REJECTED" ||
+            profile.nationalIdVerification?.status === "REJECTED"
+          ) {
+            const reason =
+              profile.documents?.rejectReason ||
+              profile.nationalIdVerification?.rejectReason;
             showDocumentRejectedToast(
-              "مدارک و پروانه‌های مرکز درمانی تایید نشد",
-              profile.documents.rejectReason,
+              "مدارک یا پروانه مرکز درمانی تایید نشد",
+              reason,
+            );
+          }
+        }
+
+        // ۵. بررسی وضعیت بیمارستان
+        if (profile.role === "Hospital") {
+          if (
+            profile.documents?.status === "REJECTED" ||
+            profile.nationalIdVerification?.status === "REJECTED"
+          ) {
+            const reason =
+              profile.documents?.rejectReason ||
+              profile.nationalIdVerification?.rejectReason;
+            showDocumentRejectedToast(
+              "مدارک یا پروانه بیمارستان تایید نشد",
+              reason,
+            );
+          }
+        }
+
+        // ۶. بررسی وضعیت آزمایشگاه
+        if (profile.role === "laboratorCenter") {
+          if (
+            profile.documents?.status === "REJECTED" ||
+            profile.nationalIdVerification?.status === "REJECTED"
+          ) {
+            const reason =
+              profile.documents?.rejectReason ||
+              profile.nationalIdVerification?.rejectReason;
+            showDocumentRejectedToast(
+              "مدارک یا پروانه آزمایشگاه تایید نشد",
+              reason,
             );
           }
         }

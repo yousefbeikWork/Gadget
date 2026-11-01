@@ -20,9 +20,9 @@ import SecureImage from "../../../components/SecureImage";
 interface CenterDocumentsSectionProps {
   userProfile: any;
   refreshProfile: () => Promise<void>;
-  updateEndpoint: string; // اندپوینت ارسال فرم (مثلاً: /Hospital/updateHospitalDocuments)
-  centerTypeName?: string; // عنوان مرکز (بیمارستان / مرکز درمانی / آزمایشگاه)
-  extraPayload?: Record<string, any>; // فیلدهای اضافی پی‌لود در صورت نیاز
+  updateEndpoint: string;
+  centerTypeName?: string;
+  extraPayload?: Record<string, any>;
 }
 
 export default function CenterDocumentsSection({
@@ -36,7 +36,7 @@ export default function CenterDocumentsSection({
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [previewImageName, setPreviewImageName] = useState<string | null>(null);
 
-  // فقط ۳ فایل مورد نیاز: پروانه + پشت و روی کارت ملی مدیر
+  // ۳ مدرک اصلی: پروانه بهره‌برداری + پشت و روی کارت ملی مدیر
   const [docs, setDocs] = useState({
     exploitationLicenseFile: "",
     managerIdFront: "",
@@ -52,7 +52,6 @@ export default function CenterDocumentsSection({
     setDocs((prev) => ({ ...prev, [field]: "" }));
   };
 
-  // ارسال ۳ مدرک هویتی و پروانه به سرور
   const handleSubmitDocs = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -179,7 +178,7 @@ export default function CenterDocumentsSection({
                 {docStatus === "APPROVED" &&
                   `پروانه بهره‌برداری و مدارک هویتی مدیر ${centerTypeName} تایید شده و حساب شما در سامانه فعال است.`}
                 {docStatus === "PENDING" &&
-                  `تصاویر پروانه و کارت ملی مدیر در صف بررسی کارشناسان ادمین قرار دارد. حساب تا زمان تایید در حالت غیرفعال می‌ماند.`}
+                  `تصاویر پروانه و کارت ملی مدیر در صف بررسی کارشناسان قرار دارد. حساب تا زمان تایید در حالت غیرفعال می‌ماند.`}
                 {docStatus === "REJECTED" && (
                   <span className="text-rose-800">
                     {rejectReason ? (
@@ -193,19 +192,20 @@ export default function CenterDocumentsSection({
                   </span>
                 )}
                 {docStatus === "NOT_UPLOADED" &&
-                  `جهت فعال‌سازی حساب کاربری ${centerTypeName}، ارسال تصویر پروانه بهره‌برداری و کارت ملی مدیر الزامی است.`}
+                  `جهت فعال‌سازی حساب کاربری ${centerTypeName}، لطفاً تصویر پروانه بهره‌برداری و کارت ملی مدیر را در فرم زیر ارسال فرمایید.`}
               </p>
             </div>
           </div>
 
-          {(docStatus === "REJECTED" || docStatus === "NOT_UPLOADED") && (
+          {/* 👈 دکمه فقط در صورتی نمایش داده می‌شود که فایلی از قبل وجود داشته و رد شده باشد */}
+          {hasUploadedDocs && docStatus === "REJECTED" && (
             <button
               type="button"
               onClick={() => setIsUploadOpen(!isUploadOpen)}
               className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
             >
               <RefreshCw size={14} className={isUploadOpen ? "rotate-180 transition-transform" : ""} />
-              <span>{isUploadOpen ? "بستن فرم آپلود" : "بارگذاری مدارک"}</span>
+              <span>{isUploadOpen ? "بستن فرم آپلود" : "بارگذاری مجدد مدارک"}</span>
             </button>
           )}
         </div>
@@ -248,7 +248,8 @@ export default function CenterDocumentsSection({
         )}
       </div>
 
-      {/* ================= ۲. فرم آپلود ۳ مدرک (فقط در صورت نیاز به آپلود) ================= */}
+      {/* ================= ۲. فرم آپلود ۳ مدرک ================= */}
+      {/* اگر فایلی بارگذاری نشده باشد، فرم به‌صورت مستقیم باز است */}
       {(isUploadOpen || (!userProfile?.isActive && !hasUploadedDocs)) && (
         <form onSubmit={handleSubmitDocs} className="space-y-4 bg-white border border-gray-200/90 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-2xs animate-in fade-in">
           <h2 className="text-xs sm:text-sm font-bold text-gray-800 flex items-center gap-2 border-b border-gray-100 pb-3">
@@ -333,7 +334,13 @@ export default function CenterDocumentsSection({
             </div>
 
             <div className="flex justify-end pt-1">
-              
+              <button
+                type="button"
+                onClick={() => setPreviewImageName(null)}
+                className="px-5 py-2 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors cursor-pointer"
+              >
+                بستن
+              </button>
             </div>
           </div>
         </div>
