@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FileCheck,
   X,
@@ -10,7 +10,7 @@ import {
   User,
   Building,
 } from "lucide-react";
-import SecureImage from "./SecureImage";
+import SecureImage from "../../common/SecureImage";
 
 interface CenterReviewModalProps {
   isOpen: boolean;
@@ -35,13 +35,22 @@ export default function CenterReviewModal({
   isSubmitting,
 }: CenterReviewModalProps) {
   const [showRejectInput, setShowRejectInput] = useState(false);
-  const [rejectReason, setRejectReason] = useState(
-    center?.documents?.rejectReason || "",
-  );
+  const [rejectReason, setRejectReason] = useState("");
+
+  // ریست خودکار وضعیت فرم هنگام باز یا بسته شدن مودال
+  useEffect(() => {
+    if (isOpen && center) {
+      setShowRejectInput(false);
+      setRejectReason(center?.documents?.rejectReason || "");
+    } else {
+      setShowRejectInput(false);
+      setRejectReason("");
+    }
+  }, [isOpen, center]);
 
   if (!isOpen || !center) return null;
 
-  // 👈 تشخیص هوشمند وضعیت فعال بودن مرکز
+  // تشخیص هوشمند وضعیت فعال بودن مرکز
   const isCenterActive =
     typeof center.isActive === "boolean"
       ? center.isActive
@@ -82,11 +91,18 @@ export default function CenterReviewModal({
       icon: <User size={16} className="text-teal-600" />,
     },
   ];
-  // بررسی اینکه آیا اصلاً فایلی آپلود شده است یا خیر
+
+  // بررسی بارگذاری حداقل یک مدرک
   const hasAnyUploadedDoc = Boolean(
     docs.exploitationLicenseFile ||
-    (managerIdFiles && managerIdFiles.length > 0),
+      (managerIdFiles && managerIdFiles.length > 0),
   );
+
+  const handleClose = () => {
+    setShowRejectInput(false);
+    setRejectReason("");
+    onClose();
+  };
 
   return (
     <div
@@ -105,13 +121,12 @@ export default function CenterReviewModal({
                 بررسی مدارک {centerTitle}
               </h3>
               <p className="text-[11px] text-gray-500 mt-0.5">
-                نوع مرکز: {getTypeName()} • کد پروانه:{" "}
-                {center.licenseCode || "---"}
+                نوع مرکز: {getTypeName()} • کد پروانه: {center.licenseCode || "---"}
               </p>
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
           >
             <X size={18} />
@@ -233,7 +248,7 @@ export default function CenterReviewModal({
         <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2 shrink-0">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer hover:bg-gray-100 transition-colors"
           >
             انصراف
@@ -246,7 +261,7 @@ export default function CenterReviewModal({
                   type="button"
                   disabled={isSubmitting || !hasAnyUploadedDoc}
                   onClick={() => setShowRejectInput(true)}
-                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <XCircle size={15} /> رد مدارک
                 </button>
@@ -254,7 +269,7 @@ export default function CenterReviewModal({
                   type="button"
                   disabled={isSubmitting || !docs.exploitationLicenseFile}
                   onClick={() => onSubmitReview("APPROVE")}
-                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <Loader2 size={15} className="animate-spin" />
@@ -277,14 +292,14 @@ export default function CenterReviewModal({
                   type="button"
                   disabled={isSubmitting || !rejectReason.trim()}
                   onClick={() => onSubmitReview("REJECT", rejectReason)}
-                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
+                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
                 >
                   {isSubmitting ? (
                     <Loader2 size={15} className="animate-spin" />
                   ) : (
                     <XCircle size={15} />
                   )}
-                  ثبت قطعی رد مدارک
+                  <span>ثبت قطعی رد مدارک</span>
                 </button>
               </>
             )}

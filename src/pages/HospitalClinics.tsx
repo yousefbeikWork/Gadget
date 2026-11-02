@@ -24,7 +24,7 @@ import api from "../services/api"; // مسیر api را با توجه به پو�
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import FileUpload from "../components/FileUpload"; // 👈 ایمپورت کامپوننت آپلود شما
+import FileUpload from "../components/common/FileUpload";
 
 interface ClinicDoctor {
   id: string;

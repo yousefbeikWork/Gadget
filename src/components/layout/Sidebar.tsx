@@ -1,6 +1,5 @@
 import { NavLink, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "../context/AuthContext";
 import {
   Home,
   Stethoscope,
@@ -27,8 +26,9 @@ import {
   Warehouse,
   Receipt,
 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import DoctorAvatar from "../common/DoctorAvatar";
 import LanguageSwitcher from "./LanguageSwitcher";
-import DoctorAvatar from "./DoctorAvatar";
 
 const menuItems = [
   {

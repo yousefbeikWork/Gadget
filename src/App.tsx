@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import DashboardLayout from "./layouts/DashboardLayout";
-import ProtectedRoute from "./components/ProtectedRoute";
 
 // ایمپورت صفحات عمومی و احراز هویت
 import Login from "./pages/Login";
@@ -33,6 +32,7 @@ import Hospitals from "./pages/Hospitals";
 import ManageHospitalClinic from "./pages/ManageHospitalClinic"; // 👈 مسیر فایلی که می‌سازیم
 import PaymentResult from "./pages/PaymentResult";
 import AdminInvoices from "./pages/AdminInvoices";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div

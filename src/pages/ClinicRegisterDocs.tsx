@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
-import FileUpload from '../components/FileUpload';
+import FileUpload from '../components/common/FileUpload';
 
 export default function ClinicRegisterDocs() {
   const location = useLocation();

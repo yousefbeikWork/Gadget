@@ -6,7 +6,7 @@ import {
 import { useNavigate } from 'react-router-dom'; // 👈 اضافه شدن جهت ناوبری
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import AddClinicDoctorModal from '../components/AddClinicDoctorModal';
+import AddClinicDoctorModal from '../components/modals/forms/AddClinicDoctorModal';
 
 interface ClinicDoctor {
   _id: string;

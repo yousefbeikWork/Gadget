@@ -10,8 +10,8 @@ import {
   Paperclip, // 👈 آیکون گیره کاغذ
 } from "lucide-react";
 import toast from "react-hot-toast";
-import api from "../services/api";
-import FileUpload from "./FileUpload"; // 👈 ایمپورت کامپوننت آپلودر
+import api from "../../../services/api";
+import FileUpload from "../../common/FileUpload";
 
 interface AddHealthRecordModalProps {
   isOpen: boolean;

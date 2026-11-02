@@ -19,7 +19,7 @@ import api from "../services/api";
 import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
-import DoctorAvatar from "../components/DoctorAvatar";
+import DoctorAvatar from "../components/common/DoctorAvatar";
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 

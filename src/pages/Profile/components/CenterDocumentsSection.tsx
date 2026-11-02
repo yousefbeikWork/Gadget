@@ -14,8 +14,9 @@ import {
 } from "lucide-react";
 import api from "../../../services/api";
 import toast from "react-hot-toast";
-import FileUpload from "../../../components/FileUpload";
-import SecureImage from "../../../components/SecureImage";
+import SecureImage from "../../../components/common/SecureImage";
+import FileUpload from "../../../components/common/FileUpload";
+
 
 interface CenterDocumentsSectionProps {
   userProfile: any;

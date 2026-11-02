@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { X, Calendar, Banknote, CalendarPlus, Loader2 } from "lucide-react";
-import api from "../services/api";
+import api from "../../../services/api";
 import toast from "react-hot-toast";
 import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
-import DoctorAvatar from "./DoctorAvatar";
+import DoctorAvatar from "../../common/DoctorAvatar";
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 

@@ -6,7 +6,7 @@ import {
   Phone, 
   Mail, 
 } from "lucide-react";
-import EnamadBadge from "./EnamadBadge";
+import EnamadBadge from "../common/EnamadBadge";
 
 export default function Footer() {
   const {  i18n } = useTranslation();

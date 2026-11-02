@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileCheck, X, CheckCircle2, XCircle, Loader2, ExternalLink } from "lucide-react";
-import SecureImage from "./SecureImage";
+import SecureImage from "../../common/SecureImage";
 
 interface DoctorReviewModalProps {
   isOpen: boolean;
@@ -20,9 +20,22 @@ export default function DoctorReviewModal({
   isSubmitting,
 }: DoctorReviewModalProps) {
   const [showRejectInput, setShowRejectInput] = useState(false);
-  const [rejectReason, setRejectReason] = useState(
-    doctor?.medicalDocuments?.rejectReason || doctor?.nationalIdVerification?.rejectReason || ""
-  );
+  const [rejectReason, setRejectReason] = useState("");
+
+  // ریست کامل وضعیت فرم هنگام باز یا بسته شدن مودال
+  useEffect(() => {
+    if (isOpen && doctor) {
+      setShowRejectInput(false);
+      setRejectReason(
+        doctor?.medicalDocuments?.rejectReason ||
+        doctor?.nationalIdVerification?.rejectReason ||
+        ""
+      );
+    } else {
+      setShowRejectInput(false);
+      setRejectReason("");
+    }
+  }, [isOpen, doctor]);
 
   if (!isOpen || !doctor) return null;
 
@@ -32,6 +45,15 @@ export default function DoctorReviewModal({
     { title: "۳. کارت نظام پزشکی", file: doctor.medicalDocuments?.medicalCouncilCard, required: true },
     { title: "۴. پروانه مطب", file: doctor.medicalDocuments?.medicalLicense, required: false },
   ];
+
+  // بررسی وجود حداقل یکی از مدارک برای فعال شدن دکمه رد
+  const hasAnyUploadedDoc = docItems.some((item) => Boolean(item.file));
+
+  const handleClose = () => {
+    setShowRejectInput(false);
+    setRejectReason("");
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs font-sans animate-in fade-in" dir="rtl">
@@ -52,14 +74,14 @@ export default function DoctorReviewModal({
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer">
+          <button onClick={handleClose} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer">
             <X size={18} />
           </button>
         </div>
 
         {/* محتوا */}
         <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-4 flex-1">
-          {/* مشخصات بیمار در کادر فشرده */}
+          {/* مشخصات پزشک در کادر فشرده */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 bg-gray-50 border border-gray-200/70 p-3 rounded-2xl text-xs">
             <div>
               <span className="text-gray-400 block text-[10px]">کد ملی:</span>
@@ -119,7 +141,7 @@ export default function DoctorReviewModal({
 
         {/* فوتر اکشن‌ها */}
         <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2 shrink-0">
-          <button onClick={onClose} className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer hover:bg-gray-100">
+          <button onClick={handleClose} className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer hover:bg-gray-100 transition-colors">
             انصراف
           </button>
 
@@ -128,9 +150,9 @@ export default function DoctorReviewModal({
               <>
                 <button
                   type="button"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !hasAnyUploadedDoc}
                   onClick={() => setShowRejectInput(true)}
-                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs"
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <XCircle size={15} /> رد مدارک
                 </button>
@@ -138,7 +160,7 @@ export default function DoctorReviewModal({
                   type="button"
                   disabled={isSubmitting || !doctor.medicalDocuments?.medicalCouncilCard || !doctor.nationalIdVerification?.frontImage}
                   onClick={() => onSubmitReview("APPROVE")}
-                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
                   <span>تایید و فعال‌سازی پزشک</span>
@@ -146,17 +168,17 @@ export default function DoctorReviewModal({
               </>
             ) : (
               <>
-                <button type="button" onClick={() => setShowRejectInput(false)} className="text-xs text-gray-500 font-bold px-2 hover:underline">
+                <button type="button" onClick={() => setShowRejectInput(false)} className="text-xs text-gray-500 font-bold px-2 hover:underline cursor-pointer">
                   انصراف از رد
                 </button>
                 <button
                   type="button"
                   disabled={isSubmitting || !rejectReason.trim()}
                   onClick={() => onSubmitReview("REJECT", rejectReason)}
-                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
+                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
                 >
                   {isSubmitting ? <Loader2 size={15} className="animate-spin" /> : <XCircle size={15} />}
-                  ثبت قطعی رد مدارک
+                  <span>ثبت قطعی رد مدارک</span>
                 </button>
               </>
             )}

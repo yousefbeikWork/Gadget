@@ -22,8 +22,8 @@ import {
 } from "lucide-react";
 import api from "../../services/api";
 import toast from "react-hot-toast";
-import FileUpload from "../../components/FileUpload";
-import SecureImage from "../../components/SecureImage";
+import SecureImage from "../../components/common/SecureImage";
+import FileUpload from "../../components/common/FileUpload";
 
 interface DoctorInfo {
   _id: string;
@@ -74,7 +74,6 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
     guardianMobile: "",
     guardianAddress: "",
   });
-
 
   useEffect(() => {
     if (userProfile) {
@@ -148,7 +147,7 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
         toast.success("اطلاعات حساب کاربری با موفقیت بروزرسانی شد");
         await refreshProfile();
       }
-    } catch (err) {
+    } catch {
       toast.error("خطا در بروزرسانی اطلاعات. لطفاً دوباره تلاش کنید.");
     } finally {
       setLoading(false);
@@ -181,7 +180,7 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
     }
   };
 
-  // ارسال یا باز ارسال مدارک کارت ملی
+  // ارسال مدارک کارت ملی
   const handleUploadDocuments = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -296,7 +295,7 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
           </div>
         </div>
 
-        {/* ۱.۲ کارت وضعیت مدارک و مشاهده تصاویر ارسالی */}
+        {/* ۱.۲ کارت وضعیت مدارک */}
         <div
           className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all ${
             docStatus === "APPROVED"
@@ -305,7 +304,7 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
                 ? "bg-blue-50/70 border-blue-200"
                 : docStatus === "REJECTED"
                   ? "bg-rose-50/80 border-rose-200"
-                  : "bg-gray-50/90 border-gray-200"
+                  : "bg-amber-50/80 border-amber-200"
           }`}
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -318,7 +317,7 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
                       ? "bg-blue-500 text-white"
                       : docStatus === "REJECTED"
                         ? "bg-rose-500 text-white"
-                        : "bg-gray-400 text-white"
+                        : "bg-amber-500 text-white"
                 }`}
               >
                 {docStatus === "APPROVED" ? (
@@ -352,7 +351,7 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
                     </span>
                   )}
                   {docStatus === "NOT_UPLOADED" && (
-                    <span className="inline-flex items-center gap-1 bg-gray-200 text-gray-700 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md">
+                    <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md">
                       <AlertCircle size={12} /> بارگذاری نشده
                     </span>
                   )}
@@ -376,13 +375,13 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
                     </span>
                   )}
                   {docStatus === "NOT_UPLOADED" &&
-                    "جهت تکمیل پرونده و صدور کارت، لطفاً تصویر رو و پشت کارت ملی خود را ارسال فرمایید."}
+                    "جهت تکمیل پرونده و صدور کارت، لطفاً تصویر رو و پشت کارت ملی خود را در فرم زیر ارسال فرمایید."}
                 </p>
               </div>
             </div>
 
-            {/* دکمه‌های کنترلی برای آپلود یا بارگذاری مجدد */}
-            {(docStatus === "REJECTED" || docStatus === "NOT_UPLOADED") && (
+            {/* دکمه فقط در صورتی نمایش داده می‌شود که قبلاً فایلی آپلود شده و رد شده باشد */}
+            {hasUploadedBefore && docStatus === "REJECTED" && (
               <button
                 type="button"
                 onClick={() => setIsUploadOpen(!isUploadOpen)}
@@ -395,24 +394,23 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
                   }
                 />
                 <span>
-                  {isUploadOpen ? "بستن فرم آپلود" : "بارگذاری مدارک"}
+                  {isUploadOpen ? "بستن فرم آپلود" : "بارگذاری مجدد مدارک"}
                 </span>
               </button>
             )}
           </div>
 
-          {/* ================= نمایش مدارک قبلی آپلود شده ================= */}
+          {/* نمایش مدارک قبلی آپلود شده */}
           {hasUploadedBefore && (
             <div className="mt-4 pt-4 border-t border-gray-200/60">
               <span className="text-[11px] font-bold text-gray-700 block mb-2.5">
                 تصاویر بارگذاری‌شده فعلی:
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* ================= روی کارت ملی ================= */}
+                {/* روی کارت ملی */}
                 {docVerification?.frontImage && (
                   <div className="bg-white border border-gray-200/90 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-2xs">
                     <div className="flex items-center gap-3 min-w-0">
-                      {/* لود امن تصویر بندانگشتی با SecureImage */}
                       <div className="w-14 h-14 rounded-xl border border-gray-200/80 bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center">
                         <SecureImage
                           fileName={docVerification.frontImage}
@@ -433,7 +431,6 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
                       </div>
                     </div>
 
-                    {/* دکمه مشاهده در اندازه بزرگ */}
                     <button
                       type="button"
                       onClick={() =>
@@ -447,11 +444,10 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
                   </div>
                 )}
 
-                {/* ================= پشت کارت ملی ================= */}
+                {/* پشت کارت ملی */}
                 {docVerification?.backImage && (
                   <div className="bg-white border border-gray-200/90 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-2xs">
                     <div className="flex items-center gap-3 min-w-0">
-                      {/* لود امن تصویر بندانگشتی با SecureImage */}
                       <div className="w-14 h-14 rounded-xl border border-gray-200/80 bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center">
                         <SecureImage
                           fileName={docVerification.backImage}
@@ -472,7 +468,6 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
                       </div>
                     </div>
 
-                    {/* دکمه مشاهده در اندازه بزرگ */}
                     <button
                       type="button"
                       onClick={() =>
@@ -489,43 +484,7 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
             </div>
           )}
 
-          {/* ================= مودال نمایش تصویر در ابعاد اصلی ================= */}
-          {previewImageName && (
-            <div
-              onClick={() => setPreviewImageName(null)}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
-            >
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-3xl p-4 sm:p-5 max-w-2xl w-full shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
-              >
-                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                  <h4 className="text-xs sm:text-sm font-bold text-gray-800">
-                    پیش‌نمایش مدارک کارت ملی
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewImageName(null)}
-                    className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-xl transition-colors cursor-pointer"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-
-                <div className="h-72 sm:h-96 w-full rounded-2xl overflow-hidden bg-gray-50 flex items-center justify-center border border-gray-100">
-                  <SecureImage
-                    fileName={previewImageName}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-
-                <div className="flex justify-end pt-1">
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ================= فرم آپلود یا جایگزینی تصاویر ================= */}
+          {/* فرم آپلود مدارک: اگر فایلی بارگذاری نشده باشد مستقیماً باز است */}
           {(isUploadOpen ||
             (docStatus === "NOT_UPLOADED" && !hasUploadedBefore)) && (
             <form
@@ -578,6 +537,49 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
           )}
         </div>
       </div>
+
+      {/* مودال نمایش تصویر در ابعاد اصلی */}
+      {previewImageName && (
+        <div
+          onClick={() => setPreviewImageName(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl p-4 sm:p-5 max-w-2xl w-full shadow-2xl space-y-4 animate-in zoom-in-95 duration-150"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <h4 className="text-xs sm:text-sm font-bold text-gray-800">
+                پیش‌نمایش مدارک کارت ملی
+              </h4>
+              <button
+                type="button"
+                onClick={() => setPreviewImageName(null)}
+                className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-xl transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="h-72 sm:h-96 w-full rounded-2xl overflow-hidden bg-gray-50 flex items-center justify-center border border-gray-100">
+              <SecureImage
+                fileName={previewImageName}
+                className="w-full h-full object-contain"
+              />
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => setPreviewImageName(null)}
+                className="px-5 py-2 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors cursor-pointer"
+              >
+                بستن
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ================== ۲. فرم اطلاعات فردی و تکمیلی ================== */}
       <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">

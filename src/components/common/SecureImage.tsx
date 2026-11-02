@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Loader2, ImageOff } from "lucide-react";
-import api from "../services/api";
+import api from "../../services/api";
 
 interface SecureImageProps {
   fileName?: string | null;

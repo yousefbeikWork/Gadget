@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import api from "../../services/api";
 import { EmptyState } from "./EmptyState";
-import DoctorAvatar from "../../components/DoctorAvatar";
+import DoctorAvatar from "../../components/common/DoctorAvatar";
 
 interface ClinicInfo {
   id: string;

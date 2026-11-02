@@ -24,13 +24,13 @@ import {
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
+import DoctorAvatar from "../components/common/DoctorAvatar";
+import DoctorReviewModal from "../components/modals/review/DoctorReviewModal";
+import DoctorBookingModal from "../components/modals/booking/DoctorBookingModal";
+import DoctorInvoicesModal from "../components/modals/misc/DoctorInvoicesModal";
+import ExcelImportModal from "../components/modals/misc/ExcelImportModal";
+import SecureImage from "../components/common/SecureImage";
 
-import DoctorAvatar from "../components/DoctorAvatar";
-import DoctorInvoicesModal from "../components/DoctorInvoicesModal";
-import ExcelImportModal from "../components/ExcelImportModal";
-import DoctorReviewModal from "../components/DoctorReviewModal";
-import DoctorBookingModal from "../components/DoctorBookingModal";
-import SecureImage from "../components/SecureImage";
 
 interface Doctor {
   _id: string;

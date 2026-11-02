@@ -14,8 +14,8 @@ import {
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import AddHealthRecordModal from "../components/AddHealthRecordModal";
-import FileDownload from "../components/FileDownload"; // 👈 ایمپورت کامپوننت دانلود
+import FileDownload from "../components/common/FileDownload";
+import AddHealthRecordModal from "../components/modals/forms/AddHealthRecordModal";
 
 interface DoctorInfo {
   _id: string;

@@ -17,8 +17,8 @@ import {
   Building2,
 } from "lucide-react";
 import api from "../../services/api";
-import AddHealthRecordModal from "../../components/AddHealthRecordModal";
 import { useAuth } from "../../context/AuthContext";
+import AddHealthRecordModal from "../../components/modals/forms/AddHealthRecordModal";
 
 interface ClinicInfo {
   id: string;

@@ -19,10 +19,11 @@ import {
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
+import CenterReviewModal from "../components/modals/review/CenterReviewModal";
+import SecureImage from "../components/common/SecureImage";
 
 // 👈 جایگزینی با کامپوننت مشترک بررسی مراکز درمانی
-import CenterReviewModal from "../components/CenterReviewModal";
-import SecureImage from "../components/SecureImage";
+
 
 interface Clinic {
   id: string;

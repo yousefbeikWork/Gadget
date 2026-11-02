@@ -28,9 +28,9 @@ import api from "../services/api";
 import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
+import CenterReviewModal from "../components/modals/review/CenterReviewModal";
+import SecureImage from "../components/common/SecureImage";
 
-import CenterReviewModal from "../components/CenterReviewModal";
-import SecureImage from "../components/SecureImage";
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 

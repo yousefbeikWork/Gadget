@@ -27,8 +27,8 @@ import { useAuth } from "../context/AuthContext";
 import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
-import LeaderReviewModal from "../components/LeaderReviewModal";
-import SecureImage from "../components/SecureImage";
+import SecureImage from "../components/common/SecureImage";
+import LeaderReviewModal from "../components/modals/review/LeaderReviewModal";
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 

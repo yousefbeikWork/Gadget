@@ -20,9 +20,9 @@ import {
 } from "lucide-react";
 import api from "../../services/api";
 import toast from "react-hot-toast";
-import FileUpload from "../../components/FileUpload";
-import DoctorAvatar from "../../components/DoctorAvatar";
-import SecureImage from "../../components/SecureImage";
+import SecureImage from "../../components/common/SecureImage";
+import FileUpload from "../../components/common/FileUpload";
+import DoctorAvatar from "../../components/common/DoctorAvatar";
 
 interface Props {
   userProfile: any;
@@ -115,7 +115,7 @@ export default function DoctorProfile({ userProfile, refreshProfile }: Props) {
         toast.success("اطلاعات حساب کاربری با موفقیت بروزرسانی شد");
         await refreshProfile();
       }
-    } catch (err) {
+    } catch {
       toast.error("خطا در بروزرسانی اطلاعات. لطفاً دوباره تلاش کنید.");
       setFormData((prev) => ({
         ...prev,
@@ -291,13 +291,13 @@ export default function DoctorProfile({ userProfile, refreshProfile }: Props) {
                   </span>
                 )}
                 {overallStatus === "NOT_UPLOADED" &&
-                  "جهت فعال‌سازی حساب و امکان دریافت نوبت توسط بیماران، ارسال تصویر رو و پشت کارت ملی و کارت نظام پزشکی الزامی است."}
+                  "جهت فعال‌سازی حساب و امکان دریافت نوبت توسط بیماران، ارسال تصویر رو و پشت کارت ملی و کارت نظام پزشکی در فرم زیر الزامی است."}
               </p>
             </div>
           </div>
 
-          {(overallStatus === "REJECTED" ||
-            overallStatus === "NOT_UPLOADED") && (
+          {/* دکمه فقط در صورتی نمایش داده می‌شود که قبلاً فایلی آپلود شده و رد شده باشد */}
+          {hasUploadedDocs && overallStatus === "REJECTED" && (
             <button
               type="button"
               onClick={() => setIsUploadOpen(!isUploadOpen)}
@@ -309,7 +309,7 @@ export default function DoctorProfile({ userProfile, refreshProfile }: Props) {
                   isUploadOpen ? "rotate-180 transition-transform" : ""
                 }
               />
-              <span>{isUploadOpen ? "بستن فرم آپلود" : "بارگذاری مدارک"}</span>
+              <span>{isUploadOpen ? "بستن فرم آپلود" : "بارگذاری مجدد مدارک"}</span>
             </button>
           )}
         </div>

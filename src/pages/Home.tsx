@@ -18,7 +18,7 @@ import {
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import Footer from "../components/Footer";
+import Footer from "../components/layout/Footer";
 
 interface TranslatedService {
   title: string;

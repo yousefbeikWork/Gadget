@@ -20,10 +20,10 @@ import {
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
+import CenterReviewModal from "../components/modals/review/CenterReviewModal";
+import HospitalBookingModal from "../components/modals/booking/HospitalBookingModal";
+import SecureImage from "../components/common/SecureImage";
 
-import CenterReviewModal from "../components/CenterReviewModal";
-import HospitalBookingModal from "../components/HospitalBookingModal";
-import SecureImage from "../components/SecureImage";
 
 interface HospitalItem {
   id: string;

@@ -7,12 +7,12 @@ import {
   Calendar, MapPin
 } from 'lucide-react';
 import api from '../../services/api';
-import AddHealthRecordModal from '../../components/AddHealthRecordModal';
 
 // ایمپورت‌های مربوط به تقویم شمسی
 import { default as DatePickerLib } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
+import AddHealthRecordModal from '../../components/modals/forms/AddHealthRecordModal';
 
 const DatePicker = (DatePickerLib as any).default || DatePickerLib;
 

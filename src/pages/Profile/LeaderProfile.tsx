@@ -21,8 +21,9 @@ import {
 } from "lucide-react";
 import api from "../../services/api";
 import toast from "react-hot-toast";
-import FileUpload from "../../components/FileUpload";
-import SecureImage from "../../components/SecureImage";
+import SecureImage from "../../components/common/SecureImage";
+import FileUpload from "../../components/common/FileUpload";
+
 
 interface Props {
   userProfile: any;
@@ -354,7 +355,7 @@ export default function LeaderProfile({ userProfile, refreshProfile }: Props) {
             </div>
           </div>
 
-          {(status === "REJECTED" || status === "NOT_UPLOADED") && (
+          {(status === "REJECTED") && (
             <button
               type="button"
               onClick={() => setIsUploadOpen(!isUploadOpen)}

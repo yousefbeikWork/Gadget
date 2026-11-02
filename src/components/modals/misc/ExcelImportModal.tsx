@@ -8,8 +8,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import api from "../services/api";
-import FileUpload from "./FileUpload";
+import api from "../../../services/api";
+import FileUpload from "../../common/FileUpload";
 
 interface FailedRecord {
   rowNumber: number;

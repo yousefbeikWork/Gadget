@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
-import AddClinicDoctorModal from "../components/AddClinicDoctorModal";
+import AddClinicDoctorModal from "../components/modals/forms/AddClinicDoctorModal";
 
 interface ClinicDoctor {
   _id: string;

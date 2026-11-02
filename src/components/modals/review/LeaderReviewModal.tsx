@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FileCheck,
   X,
@@ -9,7 +9,7 @@ import {
   Car,
   CreditCard,
 } from "lucide-react";
-import SecureImage from "./SecureImage";
+import SecureImage from "../../common/SecureImage";
 
 interface LeaderReviewModalProps {
   isOpen: boolean;
@@ -29,9 +29,18 @@ export default function LeaderReviewModal({
   isSubmitting,
 }: LeaderReviewModalProps) {
   const [showRejectInput, setShowRejectInput] = useState(false);
-  const [rejectReason, setRejectReason] = useState(
-    leader?.nationalIdVerification?.rejectReason || ""
-  );
+  const [rejectReason, setRejectReason] = useState("");
+
+  // ریست کامل وضعیت فرم هنگام باز یا بسته شدن مودال
+  useEffect(() => {
+    if (isOpen && leader) {
+      setShowRejectInput(false);
+      setRejectReason(leader?.nationalIdVerification?.rejectReason || "");
+    } else {
+      setShowRejectInput(false);
+      setRejectReason("");
+    }
+  }, [isOpen, leader]);
 
   if (!isOpen || !leader) return null;
 
@@ -69,13 +78,26 @@ export default function LeaderReviewModal({
     },
   ];
 
+  // بررسی بارگذاری حداقل یک مدرک برای مجاز شدن دکمه رد
+  const hasAnyUploadedDoc =
+    idCards.some((item) => Boolean(item.file)) ||
+    (leader.hasCar && carDocs.some((item) => Boolean(item.file)));
+
+  // بستن مودال و پاکسازی استیت‌ها
+  const handleClose = () => {
+    setShowRejectInput(false);
+    setRejectReason("");
+    onClose();
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs font-sans animate-in fade-in"
       dir="rtl"
     >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92dvh] animate-in zoom-in-95 duration-150">
-        {/* هدر */}
+        
+        {/* ================= هدر ================= */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50/90 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-10 h-10 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
@@ -91,15 +113,16 @@ export default function LeaderReviewModal({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* محتوای مدارک */}
+        {/* ================= محتوای مدارک ================= */}
         <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-5 flex-1">
+          
           {/* مشخصات لیدر و خودرو */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-gray-50 border border-gray-200/70 p-3.5 rounded-2xl text-xs">
             <div>
@@ -177,7 +200,7 @@ export default function LeaderReviewModal({
             </div>
           </div>
 
-          {/* بخش مدارک خودرو (در صورت داشتن خودرو) */}
+          {/* بخش مدارک خودرو */}
           {leader.hasCar && (
             <div className="space-y-3">
               <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1.5 border-b border-gray-100 pb-2">
@@ -234,18 +257,24 @@ export default function LeaderReviewModal({
           )}
         </div>
 
-        {/* فوتر عملیات تایید یا رد */}
+        {/* ================= فوتر عملیات تایید یا رد ================= */}
         <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2 shrink-0">
-          <div></div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer hover:bg-gray-100 transition-colors"
+          >
+            انصراف
+          </button>
 
           <div className="flex items-center gap-2">
             {!showRejectInput ? (
               <>
                 <button
                   type="button"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !hasAnyUploadedDoc}
                   onClick={() => setShowRejectInput(true)}
-                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs"
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <XCircle size={15} /> رد مدارک
                 </button>
@@ -253,10 +282,10 @@ export default function LeaderReviewModal({
                   type="button"
                   disabled={
                     isSubmitting ||
-                    !leader.nationalIdVerification?.frontImage && !leader.nationalIdPhotos?.front
+                    (!leader.nationalIdVerification?.frontImage && !leader.nationalIdPhotos?.front)
                   }
                   onClick={() => onSubmitReview("APPROVE")}
-                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <Loader2 size={15} className="animate-spin" />
@@ -273,25 +302,26 @@ export default function LeaderReviewModal({
                   onClick={() => setShowRejectInput(false)}
                   className="text-xs text-gray-500 font-bold px-2 hover:underline cursor-pointer"
                 >
-                  انصراف 
+                  انصراف از رد
                 </button>
                 <button
                   type="button"
                   disabled={isSubmitting || !rejectReason.trim()}
                   onClick={() => onSubmitReview("REJECT", rejectReason)}
-                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
+                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
                 >
                   {isSubmitting ? (
                     <Loader2 size={15} className="animate-spin" />
                   ) : (
                     <XCircle size={15} />
                   )}
-                  ثبت قطعی رد مدارک
+                  <span>ثبت قطعی رد مدارک</span>
                 </button>
               </>
             )}
           </div>
         </div>
+
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import {
   Clock4, CalendarX2, PlusCircle, Activity
 } from 'lucide-react';
 import api from '../services/api';
-import AddHealthRecordModal from '../components/AddHealthRecordModal';
+import AddHealthRecordModal from '../components/modals/forms/AddHealthRecordModal';
 
 interface PatientItem {
   patientId: string;

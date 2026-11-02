@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import FileUpload from "../../components/FileUpload";
+import FileUpload from "../../components/common/FileUpload";
 
 export default function PatientForm() {
   // const navigate = useNavigate();
