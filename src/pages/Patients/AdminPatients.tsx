@@ -1,8 +1,22 @@
 import { useState, useEffect } from "react";
 import {
-  Users, Search, Phone, CreditCard, Loader2, Wifi, WifiOff,
-  ChevronRight, ChevronLeft, ScanLine, FileSpreadsheet,
-  FileCheck, CheckCircle2, XCircle, Clock, X
+  Users,
+  Search,
+  Phone,
+  CreditCard,
+  Loader2,
+  Wifi,
+  WifiOff,
+  ChevronRight,
+  ChevronLeft,
+  ScanLine,
+  FileSpreadsheet,
+  FileCheck,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  X,
+  HeartPulse,
 } from "lucide-react";
 import api from "../../services/api";
 import toast from "react-hot-toast";
@@ -12,6 +26,8 @@ import PatientReviewModal from "../../components/modals/review/PatientReviewModa
 import PatientRfidModal from "../../components/modals/misc/PatientRfidModal";
 import SecureImage from "../../components/common/SecureImage";
 
+// 👈 ایمپورت کامپوننت پرونده سلامت
+import PatientMedicalRecord from "../Profile/components/PatientMedicalRecord";
 
 interface NationalIdVerification {
   frontImage?: string | null;
@@ -54,6 +70,10 @@ export default function AdminPatients() {
   // استیت‌های مودال‌ها
   const [rfidPatient, setRfidPatient] = useState<AdminPatientItem | null>(null);
   const [reviewPatient, setReviewPatient] = useState<AdminPatientItem | null>(null);
+  
+  // 👈 استیت مودال پرونده سلامت بیمار برای ادمین
+  const [medicalRecordPatient, setMedicalRecordPatient] = useState<AdminPatientItem | null>(null);
+
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [previewImageName, setPreviewImageName] = useState<string | null>(null);
@@ -111,7 +131,6 @@ export default function AdminPatients() {
 
       toast.success(action === "APPROVE" ? "مدارک بیمار تایید شد." : "مدارک رد شد.", { id: toastId });
 
-      // بروزرسانی آنی لیست بیماران
       setPatients((prev) =>
         prev.map((p) =>
           p._id === reviewPatient._id
@@ -221,7 +240,7 @@ export default function AdminPatients() {
           </div>
         </div>
 
-        {/* لودینگ و خطا */}
+        {/* وضعیت لودینگ و خطا */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-20 text-gadget-dark">
             <Loader2 className="animate-spin mb-3" size={36} />
@@ -279,28 +298,40 @@ export default function AdminPatients() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                  {/* 👈 دکمه‌های عملیاتی کارت همراه با مشاهده پرونده سلامت */}
+                  <div className="space-y-2 pt-2 border-t border-gray-100">
                     <button
-                      onClick={() => setReviewPatient(patient)}
-                      className="flex items-center justify-center gap-1 py-2 rounded-xl text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors cursor-pointer"
+                      type="button"
+                      onClick={() => setMedicalRecordPatient(patient)}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/80 transition-colors cursor-pointer shadow-2xs"
                     >
-                      <FileCheck size={14} /> <span>بررسی مدارک</span>
+                      <HeartPulse size={14} className="text-teal-600" />
+                      <span>مشاهده پرونده سلامت</span>
                     </button>
 
-                    <button
-                      disabled={!patient.hasPaidRfid}
-                      onClick={() => setRfidPatient(patient)}
-                      className={`flex items-center justify-center gap-1 py-2 rounded-xl text-xs font-bold transition-all ${
-                        !patient.hasPaidRfid
-                          ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-75"
-                          : patient.rfid
-                          ? "bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 cursor-pointer"
-                          : "bg-gadget-dark hover:bg-gadget-dark/90 text-white shadow-xs cursor-pointer"
-                      }`}
-                    >
-                      <ScanLine size={14} />
-                      <span>{patient.rfid ? "ویرایش RFID" : "ثبت RFID"}</span>
-                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setReviewPatient(patient)}
+                        className="flex items-center justify-center gap-1 py-2 rounded-xl text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors cursor-pointer"
+                      >
+                        <FileCheck size={14} /> <span>بررسی مدارک</span>
+                      </button>
+
+                      <button
+                        disabled={!patient.hasPaidRfid}
+                        onClick={() => setRfidPatient(patient)}
+                        className={`flex items-center justify-center gap-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                          !patient.hasPaidRfid
+                            ? "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-75"
+                            : patient.rfid
+                            ? "bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 cursor-pointer"
+                            : "bg-gadget-dark hover:bg-gadget-dark/90 text-white shadow-xs cursor-pointer"
+                        }`}
+                      >
+                        <ScanLine size={14} />
+                        <span>{patient.rfid ? "ویرایش RFID" : "ثبت RFID"}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -336,7 +367,49 @@ export default function AdminPatients() {
 
       </div>
 
-      {/* مودال بررسی مدارک بیمار (با استیت ایزوله و ریست خودکار) */}
+      {/* ================== مودال نمایش پرونده سلامت برای ادمین ================== */}
+      {medicalRecordPatient && (
+        <div
+          onClick={() => setMedicalRecordPatient(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs font-sans animate-in fade-in"
+          dir="rtl"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[92dvh] animate-in zoom-in-95 duration-150 border border-gray-100"
+          >
+            {/* هدر مودال پرونده */}
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50/90 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
+                  <HeartPulse size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base text-gray-800">
+                    پرونده جامع سلامت: {medicalRecordPatient.firstName} {medicalRecordPatient.lastName}
+                  </h3>
+                  <p className="text-[11px] text-gray-500 font-mono mt-0.5">
+                    کد ملی: {medicalRecordPatient.nationalId} • موبایل: {medicalRecordPatient.mobile}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMedicalRecordPatient(null)}
+                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* محتوای پرونده سلامت بیمار در حالت صرفاً خواندنی (isReadOnly={true}) */}
+            <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/40">
+              <PatientMedicalRecord patientId={medicalRecordPatient._id} isReadOnly={true} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* مودال بررسی مدارک هویتی بیمار (کارت ملی) */}
       <PatientReviewModal
         isOpen={!!reviewPatient}
         onClose={() => setReviewPatient(null)}
@@ -364,7 +437,7 @@ export default function AdminPatients() {
         onSuccessRefresh={fetchPatients}
       />
 
-      {/* مودال پیش‌نمایش تمام‌صفحه */}
+      {/* مودال پیش‌نمایش تمام‌صفحه تصاویر مدارک */}
       {previewImageName && (
         <div onClick={() => setPreviewImageName(null)} className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in">
           <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-3xl p-4 max-w-2xl w-full shadow-2xl space-y-3 animate-in zoom-in-95">

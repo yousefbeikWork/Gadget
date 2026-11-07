@@ -10,12 +10,11 @@ import {
   FileText,
   Edit3,
   X,
-  Plus,
   Trash2,
   Save,
   Loader2,
-  FileDown,
   Paperclip,
+  ChevronDown,
 } from "lucide-react";
 import api from "../../../services/api";
 import toast from "react-hot-toast";
@@ -57,19 +56,24 @@ interface HealthRecord {
 
 interface Props {
   patientId: string;
-  isReadOnly?: boolean; // برای استفاده پزشک یا ادمین
+  isReadOnly?: boolean;
 }
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-export default function PatientMedicalRecord({ patientId, isReadOnly = false }: Props) {
+export default function PatientMedicalRecord({
+  patientId,
+  isReadOnly = false,
+}: Props) {
   const [loading, setLoading] = useState(true);
   const [medicalProfile, setMedicalProfile] = useState<any>(null);
   const [doctorRecords, setDoctorRecords] = useState<HealthRecord[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // استیت‌های فرم ویرایش سوابق بیمار (PUT)
+  // استیت نگهداری شناسه نسخه بازشده (آکاردئون)
+  const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
+
   const [editForm, setEditForm] = useState({
     bloodGroup: "",
     familyMedicalHistory: "",
@@ -80,37 +84,61 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
   });
 
   const [allergyInput, setAllergyInput] = useState("");
-  const [tempIllness, setTempIllness] = useState<PastIllness>({ diseaseName: "", isCured: false, description: "" });
-  const [tempMed, setTempMed] = useState<Medication>({ drugName: "", dosage: "", isCurrentlyTaking: true, reason: "" });
+  const [tempIllness, setTempIllness] = useState<PastIllness>({
+    diseaseName: "",
+    isCured: false,
+    description: "",
+  });
+  const [tempMed, setTempMed] = useState<Medication>({
+    drugName: "",
+    dosage: "",
+    isCurrentlyTaking: true,
+    reason: "",
+  });
   const [tempDocTitle, setTempDocTitle] = useState("");
   const [tempDocFile, setTempDocFile] = useState("");
 
   const fetchData = async () => {
     try {
       setLoading(true);
+
       const [profileRes, recordsRes] = await Promise.allSettled([
         api.get(`/users/patientsMedicalProfile/${patientId}`),
         api.get(`/healthRecords/historyPationtsHelthRecord/${patientId}`),
       ]);
 
+      // ۱. بررسی پاسخ اطلاعات پایه بیمار با بررسی داده‌های null
       if (profileRes.status === "fulfilled" && profileRes.value.data?.success) {
         const data = profileRes.value.data.data;
-        setMedicalProfile(data);
-        setEditForm({
-          bloodGroup: data.bloodGroup || "",
-          familyMedicalHistory: data.familyMedicalHistory || "",
-          allergies: data.allergies || [],
-          pastIllnesses: data.pastIllnesses || [],
-          medications: data.medications || [],
-          documents: data.documents || [],
-        });
+        if (data) {
+          setMedicalProfile(data);
+          setEditForm({
+            bloodGroup: data.bloodGroup || "",
+            familyMedicalHistory: data.familyMedicalHistory || "",
+            allergies: Array.isArray(data.allergies) ? data.allergies : [],
+            pastIllnesses: Array.isArray(data.pastIllnesses) ? data.pastIllnesses : [],
+            medications: Array.isArray(data.medications) ? data.medications : [],
+            documents: Array.isArray(data.documents) ? data.documents : [],
+          });
+        } else {
+          setMedicalProfile(null);
+        }
       }
 
+      // ۲. دریافت سوابق ویزیت و تنظیم پیش‌فرض باز بودن آخرین نسخه
       if (recordsRes.status === "fulfilled" && recordsRes.value.data?.records) {
-        setDoctorRecords(recordsRes.value.data.records);
+        const fetchedRecords: HealthRecord[] = recordsRes.value.data.records;
+        setDoctorRecords(fetchedRecords);
+        if (fetchedRecords.length > 0) {
+          setExpandedRecordId(fetchedRecords[0]._id);
+        }
+      } else {
+        setDoctorRecords([]);
       }
     } catch {
-      toast.error("خطا در بارگذاری پرونده جامع سلامت.");
+      toast.error("خطا در بارگذاری پرونده جامع سلامت.", {
+        id: "fetch-patient-medical-error",
+      });
     } finally {
       setLoading(false);
     }
@@ -122,7 +150,10 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
     }
   }, [patientId]);
 
-  // ثبت ویرایش سوابق بیمار با متد PUT
+  const handleToggleAccordion = (id: string) => {
+    setExpandedRecordId((prev) => (prev === id ? null : id));
+  };
+
   const handleSaveMedicalProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -143,7 +174,10 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
       setIsEditModalOpen(false);
       fetchData();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "خطا در بروزرسانی پرونده سلامت.", { id: toastId });
+      toast.error(
+        err.response?.data?.message || "خطا در بروزرسانی پرونده سلامت.",
+        { id: toastId }
+      );
     } finally {
       setIsSaving(false);
     }
@@ -153,18 +187,20 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
     return (
       <div className="flex flex-col items-center justify-center py-16 text-gadget-light">
         <Loader2 className="animate-spin mb-3" size={34} />
-        <p className="text-xs font-bold text-gray-500">در حال فراخوانی پرونده سلامت الکترونیک...</p>
+        <p className="text-xs font-bold text-gray-500">
+          در حال فراخوانی پرونده سلامت الکترونیک...
+        </p>
       </div>
     );
   }
 
-  // تجمیع اسناد بخش بیمار و پیوست‌های نسخ پزشکان برای بخش سوم
   const patientDocs: MedicalDoc[] = medicalProfile?.documents || [];
-  const doctorAttachments: string[] = doctorRecords.flatMap((r) => r.attachments || []);
+  const doctorAttachments: string[] = doctorRecords.flatMap(
+    (r) => r.attachments || []
+  );
 
   return (
     <div className="space-y-6 sm:space-y-8 font-sans" dir="rtl">
-      
       {/* ================== بخش ۱: اطلاعات اولیه و سوابق خوداظهاری بیمار ================== */}
       <div className="bg-white border border-gray-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xs space-y-5">
         <div className="flex items-center justify-between border-b border-gray-100 pb-3">
@@ -173,8 +209,12 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
               <HeartPulse size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-sm sm:text-base text-gray-900">سوابق پزشکی و پرونده پایه بیمار</h3>
-              <p className="text-[11px] text-gray-500 mt-0.5">اطلاعات بیماری‌های زمینه‌ای، حساسیت‌ها و داروهای جاری</p>
+              <h3 className="font-bold text-sm sm:text-base text-gray-900">
+                سوابق پزشکی و پرونده پایه بیمار
+              </h3>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                اطلاعات بیماری‌های زمینه‌ای، حساسیت‌ها و داروهای جاری
+              </p>
             </div>
           </div>
 
@@ -183,7 +223,8 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
               onClick={() => setIsEditModalOpen(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
-              <Edit3 size={14} /> <span>ویرایش سوابق</span>
+              <Edit3 size={14} />{" "}
+              <span>{medicalProfile ? "ویرایش سوابق" : "ثبت سوابق اولیه"}</span>
             </button>
           )}
         </div>
@@ -192,11 +233,17 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-gray-50/70 p-3.5 rounded-2xl border border-gray-100 text-xs">
           <div>
             <span className="text-gray-400 block mb-0.5">گروه خونی:</span>
-            <strong className="text-gray-900 font-mono text-sm">{medicalProfile?.bloodGroup || "ثبت نشده"}</strong>
+            <strong className="text-gray-900 font-mono text-sm">
+              {medicalProfile?.bloodGroup || "ثبت نشده"}
+            </strong>
           </div>
           <div className="sm:col-span-2">
-            <span className="text-gray-400 block mb-0.5">سابقه ژنتیکی / بیماری‌های ارثی:</span>
-            <strong className="text-gray-900 leading-relaxed">{medicalProfile?.familyMedicalHistory || "ثبت نشده است"}</strong>
+            <span className="text-gray-400 block mb-0.5">
+              سابقه ژنتیکی / بیماری‌های ارثی:
+            </span>
+            <strong className="text-gray-900 leading-relaxed">
+              {medicalProfile?.familyMedicalHistory || "ثبت نشده است"}
+            </strong>
           </div>
         </div>
 
@@ -208,7 +255,10 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
           {medicalProfile?.allergies?.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {medicalProfile.allergies.map((item: string, idx: number) => (
-                <span key={idx} className="bg-amber-50 border border-amber-200 text-amber-900 text-xs px-2.5 py-1 rounded-lg font-bold">
+                <span
+                  key={idx}
+                  className="bg-amber-50 border border-amber-200 text-amber-900 text-xs px-2.5 py-1 rounded-lg font-bold"
+                >
                   {item}
                 </span>
               ))}
@@ -226,12 +276,25 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
           {medicalProfile?.pastIllnesses?.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {medicalProfile.pastIllnesses.map((illness: any, idx: number) => (
-                <div key={idx} className="border border-gray-100 bg-gray-50/50 p-2.5 rounded-xl text-xs flex justify-between items-center">
+                <div
+                  key={idx}
+                  className="border border-gray-100 bg-gray-50/50 p-2.5 rounded-xl text-xs flex justify-between items-center"
+                >
                   <div>
                     <strong className="text-gray-800">{illness.diseaseName}</strong>
-                    {illness.description && <p className="text-[11px] text-gray-500 mt-0.5">{illness.description}</p>}
+                    {illness.description && (
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        {illness.description}
+                      </p>
+                    )}
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${illness.isCured ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                      illness.isCured
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-rose-50 text-rose-700"
+                    }`}
+                  >
                     {illness.isCured ? "بهبود یافته" : "در حال درمان"}
                   </span>
                 </div>
@@ -250,12 +313,21 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
           {medicalProfile?.medications?.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {medicalProfile.medications.map((med: any, idx: number) => (
-                <div key={idx} className="border border-gray-100 bg-gray-50/50 p-2.5 rounded-xl text-xs">
+                <div
+                  key={idx}
+                  className="border border-gray-100 bg-gray-50/50 p-2.5 rounded-xl text-xs"
+                >
                   <div className="flex justify-between">
                     <strong className="text-gray-800">{med.drugName}</strong>
-                    <span className="font-mono text-gray-500" dir="ltr">{med.dosage}</span>
+                    <span className="font-mono text-gray-500" dir="ltr">
+                      {med.dosage}
+                    </span>
                   </div>
-                  {med.reason && <p className="text-[11px] text-gray-500 mt-0.5">علت مصرف: {med.reason}</p>}
+                  {med.reason && (
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      علت مصرف: {med.reason}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -265,16 +337,34 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
         </div>
       </div>
 
-      {/* ================== بخش ۲: ویزیت‌ها و نسخه‌های پزشکان ================== */}
-      <div className="bg-white border border-gray-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xs space-y-5">
-        <div className="flex items-center gap-2.5 border-b border-gray-100 pb-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
-            <Stethoscope size={20} />
+      {/* ================== بخش ۲: ویزیت‌ها و نسخه‌های پزشکان (آکاردئونی تاشو) ================== */}
+      <div className="bg-white border border-gray-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+              <Stethoscope size={20} />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm sm:text-base text-gray-900">
+                سوابق ویزیت و نسخه‌های پزشک
+              </h3>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                مجموع {doctorRecords.length} ویزیت ثبت‌شده در پرونده الکترونیک
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-sm sm:text-base text-gray-900">سوابق ویزیت و نسخه‌های پزشک</h3>
-            <p className="text-[11px] text-gray-500 mt-0.5">نسخه‌ها و تشخیص‌های ثبت‌شده توسط کادر درمان</p>
-          </div>
+
+          {doctorRecords.length > 1 && (
+            <button
+              type="button"
+              onClick={() =>
+                setExpandedRecordId((prev) => (prev ? null : doctorRecords[0]._id))
+              }
+              className="text-xs font-bold text-teal-700 hover:text-teal-900 hover:underline cursor-pointer"
+            >
+              {expandedRecordId ? "بستن همه" : "باز کردن آخرین"}
+            </button>
+          )}
         </div>
 
         {doctorRecords.length === 0 ? (
@@ -282,50 +372,161 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
             هنوز نسخه یا تشخیصی از طرف پزشکان برای این پرونده ثبت نشده است.
           </div>
         ) : (
-          <div className="space-y-4">
-            {doctorRecords.map((record) => (
-              <div key={record._id} className="border border-gray-200/80 rounded-2xl p-4 space-y-3 bg-gray-50/30">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-gray-900">{record.title}</span>
-                    {record.doctor && (
-                      <span className="text-[11px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-100">
-                        دکتر {record.doctor.firstName} {record.doctor.lastName} ({record.doctor.Expertise})
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px] text-gray-500 font-mono">
-                    <span className="flex items-center gap-1"><Calendar size={12} /> {new Date(record.createdAt).toLocaleDateString("fa-IR")}</span>
-                    <span className="flex items-center gap-1"><Clock size={12} /> {new Date(record.createdAt).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}</span>
-                  </div>
-                </div>
+          <div className="space-y-3">
+            {doctorRecords.map((record) => {
+              const isExpanded = expandedRecordId === record._id;
 
-                <div>
-                  <span className="text-[11px] font-bold text-gray-400 block mb-1">شرح و تشخیص پزشک:</span>
-                  <p className="text-xs text-gray-700 bg-white p-3 rounded-xl border border-gray-100 leading-relaxed">{record.description}</p>
-                </div>
+              return (
+                <div
+                  key={record._id}
+                  className={`border rounded-2xl overflow-hidden transition-all duration-200 ${
+                    isExpanded
+                      ? "border-teal-200 bg-white shadow-xs"
+                      : "border-gray-200/80 bg-gray-50/40 hover:bg-white hover:border-gray-300"
+                  }`}
+                >
+                  {/* سربرگ آکاردئون: همیشه قابل مشاهده و کلیک */}
+                  <div
+                    onClick={() => handleToggleAccordion(record._id)}
+                    className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                          isExpanded
+                            ? "bg-teal-600 text-white"
+                            : "bg-teal-50 text-teal-700"
+                        }`}
+                      >
+                        <Stethoscope size={17} />
+                      </div>
 
-                {record.prescription && (
-                  <div>
-                    <span className="text-[11px] font-bold text-gadget-dark block mb-1">نسخه تجویزشده:</span>
-                    <p className="text-xs text-gadget-dark bg-gadget-light/5 p-3 rounded-xl border border-gadget-light/20 font-medium leading-relaxed">{record.prescription}</p>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs sm:text-sm text-gray-900 truncate">
+                            {record.title}
+                          </span>
+                          {record.attachments && record.attachments.length > 0 && (
+                            <span className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md">
+                              <Paperclip size={11} /> {record.attachments.length} پیوست
+                            </span>
+                          )}
+                        </div>
+
+                        {record.doctor && (
+                          <p className="text-[11px] text-gray-500 truncate mt-0.5">
+                            دکتر {record.doctor.firstName} {record.doctor.lastName}{" "}
+                            <span className="text-gray-400 font-normal">
+                              ({record.doctor.Expertise})
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <div className="text-left hidden sm:block">
+                        <span className="block text-[11px] font-bold text-gray-600 font-mono">
+                          {new Date(record.createdAt).toLocaleDateString("fa-IR")}
+                        </span>
+                        <span className="block text-[10px] text-gray-400 font-mono">
+                          ساعت{" "}
+                          {new Date(record.createdAt).toLocaleTimeString("fa-IR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-transform duration-200 ${
+                          isExpanded
+                            ? "rotate-180 bg-teal-50 text-teal-700"
+                            : "text-gray-400"
+                        }`}
+                      >
+                        <ChevronDown size={17} />
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {/* بدنه تاشوی نسخه: فقط در حالت باز بودن نمایش داده می‌شود */}
+                  {isExpanded && (
+                    <div className="px-4 pb-4 pt-1 border-t border-gray-100 space-y-3 bg-gray-50/30 animate-in fade-in duration-150">
+                      {/* تاریخ در سایز موبایل */}
+                      <div className="flex items-center gap-2 text-[10px] text-gray-400 font-mono sm:hidden pt-2">
+                        <Calendar size={12} />
+                        <span>{new Date(record.createdAt).toLocaleDateString("fa-IR")}</span>
+                        <Clock size={12} className="mr-1" />
+                        <span>
+                          {new Date(record.createdAt).toLocaleTimeString("fa-IR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+
+                      {/* شرح و تشخیص */}
+                      <div>
+                        <span className="text-[11px] font-bold text-gray-400 block mb-1">
+                          شرح حال و تشخیص پزشک:
+                        </span>
+                        <p className="text-xs text-gray-700 bg-white p-3 rounded-xl border border-gray-200/80 leading-relaxed">
+                          {record.description}
+                        </p>
+                      </div>
+
+                      {/* نسخه تجویزشده */}
+                      {record.prescription && (
+                        <div>
+                          <span className="text-[11px] font-bold text-gadget-dark block mb-1">
+                            نسخه تجویزشده:
+                          </span>
+                          <p className="text-xs text-gadget-dark bg-gadget-light/5 p-3 rounded-xl border border-gadget-light/20 font-bold leading-relaxed">
+                            {record.prescription}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* پیوست‌های نسخه */}
+                      {record.attachments && record.attachments.length > 0 && (
+                        <div className="pt-2 border-t border-gray-100">
+                          <span className="text-[11px] font-bold text-gray-400 mb-2 flex items-center gap-1">
+                            <Paperclip size={12} /> مدارک پیوست این ویزیت:
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {record.attachments.map((file, i) => (
+                              <FileDownload
+                                key={i}
+                                fileName={file}
+                                className="text-xs text-blue-700 bg-white border border-blue-100 hover:bg-blue-50 px-3 py-1.5 rounded-lg shadow-2xs"
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* ================== بخش ۳: پیوست‌ها و مدارک پزشکی آپلودشده ================== */}
+      {/* ================== بخش ۳: پیوست‌ها و مدارک پزشکی ================== */}
       <div className="bg-white border border-gray-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xs space-y-4">
         <div className="flex items-center gap-2.5 border-b border-gray-100 pb-3">
           <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0">
             <Paperclip size={20} />
           </div>
           <div>
-            <h3 className="font-bold text-sm sm:text-base text-gray-900">مدارک، آزمایش‌ها و فایل‌های پیوست</h3>
-            <p className="text-[11px] text-gray-500 mt-0.5">آزمایش‌ها، تصاویر رادیولوژی و اسناد بارگذاری‌شده</p>
+            <h3 className="font-bold text-sm sm:text-base text-gray-900">
+              مدارک، آزمایش‌ها و فایل‌های پیوست
+            </h3>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              آزمایش‌ها، تصاویر رادیولوژی و اسناد بارگذاری‌شده
+            </p>
           </div>
         </div>
 
@@ -335,23 +536,33 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {/* اسناد خود بیمار */}
             {patientDocs.map((doc, idx) => (
-              <div key={idx} className="bg-gray-50/80 border border-gray-200 rounded-2xl p-3 flex flex-col justify-between gap-2 shadow-2xs">
+              <div
+                key={idx}
+                className="bg-gray-50/80 border border-gray-200 rounded-2xl p-3 flex flex-col justify-between gap-2 shadow-2xs"
+              >
                 <span className="text-xs font-bold text-gray-800 truncate" title={doc.title}>
                   <FileText size={14} className="inline text-indigo-600 ml-1" /> {doc.title}
                 </span>
-                <FileDownload fileName={doc.fileUrl} className="w-full justify-center py-2 bg-white hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-bold shadow-2xs" />
+                <FileDownload
+                  fileName={doc.fileUrl}
+                  className="w-full justify-center py-2 bg-white hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-bold shadow-2xs"
+                />
               </div>
             ))}
 
-            {/* پیوست‌های نسخ پزشکان */}
             {doctorAttachments.map((fileName, idx) => (
-              <div key={idx} className="bg-blue-50/60 border border-blue-100 rounded-2xl p-3 flex flex-col justify-between gap-2 shadow-2xs">
+              <div
+                key={idx}
+                className="bg-blue-50/60 border border-blue-100 rounded-2xl p-3 flex flex-col justify-between gap-2 shadow-2xs"
+              >
                 <span className="text-xs font-bold text-blue-900 truncate" title={fileName}>
                   <FileText size={14} className="inline text-blue-600 ml-1" /> پیوست نسخه پزشک
                 </span>
-                <FileDownload fileName={fileName} className="w-full justify-center py-2 bg-white hover:bg-gray-100 text-blue-800 rounded-xl text-xs font-bold shadow-2xs" />
+                <FileDownload
+                  fileName={fileName}
+                  className="w-full justify-center py-2 bg-white hover:bg-gray-100 text-blue-800 rounded-xl text-xs font-bold shadow-2xs"
+                />
               </div>
             ))}
           </div>
@@ -362,34 +573,56 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs font-sans animate-in fade-in">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92dvh] animate-in zoom-in-95 duration-150">
-            
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50/90 shrink-0">
-              <h3 className="font-bold text-gray-800 text-sm sm:text-base">ویرایش سوابق سلامت بیمار</h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="p-1.5 text-gray-400 hover:text-red-500 rounded-xl cursor-pointer">
+              <h3 className="font-bold text-gray-800 text-sm sm:text-base">
+                ویرایش سوابق سلامت بیمار
+              </h3>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-1.5 text-gray-400 hover:text-red-500 rounded-xl cursor-pointer"
+              >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveMedicalProfile} className="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-5 flex-1 text-xs">
-              {/* گروه خونی و ژنتیک */}
+            <form
+              onSubmit={handleSaveMedicalProfile}
+              className="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-5 flex-1 text-xs"
+            >
+              {/* گروه خونی و سابقه خانوادگی */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">گروه خونی</label>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    گروه خونی
+                  </label>
                   <select
                     value={editForm.bloodGroup}
-                    onChange={(e) => setEditForm({ ...editForm, bloodGroup: e.target.value })}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, bloodGroup: e.target.value })
+                    }
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-hidden font-bold"
                   >
                     <option value="">نامشخص</option>
-                    {BLOOD_GROUPS.map((bg) => (<option key={bg} value={bg}>{bg}</option>))}
+                    {BLOOD_GROUPS.map((bg) => (
+                      <option key={bg} value={bg}>
+                        {bg}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block font-bold text-gray-700 mb-1">سابقه خانوادگی</label>
+                  <label className="block font-bold text-gray-700 mb-1">
+                    سابقه خانوادگی
+                  </label>
                   <input
                     type="text"
                     value={editForm.familyMedicalHistory}
-                    onChange={(e) => setEditForm({ ...editForm, familyMedicalHistory: e.target.value })}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        familyMedicalHistory: e.target.value,
+                      })
+                    }
                     className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 outline-hidden"
                   />
                 </div>
@@ -397,7 +630,9 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
 
               {/* حساسیت‌ها */}
               <div className="space-y-2">
-                <label className="block font-bold text-gray-700">حساسیت‌ها</label>
+                <label className="block font-bold text-gray-700">
+                  حساسیت‌ها
+                </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -409,8 +644,14 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
                   <button
                     type="button"
                     onClick={() => {
-                      if (allergyInput.trim() && !editForm.allergies.includes(allergyInput.trim())) {
-                        setEditForm({ ...editForm, allergies: [...editForm.allergies, allergyInput.trim()] });
+                      if (
+                        allergyInput.trim() &&
+                        !editForm.allergies.includes(allergyInput.trim())
+                      ) {
+                        setEditForm({
+                          ...editForm,
+                          allergies: [...editForm.allergies, allergyInput.trim()],
+                        });
                         setAllergyInput("");
                       }
                     }}
@@ -421,9 +662,21 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {editForm.allergies.map((a, i) => (
-                    <span key={i} className="bg-amber-50 border border-amber-200 text-amber-900 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                    <span
+                      key={i}
+                      className="bg-amber-50 border border-amber-200 text-amber-900 px-2 py-0.5 rounded-lg flex items-center gap-1"
+                    >
                       {a}
-                      <X size={12} className="cursor-pointer" onClick={() => setEditForm({ ...editForm, allergies: editForm.allergies.filter((_, idx) => idx !== i) })} />
+                      <X
+                        size={12}
+                        className="cursor-pointer"
+                        onClick={() =>
+                          setEditForm({
+                            ...editForm,
+                            allergies: editForm.allergies.filter((_, idx) => idx !== i),
+                          })
+                        }
+                      />
                     </span>
                   ))}
                 </div>
@@ -431,28 +684,50 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
 
               {/* بیماری‌ها */}
               <div className="space-y-2">
-                <label className="block font-bold text-gray-700">بیماری‌های زمینه‌ای</label>
+                <label className="block font-bold text-gray-700">
+                  بیماری‌های زمینه‌ای
+                </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
                   <input
                     type="text"
                     placeholder="نام بیماری"
                     value={tempIllness.diseaseName}
-                    onChange={(e) => setTempIllness({ ...tempIllness, diseaseName: e.target.value })}
+                    onChange={(e) =>
+                      setTempIllness({
+                        ...tempIllness,
+                        diseaseName: e.target.value,
+                      })
+                    }
                     className="bg-white border border-gray-200 rounded-lg px-2 py-1.5"
                   />
                   <input
                     type="text"
                     placeholder="توضیحات"
                     value={tempIllness.description}
-                    onChange={(e) => setTempIllness({ ...tempIllness, description: e.target.value })}
+                    onChange={(e) =>
+                      setTempIllness({
+                        ...tempIllness,
+                        description: e.target.value,
+                      })
+                    }
                     className="bg-white border border-gray-200 rounded-lg px-2 py-1.5"
                   />
                   <button
                     type="button"
                     onClick={() => {
                       if (tempIllness.diseaseName.trim()) {
-                        setEditForm({ ...editForm, pastIllnesses: [...editForm.pastIllnesses, tempIllness] });
-                        setTempIllness({ diseaseName: "", isCured: false, description: "" });
+                        setEditForm({
+                          ...editForm,
+                          pastIllnesses: [
+                            ...editForm.pastIllnesses,
+                            tempIllness,
+                          ],
+                        });
+                        setTempIllness({
+                          diseaseName: "",
+                          isCured: false,
+                          description: "",
+                        });
                       }
                     }}
                     className="bg-gadget-dark text-white rounded-lg font-bold py-1.5 cursor-pointer"
@@ -461,9 +736,25 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
                   </button>
                 </div>
                 {editForm.pastIllnesses.map((item, i) => (
-                  <div key={i} className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                    <span>{item.diseaseName} ({item.description || "بدون توضیح"})</span>
-                    <Trash2 size={14} className="text-rose-500 cursor-pointer" onClick={() => setEditForm({ ...editForm, pastIllnesses: editForm.pastIllnesses.filter((_, idx) => idx !== i) })} />
+                  <div
+                    key={i}
+                    className="flex justify-between items-center bg-gray-50 p-2 rounded-lg"
+                  >
+                    <span>
+                      {item.diseaseName} ({item.description || "بدون توضیح"})
+                    </span>
+                    <Trash2
+                      size={14}
+                      className="text-rose-500 cursor-pointer"
+                      onClick={() =>
+                        setEditForm({
+                          ...editForm,
+                          pastIllnesses: editForm.pastIllnesses.filter(
+                            (_, idx) => idx !== i
+                          ),
+                        })
+                      }
+                    />
                   </div>
                 ))}
               </div>
@@ -476,22 +767,34 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
                     type="text"
                     placeholder="نام دارو"
                     value={tempMed.drugName}
-                    onChange={(e) => setTempMed({ ...tempMed, drugName: e.target.value })}
+                    onChange={(e) =>
+                      setTempMed({ ...tempMed, drugName: e.target.value })
+                    }
                     className="bg-white border border-gray-200 rounded-lg px-2 py-1.5"
                   />
                   <input
                     type="text"
                     placeholder="دوز مصرفی"
                     value={tempMed.dosage}
-                    onChange={(e) => setTempMed({ ...tempMed, dosage: e.target.value })}
+                    onChange={(e) =>
+                      setTempMed({ ...tempMed, dosage: e.target.value })
+                    }
                     className="bg-white border border-gray-200 rounded-lg px-2 py-1.5"
                   />
                   <button
                     type="button"
                     onClick={() => {
                       if (tempMed.drugName.trim()) {
-                        setEditForm({ ...editForm, medications: [...editForm.medications, tempMed] });
-                        setTempMed({ drugName: "", dosage: "", isCurrentlyTaking: true, reason: "" });
+                        setEditForm({
+                          ...editForm,
+                          medications: [...editForm.medications, tempMed],
+                        });
+                        setTempMed({
+                          drugName: "",
+                          dosage: "",
+                          isCurrentlyTaking: true,
+                          reason: "",
+                        });
                       }
                     }}
                     className="bg-blue-600 text-white rounded-lg font-bold py-1.5 cursor-pointer"
@@ -500,16 +803,34 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
                   </button>
                 </div>
                 {editForm.medications.map((item, i) => (
-                  <div key={i} className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                    <span>{item.drugName} - {item.dosage}</span>
-                    <Trash2 size={14} className="text-rose-500 cursor-pointer" onClick={() => setEditForm({ ...editForm, medications: editForm.medications.filter((_, idx) => idx !== i) })} />
+                  <div
+                    key={i}
+                    className="flex justify-between items-center bg-gray-50 p-2 rounded-lg"
+                  >
+                    <span>
+                      {item.drugName} - {item.dosage}
+                    </span>
+                    <Trash2
+                      size={14}
+                      className="text-rose-500 cursor-pointer"
+                      onClick={() =>
+                        setEditForm({
+                          ...editForm,
+                          medications: editForm.medications.filter(
+                            (_, idx) => idx !== i
+                          ),
+                        })
+                      }
+                    />
                   </div>
                 ))}
               </div>
 
               {/* اسناد پزشکی */}
               <div className="space-y-2">
-                <label className="block font-bold text-gray-700">افزودن سند یا مدرک جدید</label>
+                <label className="block font-bold text-gray-700">
+                  افزودن سند یا مدرک جدید
+                </label>
                 <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-2">
                   <input
                     type="text"
@@ -527,7 +848,13 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
                     type="button"
                     disabled={!tempDocTitle || !tempDocFile}
                     onClick={() => {
-                      setEditForm({ ...editForm, documents: [...editForm.documents, { title: tempDocTitle.trim(), fileUrl: tempDocFile }] });
+                      setEditForm({
+                        ...editForm,
+                        documents: [
+                          ...editForm.documents,
+                          { title: tempDocTitle.trim(), fileUrl: tempDocFile },
+                        ],
+                      });
                       setTempDocTitle("");
                       setTempDocFile("");
                     }}
@@ -537,9 +864,23 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
                   </button>
                 </div>
                 {editForm.documents.map((item, i) => (
-                  <div key={i} className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                  <div
+                    key={i}
+                    className="flex justify-between items-center bg-gray-50 p-2 rounded-lg"
+                  >
                     <span>{item.title}</span>
-                    <Trash2 size={14} className="text-rose-500 cursor-pointer" onClick={() => setEditForm({ ...editForm, documents: editForm.documents.filter((_, idx) => idx !== i) })} />
+                    <Trash2
+                      size={14}
+                      className="text-rose-500 cursor-pointer"
+                      onClick={() =>
+                        setEditForm({
+                          ...editForm,
+                          documents: editForm.documents.filter(
+                            (_, idx) => idx !== i
+                          ),
+                        })
+                      }
+                    />
                   </div>
                 ))}
               </div>
@@ -558,16 +899,18 @@ export default function PatientMedicalRecord({ patientId, isReadOnly = false }: 
                   disabled={isSaving}
                   className="px-6 py-2 bg-gadget-dark text-white rounded-xl font-bold cursor-pointer flex items-center gap-1.5 shadow-md disabled:opacity-50"
                 >
-                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  {isSaving ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Save size={14} />
+                  )}
                   <span>ذخیره نهایی تغییرات</span>
                 </button>
               </div>
             </form>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }

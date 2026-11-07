@@ -4,11 +4,8 @@ import {
   Users,
   Save,
   Loader2,
-  Activity,
   FileText,
-  Calendar,
   Clock,
-  Stethoscope,
   CreditCard,
   CheckCircle2,
   AlertCircle,
@@ -26,24 +23,6 @@ import SecureImage from "../../components/common/SecureImage";
 import FileUpload from "../../components/common/FileUpload";
 import PatientMedicalRecord from "./components/PatientMedicalRecord";
 
-interface DoctorInfo {
-  _id: string;
-  role: string;
-  firstName: string;
-  lastName: string;
-  Expertise: string;
-}
-
-interface HealthRecord {
-  _id: string;
-  title: string;
-  description: string;
-  prescription: string;
-  attachments?: string[];
-  createdAt: string;
-  doctor?: DoctorInfo;
-}
-
 interface Props {
   userProfile: any;
   refreshProfile: () => Promise<void>;
@@ -51,8 +30,6 @@ interface Props {
 
 export default function PatientProfile({ userProfile, refreshProfile }: Props) {
   const [loading, setLoading] = useState(false);
-  const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
-  const [loadingRecords, setLoadingRecords] = useState(false);
   const [isPayingRfid, setIsPayingRfid] = useState(false);
 
   // استیت‌های آپلود یا بارگذاری مجدد مدارک
@@ -93,28 +70,6 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
       });
     }
   }, [userProfile]);
-
-  useEffect(() => {
-    if (userProfile?._id) {
-      const fetchMyHealthRecords = async () => {
-        try {
-          setLoadingRecords(true);
-          const response = await api.get(
-            `/healthRecords/historyPationtsHelthRecord/${userProfile._id}`,
-          );
-          if (response.data && response.data.records) {
-            setHealthRecords(response.data.records);
-          }
-        } catch (err) {
-          console.error("خطا در دریافت پرونده سلامت بیمار", err);
-        } finally {
-          setLoadingRecords(false);
-        }
-      };
-      fetchMyHealthRecords();
-    }
-  }, [userProfile?._id]);
-
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
