@@ -20,6 +20,7 @@ import {
   Clock,
   Filter,
   RotateCcw,
+  Ban,
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -30,7 +31,6 @@ import DoctorBookingModal from "../components/modals/booking/DoctorBookingModal"
 import DoctorInvoicesModal from "../components/modals/misc/DoctorInvoicesModal";
 import ExcelImportModal from "../components/modals/misc/ExcelImportModal";
 import SecureImage from "../components/common/SecureImage";
-
 
 interface Doctor {
   _id: string;
@@ -83,7 +83,7 @@ export default function Doctors() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // دریافت پزشکان از سرور
+  // دریافت پزشکان از سرور (تمامی پزشکان بدون فیلتر فعال بودن)
   const fetchDoctors = async (
     page = 1,
     search = searchQuery,
@@ -101,11 +101,6 @@ export default function Doctors() {
         expertise: expertise.trim() || undefined,
         city: city.trim() || undefined,
       };
-
-      // در صورت پشتیبانی سرور، برای غیر ادمین‌ها فقط فعال‌ها فرستاده شود
-      if (!isAdmin) {
-        params.isActive = true;
-      }
 
       const res = await api.get("/users/doctorsList", { params });
 
@@ -140,11 +135,6 @@ export default function Doctors() {
     setCityFilter("");
     setCurrentPage(1);
   };
-
-  // فیلتر اطمینان در فرانت‌اند: بیمار فقط فعال‌ها را ببیند، ادمین همه را
-  const displayedDoctors = isAdmin
-    ? doctors
-    : doctors.filter((doc) => doc.isActive === true);
 
   // ثبت تایید یا رد مدارک پزشک توسط ادمین
   const handleReviewSubmit = async (
@@ -334,8 +324,8 @@ export default function Doctors() {
           </div>
         )}
 
-        {/* ================= پیام پزشک یافت نشد (کامپوننت خالی بودن لیست) ================= */}
-        {!loading && !error && displayedDoctors.length === 0 && (
+        {/* ================= پیام پزشک یافت نشد ================= */}
+        {!loading && !error && doctors.length === 0 && (
           <div className="bg-gray-50/70 p-10 rounded-3xl border border-dashed border-gray-200 text-center flex flex-col items-center justify-center my-6">
             <div className="w-16 h-16 bg-white text-gray-400 rounded-2xl flex items-center justify-center mb-3 shadow-2xs border border-gray-100">
               {hasActiveFilters ? <Filter size={28} /> : <Stethoscope size={28} />}
@@ -346,7 +336,7 @@ export default function Doctors() {
             <p className="text-gray-500 text-xs sm:text-sm max-w-sm leading-relaxed">
               {hasActiveFilters
                 ? "هیچ پزشکی با فیلترهای انتخابی شما مطابقت ندارد. لطفاً فیلترها را تغییر دهید."
-                : "در حال حاضر هیچ پزشکی با حساب فعال در سامانه ثبت نشده است."}
+                : "در حال حاضر هیچ پزشکی در سامانه ثبت نشده است."}
             </p>
             {hasActiveFilters && (
               <button
@@ -361,115 +351,135 @@ export default function Doctors() {
         )}
 
         {/* ================= گرید کارت‌های پزشکان ================= */}
-        {!loading && !error && displayedDoctors.length > 0 && (
+        {!loading && !error && doctors.length > 0 && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
-              {displayedDoctors.map((doctor) => (
-                <div
-                  key={doctor._id}
-                  className="bg-white border border-gray-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between group"
-                >
-                  <div>
-                    {/* اطلاعات بالای کارت */}
-                    <div className="flex items-center gap-3 mb-3.5 pb-3.5 border-b border-gray-100">
-                      <DoctorAvatar
-                        imageProfile={doctor.imageProfile}
-                        firstName={doctor.firstName}
-                        className="w-13 h-13 rounded-2xl shrink-0"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <h3 className="font-bold text-sm sm:text-base text-gray-800 truncate">
-                            دکتر {doctor.firstName} {doctor.lastName}
-                          </h3>
-                          {isAdmin && (
+              {doctors.map((doctor) => {
+                const isDoctorActive = Boolean(doctor.isActive);
+
+                return (
+                  <div
+                    key={doctor._id}
+                    className={`bg-white border rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col justify-between group transition-all ${
+                      isDoctorActive
+                        ? "border-gray-200/90 hover:shadow-md"
+                        : "border-gray-200/70 bg-gray-50/30"
+                    }`}
+                  >
+                    <div>
+                      {/* اطلاعات بالای کارت */}
+                      <div className="flex items-center gap-3 mb-3.5 pb-3.5 border-b border-gray-100">
+                        <DoctorAvatar
+                          imageProfile={doctor.imageProfile}
+                          firstName={doctor.firstName}
+                          className={`w-13 h-13 rounded-2xl shrink-0 ${
+                            !isDoctorActive ? "opacity-75 grayscale" : ""
+                          }`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <h3 className="font-bold text-sm sm:text-base text-gray-800 truncate">
+                              دکتر {doctor.firstName} {doctor.lastName}
+                            </h3>
+                            
+                            {/* بج فعال / غیرفعال برای همه کاربران */}
                             <span
                               className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
-                                doctor.isActive
+                                isDoctorActive
                                   ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                  : "bg-gray-100 text-gray-500"
+                                  : "bg-rose-50 text-rose-600 border border-rose-200"
                               }`}
                             >
-                              {doctor.isActive ? "فعال" : "غیرفعال"}
+                              {isDoctorActive ? "فعال" : "غیرفعال"}
                             </span>
-                          )}
+                          </div>
+
+                          <span className="inline-block bg-teal-50 text-teal-700 text-xs font-bold px-2 py-0.5 rounded-lg truncate max-w-full">
+                            {doctor.Expertise}
+                          </span>
                         </div>
-                        <span className="inline-block bg-teal-50 text-teal-700 text-xs font-bold px-2 py-0.5 rounded-lg truncate max-w-full">
-                          {doctor.Expertise}
-                        </span>
+                      </div>
+
+                      {/* مشخصات پزشک */}
+                      <div className="space-y-2 text-xs mb-4">
+                        {isAdmin && (
+                          <div className="flex items-center justify-between bg-gray-50/70 p-2.5 rounded-xl border border-gray-100">
+                            <span className="text-gray-500 font-medium">مدارک:</span>
+                            {getDocBadge(doctor)}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Award size={15} className="text-gray-400 shrink-0" />
+                          <span>
+                            نظام پزشکی:{" "}
+                            <strong className="text-gray-800 font-mono">
+                              {doctor.medicalCouncilCode}
+                            </strong>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Phone size={15} className="text-gray-400 shrink-0" />
+                          <span dir="ltr" className="font-mono text-gray-800">
+                            {doctor.clinicPhone}
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-2 text-gray-600">
+                          <MapPin size={15} className="text-gray-400 shrink-0 mt-0.5" />
+                          <span className="line-clamp-2 leading-relaxed">
+                            {doctor.clinicAddress}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* مشخصات و بَج وضعیت مدارک برای ادمین */}
-                    <div className="space-y-2 text-xs mb-4">
-                      {isAdmin && (
-                        <div className="flex items-center justify-between bg-gray-50/70 p-2.5 rounded-xl border border-gray-100">
-                          <span className="text-gray-500 font-medium">مدارک:</span>
-                          {getDocBadge(doctor)}
+                    {/* دکمه‌های عملیاتی پایین کارت */}
+                    <div className="pt-3 border-t border-gray-100">
+                      {isAdmin ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setReviewDoctor(doctor)}
+                            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors cursor-pointer"
+                          >
+                            <FileCheck size={14} /> بررسی مدارک
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setInvoiceDoctor(doctor)}
+                            className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer shadow-xs"
+                          >
+                            <Receipt size={14} /> صورت‌حساب
+                          </button>
                         </div>
+                      ) : !isDoctorActive ? (
+                        /* پزشک غیرفعال است و امکان نوبت‌دهی وجود ندارد */
+                        <button
+                          type="button"
+                          disabled
+                          className="w-full flex items-center justify-center gap-1.5 bg-gray-100 text-gray-400 py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-gray-200 cursor-not-allowed opacity-80"
+                        >
+                          <Ban size={15} /> نوبت‌دهی غیرفعال است
+                        </button>
+                      ) : isLoggedIn ? (
+                        <button
+                          onClick={() => setBookingDoctor(doctor)}
+                          className="w-full flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-xs"
+                        >
+                          <CalendarPlus size={16} /> دریافت نوبت
+                        </button>
+                      ) : (
+                        <Link
+                          to="/login"
+                          className="w-full flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-gray-200 transition-all"
+                        >
+                          <LogIn size={16} /> ورود برای رزرو
+                        </Link>
                       )}
-
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Award size={15} className="text-gray-400 shrink-0" />
-                        <span>
-                          نظام پزشکی:{" "}
-                          <strong className="text-gray-800 font-mono">
-                            {doctor.medicalCouncilCode}
-                          </strong>
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Phone size={15} className="text-gray-400 shrink-0" />
-                        <span dir="ltr" className="font-mono text-gray-800">
-                          {doctor.clinicPhone}
-                        </span>
-                      </div>
-                      <div className="flex items-start gap-2 text-gray-600">
-                        <MapPin size={15} className="text-gray-400 shrink-0 mt-0.5" />
-                        <span className="line-clamp-2 leading-relaxed">
-                          {doctor.clinicAddress}
-                        </span>
-                      </div>
                     </div>
                   </div>
-
-                  {/* دکمه‌های عملیاتی پایین کارت */}
-                  <div className="pt-3 border-t border-gray-100">
-                    {isAdmin ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setReviewDoctor(doctor)}
-                          className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors cursor-pointer"
-                        >
-                          <FileCheck size={14} /> بررسی مدارک
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setInvoiceDoctor(doctor)}
-                          className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer shadow-xs"
-                        >
-                          <Receipt size={14} /> صورت‌حساب
-                        </button>
-                      </div>
-                    ) : isLoggedIn ? (
-                      <button
-                        onClick={() => setBookingDoctor(doctor)}
-                        className="w-full flex items-center justify-center gap-2 bg-gadget-dark hover:bg-gadget-dark/90 text-white py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-xs"
-                      >
-                        <CalendarPlus size={16} /> دریافت نوبت
-                      </button>
-                    ) : (
-                      <Link
-                        to="/login"
-                        className="w-full flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-gray-200 transition-all"
-                      >
-                        <LogIn size={16} /> ورود برای رزرو
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* کنترل‌های صفحه‌بندی */}

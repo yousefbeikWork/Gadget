@@ -24,6 +24,7 @@ import api from "../../services/api";
 import toast from "react-hot-toast";
 import SecureImage from "../../components/common/SecureImage";
 import FileUpload from "../../components/common/FileUpload";
+import PatientMedicalRecord from "./components/PatientMedicalRecord";
 
 interface DoctorInfo {
   _id: string;
@@ -774,119 +775,12 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
       </form>
 
       {/* ================== ۳. پرونده سلامت من ================== */}
-      <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
-        <h2 className="text-sm sm:text-base font-bold text-gray-800 flex items-center gap-2">
-          <Activity size={20} className="text-gadget-light" />
-          پرونده سلامت من (سوابق ویزیت و نسخه‌ها)
-        </h2>
 
-        {loadingRecords ? (
-          <div className="flex flex-col items-center justify-center py-10 text-gadget-light">
-            <Loader2 className="animate-spin mb-2" size={30} />
-            <p className="text-xs font-medium text-gray-500">
-              در حال دریافت پرونده الکترونیک سلامت...
-            </p>
-          </div>
-        ) : healthRecords.length === 0 ? (
-          <div className="bg-gray-50 border border-dashed border-gray-200 p-8 text-center rounded-2xl text-gray-500 text-xs sm:text-sm">
-            <FileText
-              size={32}
-              strokeWidth={1.5}
-              className="mx-auto mb-2 text-gray-400"
-            />
-            هنوز هیچ پرونده ویزیت یا نسخه‌ای برای شما در سیستم ثبت نشده است.
-          </div>
-        ) : (
-          <div className="relative border-r-2 border-gadget-light/30 pr-3.5 sm:pr-6 space-y-4 py-1">
-            {healthRecords.map((record) => (
-              <div
-                key={record._id}
-                className="relative animate-in fade-in slide-in-from-bottom-2"
-              >
-                <span className="absolute -right-5.25 sm:-right-7.75 top-4 w-3.5 h-3.5 rounded-full bg-gadget-light ring-4 ring-white shadow-xs"></span>
-
-                <div className="bg-white border border-gray-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs hover:shadow-xs transition-shadow space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-3">
-                    <h3 className="font-bold text-sm sm:text-base text-gray-900">
-                      {record.title}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500 font-medium">
-                      <span className="flex items-center gap-1 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">
-                        <Calendar size={13} className="text-gray-400" />
-                        {new Date(record.createdAt).toLocaleDateString("fa-IR")}
-                      </span>
-                      <span className="flex items-center gap-1 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">
-                        <Clock size={13} className="text-gray-400" />
-                        {new Date(record.createdAt).toLocaleTimeString(
-                          "fa-IR",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          },
-                        )}
-                      </span>
-                    </div>
-                  </div>
-
-                  {record.doctor && (
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-teal-800 bg-teal-50 border border-teal-100 px-3 py-1.5 rounded-xl w-fit">
-                      <Stethoscope
-                        size={14}
-                        className="text-teal-600 shrink-0"
-                      />
-                      <span>
-                        پزشک: دکتر {record.doctor.firstName}{" "}
-                        {record.doctor.lastName}{" "}
-                        <span className="opacity-75 font-normal">
-                          ({record.doctor.Expertise})
-                        </span>
-                      </span>
-                    </div>
-                  )}
-
-                  <div>
-                    <h4 className="text-[11px] font-bold text-gray-400 mb-1">
-                      تشخیص پزشک:
-                    </h4>
-                    <p className="text-xs sm:text-sm text-gray-700 bg-gray-50/70 p-3 rounded-xl border border-gray-100 leading-relaxed">
-                      {record.description}
-                    </p>
-                  </div>
-
-                  {record.prescription && (
-                    <div>
-                      <h4 className="text-[11px] font-bold text-gadget-dark mb-1">
-                        نسخه تجویزشده:
-                      </h4>
-                      <p className="text-xs sm:text-sm text-gadget-dark bg-gadget-light/5 p-3 rounded-xl border border-gadget-light/20 font-medium leading-relaxed">
-                        {record.prescription}
-                      </p>
-                    </div>
-                  )}
-
-                  {record.attachments && record.attachments.length > 0 && (
-                    <div className="pt-1">
-                      <h4 className="text-[11px] font-bold text-gray-400 mb-1.5">
-                        مدارک پیوست:
-                      </h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {record.attachments.map((file, i) => (
-                          <span
-                            key={i}
-                            className="text-[11px] font-medium text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg flex items-center gap-1"
-                          >
-                            <FileText size={12} /> {file}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {userProfile?._id && (
+        <div className="mt-8 pt-6 border-t border-gray-100">
+          <PatientMedicalRecord patientId={userProfile._id} />
+        </div>
+      )}
     </div>
   );
 }
