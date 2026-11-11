@@ -57,6 +57,7 @@ interface HealthRecord {
 interface Props {
   patientId: string;
   isReadOnly?: boolean;
+  isActive?: boolean;
 }
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -64,6 +65,7 @@ const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 export default function PatientMedicalRecord({
   patientId,
   isReadOnly = false,
+  isActive = true,
 }: Props) {
   const [loading, setLoading] = useState(true);
   const [medicalProfile, setMedicalProfile] = useState<any>(null);
@@ -102,12 +104,16 @@ export default function PatientMedicalRecord({
     try {
       setLoading(true);
 
+      // اگر بیمار غیرفعال است، فقط اطلاعات پایه خوداظهاری را دریافت کن و نسخه را نخوان
+      const shouldFetchRecords = isReadOnly || isActive;
+
       const [profileRes, recordsRes] = await Promise.allSettled([
         api.get(`/users/patientsMedicalProfile/${patientId}`),
-        api.get(`/healthRecords/historyPationtsHelthRecord/${patientId}`),
+        shouldFetchRecords
+          ? api.get(`/healthRecords/historyPationtsHelthRecord/${patientId}`)
+          : Promise.resolve({ data: { records: [] } } as any),
       ]);
 
-      // ۱. بررسی پاسخ اطلاعات پایه بیمار با بررسی داده‌های null
       if (profileRes.status === "fulfilled" && profileRes.value.data?.success) {
         const data = profileRes.value.data.data;
         if (data) {
@@ -116,8 +122,12 @@ export default function PatientMedicalRecord({
             bloodGroup: data.bloodGroup || "",
             familyMedicalHistory: data.familyMedicalHistory || "",
             allergies: Array.isArray(data.allergies) ? data.allergies : [],
-            pastIllnesses: Array.isArray(data.pastIllnesses) ? data.pastIllnesses : [],
-            medications: Array.isArray(data.medications) ? data.medications : [],
+            pastIllnesses: Array.isArray(data.pastIllnesses)
+              ? data.pastIllnesses
+              : [],
+            medications: Array.isArray(data.medications)
+              ? data.medications
+              : [],
             documents: Array.isArray(data.documents) ? data.documents : [],
           });
         } else {
@@ -125,9 +135,12 @@ export default function PatientMedicalRecord({
         }
       }
 
-      // ۲. دریافت سوابق ویزیت و تنظیم پیش‌فرض باز بودن آخرین نسخه
-      if (recordsRes.status === "fulfilled" && recordsRes.value.data?.records) {
-        const fetchedRecords: HealthRecord[] = recordsRes.value.data.records;
+      if (
+        shouldFetchRecords &&
+        recordsRes.status === "fulfilled" &&
+        recordsRes.value.data?.records
+      ) {
+        const fetchedRecords = recordsRes.value.data.records;
         setDoctorRecords(fetchedRecords);
         if (fetchedRecords.length > 0) {
           setExpandedRecordId(fetchedRecords[0]._id);
@@ -176,7 +189,7 @@ export default function PatientMedicalRecord({
     } catch (err: any) {
       toast.error(
         err.response?.data?.message || "خطا در بروزرسانی پرونده سلامت.",
-        { id: toastId }
+        { id: toastId },
       );
     } finally {
       setIsSaving(false);
@@ -196,7 +209,7 @@ export default function PatientMedicalRecord({
 
   const patientDocs: MedicalDoc[] = medicalProfile?.documents || [];
   const doctorAttachments: string[] = doctorRecords.flatMap(
-    (r) => r.attachments || []
+    (r) => r.attachments || [],
   );
 
   return (
@@ -250,7 +263,8 @@ export default function PatientMedicalRecord({
         {/* حساسیت‌ها */}
         <div className="space-y-2">
           <span className="text-xs font-bold text-gray-600 flex items-center gap-1.5">
-            <AlertTriangle size={15} className="text-amber-500" /> حساسیت‌های دارویی و غذایی:
+            <AlertTriangle size={15} className="text-amber-500" /> حساسیت‌های
+            دارویی و غذایی:
           </span>
           {medicalProfile?.allergies?.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
@@ -264,14 +278,17 @@ export default function PatientMedicalRecord({
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-400 italic">هیچ حساسیتی ثبت نشده است.</p>
+            <p className="text-xs text-gray-400 italic">
+              هیچ حساسیتی ثبت نشده است.
+            </p>
           )}
         </div>
 
         {/* بیماری‌های زمینه‌ای */}
         <div className="space-y-2">
           <span className="text-xs font-bold text-gray-600 flex items-center gap-1.5">
-            <Activity size={15} className="text-rose-500" /> بیماری‌های زمینه‌ای:
+            <Activity size={15} className="text-rose-500" /> بیماری‌های
+            زمینه‌ای:
           </span>
           {medicalProfile?.pastIllnesses?.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -281,7 +298,9 @@ export default function PatientMedicalRecord({
                   className="border border-gray-100 bg-gray-50/50 p-2.5 rounded-xl text-xs flex justify-between items-center"
                 >
                   <div>
-                    <strong className="text-gray-800">{illness.diseaseName}</strong>
+                    <strong className="text-gray-800">
+                      {illness.diseaseName}
+                    </strong>
                     {illness.description && (
                       <p className="text-[11px] text-gray-500 mt-0.5">
                         {illness.description}
@@ -301,7 +320,9 @@ export default function PatientMedicalRecord({
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-400 italic">بیماری زمینه‌ای ثبت نشده است.</p>
+            <p className="text-xs text-gray-400 italic">
+              بیماری زمینه‌ای ثبت نشده است.
+            </p>
           )}
         </div>
 
@@ -338,6 +359,7 @@ export default function PatientMedicalRecord({
       </div>
 
       {/* ================== بخش ۲: ویزیت‌ها و نسخه‌های پزشکان (آکاردئونی تاشو) ================== */}
+      {/* ================== بخش ۲: ویزیت‌ها و نسخه‌های پزشکان ================== */}
       <div className="bg-white border border-gray-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xs space-y-4">
         <div className="flex items-center justify-between border-b border-gray-100 pb-3">
           <div className="flex items-center gap-2.5">
@@ -349,16 +371,21 @@ export default function PatientMedicalRecord({
                 سوابق ویزیت و نسخه‌های پزشک
               </h3>
               <p className="text-[11px] text-gray-500 mt-0.5">
-                مجموع {doctorRecords.length} ویزیت ثبت‌شده در پرونده الکترونیک
+                {isActive
+                  ? `مجموع ${doctorRecords.length} ویزیت ثبت‌شده در پرونده الکترونیک`
+                  : "دسترسی به نسخه‌ها نیازمند فعال بودن حساب کاربری است"}
               </p>
             </div>
           </div>
 
-          {doctorRecords.length > 1 && (
+          {/* دکمه بستن/باز کردن فقط زمانی که بیمار فعال است و نسخه دارد نمایش داده می‌شود */}
+          {isActive && doctorRecords.length > 1 && (
             <button
               type="button"
               onClick={() =>
-                setExpandedRecordId((prev) => (prev ? null : doctorRecords[0]._id))
+                setExpandedRecordId((prev) =>
+                  prev ? null : doctorRecords[0]._id,
+                )
               }
               className="text-xs font-bold text-teal-700 hover:text-teal-900 hover:underline cursor-pointer"
             >
@@ -367,11 +394,31 @@ export default function PatientMedicalRecord({
           )}
         </div>
 
-        {doctorRecords.length === 0 ? (
+        {/* 👈 شرط عدم نمایش نسخه‌ها برای بیمار غیرفعال */}
+        {!isActive ? (
+          <div className="bg-rose-50/70 border border-rose-200/80 rounded-2xl p-4 sm:p-5 flex items-start gap-3">
+            <AlertTriangle
+              size={20}
+              className="text-rose-600 shrink-0 mt-0.5"
+            />
+            <div className="text-xs text-rose-900 leading-relaxed">
+              <strong className="block mb-1 text-sm font-bold">
+                مشاهده نسخه‌ها و پرونده ویزیت مسدود است
+              </strong>
+              <p className="text-rose-800/80">
+                حساب کاربری شما هنوز تایید و فعال نشده است. جهت مشاهده سوابق
+                ویزیت، نسخه‌های تجویزشده و دستورات دارویی پزشک، لطفاً ابتدا
+                مدارک هویتی خود را بارگذاری کرده و هزینه کارت هوشمند سلامت
+                (RFID) را پرداخت فرمایید.
+              </p>
+            </div>
+          </div>
+        ) : doctorRecords.length === 0 ? (
           <div className="bg-gray-50 border border-dashed border-gray-200 p-8 text-center rounded-2xl text-gray-400 text-xs">
             هنوز نسخه یا تشخیصی از طرف پزشکان برای این پرونده ثبت نشده است.
           </div>
         ) : (
+          /* لیست آکاردئونی نسخه‌ها (فقط در حالت فعال بودن بیمار) */
           <div className="space-y-3">
             {doctorRecords.map((record) => {
               const isExpanded = expandedRecordId === record._id;
@@ -385,7 +432,6 @@ export default function PatientMedicalRecord({
                       : "border-gray-200/80 bg-gray-50/40 hover:bg-white hover:border-gray-300"
                   }`}
                 >
-                  {/* سربرگ آکاردئون: همیشه قابل مشاهده و کلیک */}
                   <div
                     onClick={() => handleToggleAccordion(record._id)}
                     className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none"
@@ -406,16 +452,19 @@ export default function PatientMedicalRecord({
                           <span className="font-bold text-xs sm:text-sm text-gray-900 truncate">
                             {record.title}
                           </span>
-                          {record.attachments && record.attachments.length > 0 && (
-                            <span className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md">
-                              <Paperclip size={11} /> {record.attachments.length} پیوست
-                            </span>
-                          )}
+                          {record.attachments &&
+                            record.attachments.length > 0 && (
+                              <span className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md">
+                                <Paperclip size={11} />{" "}
+                                {record.attachments.length} پیوست
+                              </span>
+                            )}
                         </div>
 
                         {record.doctor && (
                           <p className="text-[11px] text-gray-500 truncate mt-0.5">
-                            دکتر {record.doctor.firstName} {record.doctor.lastName}{" "}
+                            دکتر {record.doctor.firstName}{" "}
+                            {record.doctor.lastName}{" "}
                             <span className="text-gray-400 font-normal">
                               ({record.doctor.Expertise})
                             </span>
@@ -427,14 +476,19 @@ export default function PatientMedicalRecord({
                     <div className="flex items-center gap-2.5 shrink-0">
                       <div className="text-left hidden sm:block">
                         <span className="block text-[11px] font-bold text-gray-600 font-mono">
-                          {new Date(record.createdAt).toLocaleDateString("fa-IR")}
+                          {new Date(record.createdAt).toLocaleDateString(
+                            "fa-IR",
+                          )}
                         </span>
                         <span className="block text-[10px] text-gray-400 font-mono">
                           ساعت{" "}
-                          {new Date(record.createdAt).toLocaleTimeString("fa-IR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {new Date(record.createdAt).toLocaleTimeString(
+                            "fa-IR",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
                         </span>
                       </div>
 
@@ -450,23 +504,27 @@ export default function PatientMedicalRecord({
                     </div>
                   </div>
 
-                  {/* بدنه تاشوی نسخه: فقط در حالت باز بودن نمایش داده می‌شود */}
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-1 border-t border-gray-100 space-y-3 bg-gray-50/30 animate-in fade-in duration-150">
-                      {/* تاریخ در سایز موبایل */}
                       <div className="flex items-center gap-2 text-[10px] text-gray-400 font-mono sm:hidden pt-2">
                         <Calendar size={12} />
-                        <span>{new Date(record.createdAt).toLocaleDateString("fa-IR")}</span>
+                        <span>
+                          {new Date(record.createdAt).toLocaleDateString(
+                            "fa-IR",
+                          )}
+                        </span>
                         <Clock size={12} className="mr-1" />
                         <span>
-                          {new Date(record.createdAt).toLocaleTimeString("fa-IR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {new Date(record.createdAt).toLocaleTimeString(
+                            "fa-IR",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
                         </span>
                       </div>
 
-                      {/* شرح و تشخیص */}
                       <div>
                         <span className="text-[11px] font-bold text-gray-400 block mb-1">
                           شرح حال و تشخیص پزشک:
@@ -476,7 +534,6 @@ export default function PatientMedicalRecord({
                         </p>
                       </div>
 
-                      {/* نسخه تجویزشده */}
                       {record.prescription && (
                         <div>
                           <span className="text-[11px] font-bold text-gadget-dark block mb-1">
@@ -488,7 +545,6 @@ export default function PatientMedicalRecord({
                         </div>
                       )}
 
-                      {/* پیوست‌های نسخه */}
                       {record.attachments && record.attachments.length > 0 && (
                         <div className="pt-2 border-t border-gray-100">
                           <span className="text-[11px] font-bold text-gray-400 mb-2 flex items-center gap-1">
@@ -541,8 +597,12 @@ export default function PatientMedicalRecord({
                 key={idx}
                 className="bg-gray-50/80 border border-gray-200 rounded-2xl p-3 flex flex-col justify-between gap-2 shadow-2xs"
               >
-                <span className="text-xs font-bold text-gray-800 truncate" title={doc.title}>
-                  <FileText size={14} className="inline text-indigo-600 ml-1" /> {doc.title}
+                <span
+                  className="text-xs font-bold text-gray-800 truncate"
+                  title={doc.title}
+                >
+                  <FileText size={14} className="inline text-indigo-600 ml-1" />{" "}
+                  {doc.title}
                 </span>
                 <FileDownload
                   fileName={doc.fileUrl}
@@ -556,8 +616,12 @@ export default function PatientMedicalRecord({
                 key={idx}
                 className="bg-blue-50/60 border border-blue-100 rounded-2xl p-3 flex flex-col justify-between gap-2 shadow-2xs"
               >
-                <span className="text-xs font-bold text-blue-900 truncate" title={fileName}>
-                  <FileText size={14} className="inline text-blue-600 ml-1" /> پیوست نسخه پزشک
+                <span
+                  className="text-xs font-bold text-blue-900 truncate"
+                  title={fileName}
+                >
+                  <FileText size={14} className="inline text-blue-600 ml-1" />{" "}
+                  پیوست نسخه پزشک
                 </span>
                 <FileDownload
                   fileName={fileName}
@@ -650,7 +714,10 @@ export default function PatientMedicalRecord({
                       ) {
                         setEditForm({
                           ...editForm,
-                          allergies: [...editForm.allergies, allergyInput.trim()],
+                          allergies: [
+                            ...editForm.allergies,
+                            allergyInput.trim(),
+                          ],
                         });
                         setAllergyInput("");
                       }
@@ -673,7 +740,9 @@ export default function PatientMedicalRecord({
                         onClick={() =>
                           setEditForm({
                             ...editForm,
-                            allergies: editForm.allergies.filter((_, idx) => idx !== i),
+                            allergies: editForm.allergies.filter(
+                              (_, idx) => idx !== i,
+                            ),
                           })
                         }
                       />
@@ -750,7 +819,7 @@ export default function PatientMedicalRecord({
                         setEditForm({
                           ...editForm,
                           pastIllnesses: editForm.pastIllnesses.filter(
-                            (_, idx) => idx !== i
+                            (_, idx) => idx !== i,
                           ),
                         })
                       }
@@ -817,7 +886,7 @@ export default function PatientMedicalRecord({
                         setEditForm({
                           ...editForm,
                           medications: editForm.medications.filter(
-                            (_, idx) => idx !== i
+                            (_, idx) => idx !== i,
                           ),
                         })
                       }
@@ -876,7 +945,7 @@ export default function PatientMedicalRecord({
                         setEditForm({
                           ...editForm,
                           documents: editForm.documents.filter(
-                            (_, idx) => idx !== i
+                            (_, idx) => idx !== i,
                           ),
                         })
                       }

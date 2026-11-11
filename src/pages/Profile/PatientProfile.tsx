@@ -733,7 +733,10 @@ export default function PatientProfile({ userProfile, refreshProfile }: Props) {
 
       {userProfile?._id && (
         <div className="mt-8 pt-6 border-t border-gray-100">
-          <PatientMedicalRecord patientId={userProfile._id} />
+          <PatientMedicalRecord
+            patientId={userProfile._id}
+            isActive={Boolean(userProfile.isActive)}
+          />
         </div>
       )}
     </div>

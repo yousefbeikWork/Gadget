@@ -324,7 +324,7 @@ export default function Step1Identity({ onSuccessNext }: Props) {
           <div className="flex items-center gap-2 text-gray-800 border-b border-gray-200/60 pb-2">
             <Users size={17} className="text-gadget-light" />
             <h3 className="text-xs sm:text-sm font-bold">
-              اطلاعات قیم / سرپرست قانونی (برای افراد زیر ۱۸ سال الزامی است)
+              اطلاعات قیم / سرپرست قانونی 
             </h3>
           </div>
 
