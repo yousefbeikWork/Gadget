@@ -85,9 +85,9 @@ export default function Footer() {
             <div className="pt-4 flex gap-3">
               <EnamadBadge />
               {/* جایگاهی برای نماد ساماندهی در آینده */}
-              <div className="w-25 h-25 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center text-xs text-gray-400 text-center p-2 shadow-sm">
+              {/* <div className="w-25 h-25 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center text-xs text-gray-400 text-center p-2 shadow-sm">
                 نماد ساماندهی (به زودی)
-              </div>
+              </div> */}
             </div>
           </div>
 

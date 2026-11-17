@@ -1,9 +1,10 @@
 // import React from "react";
+import enamd from "../../../public/enamad1.jpg";
 
 export default function EnamadBadge() {
   // کد خام اینماد را دقیقاً به شکل یک رشته (String) اینجا قرار می‌دهیم
-  const enamadCode = `<a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=7085309&Code=1C8FL0Bt6wU5qsjjnX7splo4Pk5Mz15d'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=7085309&Code=1C8FL0Bt6wU5qsjjnX7splo4Pk5Mz15d' alt='' style='cursor:pointer' code='1C8FL0Bt6wU5qsjjnX7splo4Pk5Mz15d'></a>`;
-
+  const enamadCode = `<a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=7085309&Code=1C8FL0Bt6wU5qsjjnX7splo4Pk5Mz15d'><img referrerpolicy='origin' src=${enamd} alt='' style='cursor:pointer' code='1C8FL0Bt6wU5qsjjnX7splo4Pk5Mz15d'></a>`;
+  // https://trustseal.enamad.ir/logo.aspx?id=7085309&Code=1C8FL0Bt6wU5qsjjnX7splo4Pk5Mz15d
   return (
     <div
       // می‌توانید با کلاس‌های تیل‌ویند بک‌گراند، سایز و پدینگ دلخواه به آن بدهید
